@@ -21,8 +21,11 @@ the connector in about half a second, and every kind of movement is softened.
 npm test
 ```
 
-Expected: **159 tests, 0 failures.** New: `test/step-motion.test.js` — the
-`--duration-step` band (300–700ms) and the badge's glide vector on the real map.
+Expected: **159 tests, 0 failures.** `test/step-motion.test.js` pins the
+`--duration-step` band (300–700ms) and the badge's glide vector on the real map —
+including a simulation of how browsers expose SVG class names (an object, not a
+string), after correction 4 found the glide silently dead in real browsers while
+every stub test passed.
 
 ### Manual
 

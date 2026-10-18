@@ -59,11 +59,25 @@ Vinland.define('ui/panel-map', function (require) {
     document.dispatchEvent(event);
   }
 
+  /**
+   * The class list of a node, as strings. Careful: on SVG elements in a real
+   * browser `className` is an SVGAnimatedString object, not a string — so
+   * read the `class` attribute there, or every lookup below silently misses
+   * and the marker glide (and any browser-only class search) never happens.
+   */
+  function classListOf(node) {
+    if (!node) return [];
+    if (typeof node.className === 'string') return node.className.split(/\s+/).filter(Boolean);
+    if (typeof node.getAttribute === 'function') {
+      return String(node.getAttribute('class') || '').split(/\s+/).filter(Boolean);
+    }
+    return [];
+  }
+
   /** First descendant (or self) whose class list includes `cls`. */
   function findByClass(node, cls) {
     if (!node) return null;
-    const classes = String(node.className || '').split(/\s+/);
-    if (classes.indexOf(cls) !== -1) return node;
+    if (classListOf(node).indexOf(cls) !== -1) return node;
     const kids = node.children || [];
     for (let i = 0; i < kids.length; i++) {
       const hit = findByClass(kids[i], cls);
@@ -76,8 +90,7 @@ Vinland.define('ui/panel-map', function (require) {
   function findAllByClass(node, cls, out) {
     const acc = out || [];
     if (!node) return acc;
-    const classes = String(node.className || '').split(/\s+/);
-    if (classes.indexOf(cls) !== -1) acc.push(node);
+    if (classListOf(node).indexOf(cls) !== -1) acc.push(node);
     const kids = node.children || [];
     for (let i = 0; i < kids.length; i++) findAllByClass(kids[i], cls, acc);
     return acc;

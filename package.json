@@ -1,6 +1,6 @@
 {
   "name": "vinland",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "private": true,
   "description": "Vinland — a text-based, systemic sandbox RPG in the browser. Double-click index.html: no install, no build, no server, no dependencies.",
   "type": "module",
