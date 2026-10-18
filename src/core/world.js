@@ -21,6 +21,8 @@ Vinland.define('core/world', function () {
    * Validate a content pack and throw a message an author can act on.
    * @param {object} pack
    */
+  const INTERACTABLE_TYPES = ['object', 'item', 'container', 'fixture', 'npc', 'wildlife'];
+
   function validatePack(pack) {
     if (!pack || typeof pack !== 'object') throw new Error('world pack must be an object');
     if (!Array.isArray(pack.locations) || pack.locations.length === 0) {
@@ -43,7 +45,34 @@ Vinland.define('core/world', function () {
       if (!Array.isArray(loc.at) || loc.at.length !== 2 || !loc.at.every(Number.isInteger)) {
         throw new Error(`location "${loc.id}" needs an integer grid position at: [x, y]`);
       }
+      // Interactables are optional per location but when present must be valid
+      if (loc.interactables !== undefined) {
+        if (!Array.isArray(loc.interactables)) throw new Error(`location "${loc.id}" interactables must be an array`);
+        const seenIds = new Set();
+        for (const inter of loc.interactables) {
+          if (!inter || typeof inter.id !== 'string' || inter.id.length === 0) throw new Error(`an interactable in "${loc.id}" needs a non-empty string id`);
+          if (seenIds.has(inter.id)) throw new Error(`duplicate interactable id "${inter.id}" in "${loc.id}"`);
+          seenIds.add(inter.id);
+          if (typeof inter.name !== 'string' || inter.name.length === 0) throw new Error(`interactable "${inter.id}" in "${loc.id}" needs a name`);
+          if (typeof inter.type !== 'string' || INTERACTABLE_TYPES.indexOf(inter.type) === -1) throw new Error(`interactable "${inter.id}" in "${loc.id}" needs a type (${INTERACTABLE_TYPES.join(', ')})`);
+          if (inter.examine !== undefined && inter.examine !== null && typeof inter.examine !== 'string') throw new Error(`interactable "${inter.id}" examine must be a string`);
+          if (inter.color !== undefined && inter.color !== null && typeof inter.color !== 'string') throw new Error(`interactable "${inter.id}" color must be a string`);
+          if (inter.actions !== undefined && inter.actions !== null) {
+            if (!Array.isArray(inter.actions)) throw new Error(`interactable "${inter.id}" actions must be an array`);
+          }
+        }
+      }
       byId.set(loc.id, loc);
+    }
+
+    // Interactable ids must be globally unique (and not clash with location ids)
+    const globalInterIds = new Set();
+    for (const loc of pack.locations) {
+      for (const inter of loc.interactables || []) {
+        if (byId.has(inter.id)) throw new Error(`interactable id "${inter.id}" clashes with a location id`);
+        if (globalInterIds.has(inter.id)) throw new Error(`duplicate interactable id "${inter.id}" across locations`);
+        globalInterIds.add(inter.id);
+      }
     }
 
     const positions = new Set();
@@ -92,7 +121,19 @@ Vinland.define('core/world', function () {
 
     const locations = {};
     for (const loc of pack.locations) {
-      locations[loc.id] = { id: loc.id, name: loc.name, at: [loc.at[0], loc.at[1]], passage: loc.passage };
+      const inters = (loc.interactables || []).map(function (inter) {
+        // Clone shallowly — all fields are primitives or arrays of primitives.
+        const copy = {};
+        for (const k in inter) if (Object.prototype.hasOwnProperty.call(inter, k)) copy[k] = inter[k];
+        return Object.freeze(copy);
+      });
+      locations[loc.id] = {
+        id: loc.id,
+        name: loc.name,
+        at: [loc.at[0], loc.at[1]],
+        passage: loc.passage,
+        interactables: Object.freeze(inters),
+      };
     }
 
     // Both directions of every edge, derived once. Undeclarable inconsistency.
@@ -109,6 +150,8 @@ Vinland.define('core/world', function () {
       locations,
       exits,
       current: pack.start ?? pack.locations[0].id,
+      inventory: Object.freeze([]),
+      containerStates: Object.freeze({}),
     });
   }
 
@@ -158,10 +201,40 @@ Vinland.define('core/world', function () {
     return Object.keys(world?.locations ?? {}).sort();
   }
 
+  /** Interactables at a location, or empty. */
+  function interactablesAt(world, locationId) {
+    var loc = location(world, locationId);
+    return loc ? loc.interactables || [] : [];
+  }
+
+  /** Here + inventory combined lookup: find interactable by id anywhere */
+  function findInteractable(world, id) {
+    if (!world || !id) return null;
+    var inv = world.inventory || [];
+    for (var i = 0; i < inv.length; i++) if (inv[i].id === id) return inv[i];
+    var ids = Object.keys(world.locations || {});
+    for (var li = 0; li < ids.length; li++) {
+      var list = world.locations[ids[li]].interactables || [];
+      for (var j = 0; j < list.length; j++) if (list[j].id === id) return list[j];
+    }
+    return null;
+  }
+
+  /** Interactables you currently have */
+  function inventory(world) {
+    return world.inventory ? world.inventory.slice() : [];
+  }
+
+  /** Container open/closed state, default 'closed' */
+  function containerState(world, id) {
+    return (world.containerStates && world.containerStates[id]) || 'closed';
+  }
+
   return {
     DIRECTIONS,
     OPPOSITE,
     DELTA,
+    INTERACTABLE_TYPES,
     validatePack,
     createWorld,
     location,
@@ -170,5 +243,9 @@ Vinland.define('core/world', function () {
     canTravel,
     travel,
     locationIds,
+    interactablesAt,
+    findInteractable,
+    inventory,
+    containerState,
   };
 });

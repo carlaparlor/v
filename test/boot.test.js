@@ -72,7 +72,8 @@ test('booting the real scripts renders both panes from one world state', () => {
     ['text', 'map'],
   );
   assert.equal(doc.shell.style.gap, '0px', 'no seam between the panes');
-  assert.equal(doc.shell.textContent, '', 'no error message rendered into the shell');
+  assert.doesNotMatch(doc.shell.textContent, /Vinland failed to start/, 'no error message rendered into the shell');
+  assert.ok(doc.shell.textContent.includes('Straumfjord'), 'shell aggregates pane content now');
 
   // Left pane: prose. Right pane: a map made of words and lines.
   const [textPane, mapPane] = doc.shell.children;

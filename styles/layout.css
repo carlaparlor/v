@@ -56,6 +56,11 @@ body {
     var(--color-shell-light) 100%
   );
   background: var(--shell-gradient);
+  transition: opacity var(--fade-duration) var(--fade-easing);
+}
+
+.shell.is-fading {
+  opacity: 0;
 }
 
 .shell[data-direction='rows'] {

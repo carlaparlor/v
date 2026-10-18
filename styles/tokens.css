@@ -54,4 +54,26 @@
   --shell-gap: 0px; /* 0 keeps the fade continuous across the seam */
   --shell-padding: 0px; /* edge to edge */
   --pane-padding: var(--space-4);
+
+  /* Fade transition (ADR-0007) — whole-shell fade for action results */
+  --fade-duration: 220ms;
+  --fade-easing: ease;
+
+  /* Interactables — each type has its own color (plus per-instance color override).
+     Chosen for visibility on the dark pane (#0b0a08): all clear WCAG AA there. */
+  --color-interactable-object: #8ecae6;
+  --color-interactable-item: #f4a261;
+  --color-interactable-container: #c9a8ff;
+  --color-interactable-fixture: #e76f51;
+  --color-interactable-npc: #90be6d;
+  --color-interactable-wildlife: #f9c74f;
+
+  /* Interactable dropdown */
+  --color-dropdown-bg: #1c1a16;
+  --color-dropdown-border: #3a352e;
+  --color-dropdown-hover: #2a2720;
+  --color-interactable-hover: rgba(255, 255, 255, 0.08);
+  --color-return-hover: rgba(255, 255, 255, 0.06);
+  --color-shadow-strong: rgba(0, 0, 0, 0.45);
+  --color-shadow-soft: rgba(0, 0, 0, 0.3);
 }
