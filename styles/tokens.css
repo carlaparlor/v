@@ -1,0 +1,84 @@
+/*
+ * Design tokens — the single source of theme truth.
+ * Retheming Vinland (including by a mod) means overriding these, not editing layout.css.
+ * See docs/CONVENTIONS.md.
+ *
+ * These are the PRIMITIVES. The gradient that combines them is composed in layout.css
+ * on `.shell`, so a direction change (rows/columns) only has to flip --fade-axis.
+ */
+
+:root {
+  /*
+   * Two palpable tones: each pane holds its own solid colour for its whole body,
+   * and the blend happens only at the very tip where they meet (ADR-0005).
+   *
+   * Tone-to-tone luminance ratio is ~2.2:1 — clearly visible as two surfaces.
+   * Body text (--color-text) still clears WCAG AA on the lighter tone (~6:1).
+   */
+  --color-shell-dark: #0b0a08;
+  --color-shell-light: #544839;
+
+  /* Which way the fade runs. '.shell[data-direction=rows]' flips it to 'to bottom'. */
+  --fade-axis: to right;
+
+  /* Half-width of the blend, measured from the seam. 4% => tones meet over 8% of the shell. */
+  --fade-span: 4%;
+
+  /* Text */
+  --color-text: #ded4c3;
+  --color-text-bright: #f2e9da;
+  --color-text-dim: #8d8377; /* AA on the DARK pane only — never use it on the light pane */
+  --color-accent: #c8873c; /* decorative only: ~3:1 on the light pane, not body-text safe */
+
+  /* Type */
+  --font-ui: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-size-base: 15px;
+  --line-height-base: 1.55;
+  --font-size-title: 19px;
+  --font-size-small: 12px;
+  --letter-spacing-label: 0.14em;
+
+  /* Map (custom SVG rendering): node pills, connector lines, player marker. */
+  --map-font-size: 13px;
+  --color-map-node: #3a3128;
+  --color-map-node-hover: #4a3b2a;
+  --color-map-node-border: #8a7a63;
+  --color-map-node-here: #453723;
+  --color-map-edge: #b8a888;
+  --color-map-marker: #c8873c;
+  --color-map-marker-text: #1c1710;
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  /* Shell + panes */
+  --shell-gap: 0px; /* 0 keeps the fade continuous across the seam */
+  --shell-padding: 0px; /* edge to edge */
+  --pane-padding: var(--space-4);
+
+  /* Fade transition (ADR-0007) — whole-shell fade for action results */
+  --fade-duration: 400ms;
+  --fade-easing: ease-in-out;
+
+  /* Interactables — each type has its own color (plus per-instance color override).
+     Chosen for visibility on the dark pane (#0b0a08): all clear WCAG AA there. */
+  --color-interactable-object: #8ecae6;
+  --color-interactable-item: #f4a261;
+  --color-interactable-container: #c9a8ff;
+  --color-interactable-fixture: #e76f51;
+  --color-interactable-npc: #90be6d;
+  --color-interactable-wildlife: #f9c74f;
+
+  /* Interactable dropdown */
+  --color-dropdown-bg: #1c1a16;
+  --color-dropdown-border: #3a352e;
+  --color-dropdown-hover: #2a2720;
+  --color-interactable-hover: rgba(255, 255, 255, 0.08);
+  --color-return-hover: rgba(255, 255, 255, 0.06);
+  --color-shadow-strong: rgba(0, 0, 0, 0.45);
+  --color-shadow-soft: rgba(0, 0, 0, 0.3);
+}

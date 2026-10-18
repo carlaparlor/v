@@ -1,0 +1,14 @@
+# Dependencies — Vinland has none by design (ADR-0001). If one ever appears, ignore it here.
+node_modules/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Logs
+npm-debug.log*
+*.log

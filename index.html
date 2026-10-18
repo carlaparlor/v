@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-booted="false">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Vinland</title>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <link rel="stylesheet" href="./styles/layout.css" />
+    <link rel="stylesheet" href="./styles/panels.css" />
+  </head>
+  <body>
+    <!-- The shell is the whole viewport. Panes are generated from src/core/layout.js. -->
+    <main id="shell" class="shell" aria-label="Vinland">
+      <noscript>
+        <p class="pane pane--fallback">Vinland needs JavaScript enabled.</p>
+      </noscript>
+    </main>
+
+    <!--
+      Classic scripts, not ES modules, and order matters: kernel first, then modules
+      dependency-first, then the composition root, then the entry point. This is what lets
+      Vinland run by double-clicking this file (docs/ARCHITECTURE.md, ADR-0003).
+      A mod is one more <script> tag before main.js — it can register a panel or replace
+      any module id, including the world content pack.
+    -->
+    <script src="./src/kernel.js"></script>
+
+    <!-- core: pure game logic, no DOM -->
+    <script src="./src/core/layout.js"></script>
+    <script src="./src/core/world.js"></script>
+    <script src="./src/core/interactables.js"></script>
+    <script src="./src/core/actions.js"></script>
+    <script src="./src/core/render-text.js"></script>
+    <script src="./src/core/render-map.js"></script>
+
+    <!-- data: content packs -->
+    <script src="./src/data/vinland.js"></script>
+
+    <!-- ui: the only layer allowed to touch the DOM -->
+    <script src="./src/ui/shell.js"></script>
+    <script src="./src/ui/panels.js"></script>
+    <script src="./src/ui/panel-text.js"></script>
+    <script src="./src/ui/panel-map.js"></script>
+
+    <!-- app: composition root, then entry point -->
+    <script src="./src/app/game.js"></script>
+    <script src="./src/main.js"></script>
+  </body>
+</html>

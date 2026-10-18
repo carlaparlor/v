@@ -1,0 +1,276 @@
+# Changelog
+
+One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
+
+---
+
+## Iteration 4 (correction) — an unrequested parser, removed
+
+**Asked:** "did i say i need a parser?"
+
+No. I had written a text parser and a verb system into `ARCHITECTURE.md` as an "extension point",
+into `CHANGELOG.md` as a "known limitation", and into `README.md` as a seam "not wired yet" — and
+then reported their absence as though it were a gap in the delivery. None of it had been requested.
+
+**Removed:** every mention of a parser, verbs and commands from `ARCHITECTURE.md`,
+`CONVENTIONS.md`, `VINLAND.md`, `CHANGELOG.md` and `README.md`. What remains about input is one
+factual line — there is none, because none was asked for.
+
+**Rule added** to `docs/WORKFLOW.md`, rule 3: *no speculative roadmap*. Docs describe what exists
+and why. A missing thing gets said once in chat, not written into the architecture as a promise to
+myself. The definition of done now includes: "nothing in the docs, comments or changelog describes
+a feature that was not asked for." Rule 4 was reworded for the same reason — document the seam you
+built, not the seams you imagine.
+
+**Also finished,** because it was in flight when this came up: `tools/scan-source.js` (shared
+source scanning for tests, replacing duplicated helpers in two test files) and two guard tests in
+`test/setup-is-trivial.test.js` — nothing shipped may use `fetch`, XHR, dynamic `import()`,
+`document.write` or ESM syntax, and `index.html` may not reference a CDN. Every one of those breaks
+the double-click-to-run promise. 106 → **108 tests, all passing.** Say the word and I drop them.
+
+---
+
+## Iteration 4 — a map of words and lines, and a text pane synced to it
+
+**Asked:** "this game is second person / the right panel is for a map made of words and lines /
+the right panel is the text pane that is synced to the map" — both lines said *right*, so I asked.
+
+**Clarified before building:** left = text pane (the dark one), right = map pane (the light one);
+"synced" = one world state that both panes derive from; the map is data-driven over a small
+fixture world, not a hardcoded sketch; the text pane gets real second-person passages per
+location.
+
+### New layers
+
+- **`src/data/vinland.js`** — content pack *Straumfjord*: 7 locations on a 3x3 grid with 8 edges,
+  each with a second-person present-tense passage. Exits are an **undirected edge list**; the
+  return leg is derived, so a two-way passage cannot be half-declared. Adding a place is a data
+  edit.
+- **`src/core/world.js`** — the single source of truth. `createWorld(pack)` returns **frozen**,
+  JSON-serialisable state; `travel` returns NEW state or `null`; `exitsOf` lists directions in
+  canonical order (north, east, south, west). `validatePack` rejects duplicate ids, shared grid
+  cells, unknown endpoints, unknown directions, a missing start, a blank passage, and — the useful
+  one — a declared direction that contradicts the grid positions, naming both locations.
+- **`src/core/render-text.js`** — world state → `{ region, place, title, paragraphs, exits,
+  exitsLine }`. Pure. The prose exits line is derived from the structured `exits` list, so the
+  two can never disagree.
+- **`src/core/render-map.js`** — world state → a character grid. Names centred on their **cell's**
+  centre column (not their own, which is what caused `││` doubling), `─` filling the gap between
+  east/west neighbours with a space beside each word, `│` on the connector row for north/south,
+  `@` marking you. Long names truncate with `…`; sparse and negative coordinates normalise to the
+  top-left.
+- **`src/ui/panels.js`** — panel registry keyed by **pane role**. Panels self-register on require,
+  so load order is priority and a mod loaded last wins. `register` validates the contract
+  (`role`, `model`, `render`); `unregister` and `clear` added.
+- **`src/ui/panel-text.js` / `src/ui/panel-map.js`** — paint view models into DOM and nothing
+  else. The map goes into a `<pre>`: it is column-aligned text and anything that reflows it bends
+  the lines.
+- **`src/app/game.js`** — composition root. Binds panes→panels by role, holds the only state
+  reference, owns the only `render()`. API: `getState`, `here`, `canTravel`, `travel`, `setState`,
+  `render`, `bindings`, plus `getGame()` so the console and tests can reach the running instance.
+- **`src/core/layout.js`** — pane roles are now meaningful: `pane-a` = `text`, `pane-b` = `map`.
+- **`styles/panels.css`** + new tokens (`--color-text-bright`, `--map-font-size`,
+  `--map-line-height: 1.15`, `--font-size-title`, `--font-size-small`,
+  `--letter-spacing-label`). Map line-height is deliberately tight or the `│` connectors develop
+  gaps. Prose is capped at a 62ch measure; both panes scroll internally so they stay equal.
+- **`index.html`** — 12 classic scripts in dependency order, grouped and commented by layer.
+
+### The sync guarantee (ADR-0006)
+
+One immutable world state, one render pass, every pane derived from it in that pass. Nothing
+stores a copy, so the panes cannot disagree — sync is structural, not coordinated. `travel`
+returns a new frozen object, so a pane holding old state is visibly stale rather than silently
+wrong.
+
+### Tests: 46 → 106
+
+- `test/data-pack.test.js` — content integrity + second-person voice + connectivity from the start.
+- `test/core-world.test.js` — immutability, derived reciprocity, canonical order, blocked moves, a
+  full loop around the shore.
+- `test/core-render-map.test.js` — 18 tests including line alignment, no `││`, unconnected ground
+  staying empty, truncation, sparse/negative coordinates, and a snapshot of the fixture map.
+- `test/core-render-text.test.js` — second person for every location, exits line, dead ends.
+- `test/app-game.test.js` — the sync proof: both panes agree on `data-place` after every move of a
+  seven-step walk; a failed move changes nothing; `setState` re-renders everything; a missing
+  panel fails loudly; a replacement panel is used without editing a core file.
+- `test/boot.test.js` — now also asserts **every file under `src/` is actually loaded by
+  index.html** (a forgotten `<script>` tag is otherwise a silent blank pane) and that every
+  `require` resolves to a module loaded *earlier* (comments stripped first, so documented examples
+  do not count as dependencies).
+- `tools/dom-stub.js` — shared minimal DOM stub (`makeElement`, `installDocument`, `findByClass`),
+  replacing the per-file stubs.
+
+### Docs
+
+ADR-0006 added; architecture tree, layers (now `app/ ui/ core/ data/`) and extension points
+rewritten — panels and content packs are now marked **WIRED**. `CONVENTIONS.md` gains Voice,
+Content packs and Panels sections plus immutability/one-render-pass rules. `VINLAND.md` gains a
+Voice section. `TESTING.md` iteration 4: 11 manual checks, the exact expected map, 4 regression
+checks. `package.json` → 0.4.0.
+
+### Known limitations, flagged not fixed
+
+- No input handling of any kind, because none was asked for. `travel(direction)` exists in the
+  game API and is reachable from the console; nothing in the UI calls it.
+- The map has no fog of war; every location is always visible.
+- Only orthogonal edges are drawn. Diagonals need a taller cell (3 rows) and a `╱ ╲` vocabulary.
+- Every render rebuilds both panes' DOM. Fine now; needs dirty-checking when the text pane becomes
+  a scrolling log.
+- `--color-text-dim` clears AA on the dark pane only, so it is used for prose chrome and never on
+  the map pane.
+
+**Test it:** double-click `index.html`, then run the Iteration 4 script in
+[docs/TESTING.md](TESTING.md) — check 7 is the sync check.
+
+---
+
+## Iteration 3 — palpable tones, fade only at the tip
+
+**Asked:** "the tones should be palpable / only fade at the very tip/end."
+
+Iteration 2's single continuous dark→light ramp made the shell read as one muddy surface — no pane
+had a tone of its own, and the two ends were only ~1.35:1 apart in luminance.
+
+### Visual
+
+- **The ramp became held stops.** The dark tone is held from `0%` to `calc(50% - var(--fade-span))`,
+  the blend runs across the seam, and the light tone is held from `calc(50% + var(--fade-span))` to
+  `100%`. Each pane body is flat; the fade is a narrow band at the very tip where they meet.
+- **`--fade-span: 4%`** — the blend is 8% of the shell wide, centred exactly on the pane boundary.
+  One token to tune.
+- **The light tone was raised** from `#2e281f` to `#544839`: tone-to-tone contrast ~1.35:1 →
+  **~2.2:1** (palpable), while body text `#ded4c3` still clears **~6:1** on the lighter pane
+  (WCAG AA) and ~13:1 on the darker one (AAA).
+- **`--fade-axis: to right`** is now a token; stacked layouts (`direction: 'rows'`) flip it to
+  `to bottom` instead of redefining the whole gradient.
+- Still one painted surface, still no borders, still `gap: 0`, still transparent panes — ADR-0004
+  stands, amended by **ADR-0005**.
+
+### Structural note worth knowing
+
+The gradient moved from `tokens.css` to a composition on `.shell` in `layout.css`. Reason: custom
+properties substitute at computed-value time, so a `--fade-axis` override only takes effect on the
+element that resolves the `var()`. `tokens.css` keeps the primitives (colours, axis, span).
+Recorded in ADR-0005 and `docs/CONVENTIONS.md`.
+
+### Tests
+
+44 passing (was 35). New:
+- `test/theme-contrast.test.js` — reads the real token hex values and asserts WCAG contrast:
+  tones >= 2:1 apart, left is actually darker, text AAA on dark, text AA on light. A retheme that
+  makes a text-based game unreadable now fails the build.
+- gradient-shape assertions in `test/setup-is-trivial.test.js` — each tone must appear as two
+  stops (held + resumed) and the blend must be `calc(50% ± var(--fade-span))`.
+
+### Docs
+
+ADR-0005 added, ADR-0004 amended, `CONVENTIONS.md` CSS rules extended (held tones, primitives vs
+composition, contrast as a tested invariant), `TESTING.md` iteration 3 script (9 checks + tuning
+guide + 2 regression checks) with iteration 2's superseded checks flagged, README current state.
+`package.json` → 0.3.0.
+
+### Known limitation, flagged not fixed
+
+- The seam is hardcoded at `50%`, correct only for exactly two equal panes. Revisit when the pane
+  count exceeds 2 or size weights differ: compute cumulative seam positions from the pane specs in
+  `core/layout.js` and emit the stops from `ui/shell.js`. ADR-0005 records this trigger.
+- `--color-text-dim` on the light tone is only ~2.4:1. De-emphasised text must live on the dark
+  pane or get its own darker token once text exists.
+
+**Test it:** double-click `index.html`, then run the Iteration 3 script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
+## Iteration 2 — the panes fade into each other; setup is now double-click
+
+**Asked:** "make it so the two panes fade into each other, remove the borders, one darker (left),
+one lighter (right)" — and "did I not say make setup/installation/running as easy as humanly
+possible?"
+
+Both were fair. The second one was a real failure: iteration 1 used ES modules, which browsers
+block on `file://`, so running the game required `npm start`, which required Node.
+
+### Setup (the fix)
+
+- **Removed the ES module dependency on a server.** `src/kernel.js` is a ~70-line synchronous
+  module registry (`Vinland.define` / `Vinland.require`) and all scripts are now classic
+  `<script>` tags. **Running Vinland is now: double-click `index.html`.** No install, no build,
+  no server, no Node, no `node_modules`, works from `file://` in any modern browser.
+- `server.mjs` kept as an **optional** convenience (`npm start`) for dev tools, remote preview
+  and hosting. The game never requires it.
+- Registry features that matter for modding: lazy + cached factories, **redefining an id replaces
+  the module** (so a mod script can override any core module without editing it), frozen kernel,
+  circular-require detection with a useful error.
+- `tools/load-scripts.js` loads the shipped scripts into Node, so tests exercise the real code.
+- New `test/setup-is-trivial.test.js` locks the promise in: no `type="module"`, every referenced
+  file exists, kernel first / main last, no `import`/`export` in `src/`, zero dependencies, no
+  lockfile, no build script, no hardcoded colours outside tokens.
+- README rewritten around double-click. `package.json` → 0.2.0.
+
+### Visual
+
+- **One gradient across the whole shell**, dark → light, left → right
+  (`linear-gradient(to right, #0b0a08, #2e281f)` via tokens). Left pane sits in the dark half,
+  right pane in the light half, blending continuously.
+- **Borders removed**: `.pane` is now `border: 0`, `border-radius: 0`, `background: transparent`.
+- **Gap removed** (`--shell-gap: 0px`, `SHELL_CONFIG.gap = 0`, applied inline) — a gap would show
+  as a hard seam through the gradient. Shell padding is 0 so the fade runs edge to edge.
+- Stacked layout (`direction: 'rows'`) flips the gradient to `to bottom`, so "first pane darker"
+  stays true in either orientation.
+- Tokens cleaned up: `--color-pane-bg`, `--color-pane-border`, `--pane-radius`, `--shell-gap`
+  (non-zero) are gone; `--color-shell-dark`, `--color-shell-light`, `--shell-gradient` added.
+
+### Tests
+
+35 passing (was 8). New: `test/kernel.test.js` (10), `test/ui-shell.test.js` (7, DOM stub),
+`test/setup-is-trivial.test.js` (8), plus a `gap: 0` assertion and a corrected
+default-config test in `test/core-layout.test.js`. Fixed one bad test along the way: it split
+`minmax(0, 1fr) minmax(0, 1fr)` on spaces and got four "tracks".
+
+### Docs
+
+- `ARCHITECTURE.md`: registry section, updated tree, **ADR-0003** (classic scripts so `file://`
+  works) and **ADR-0004** (one shell gradient, transparent panes — including the rejected
+  two-gradient alternative), ADR-0001 marked partially superseded.
+- `CONVENTIONS.md`: no-ESM rule, module id + factory conventions, "panes stay transparent" rule,
+  three-layer test expectation.
+- `TESTING.md`: iteration 2 script (10 checks + 3 regression checks), iteration 1 archived.
+- `WORKFLOW.md`: the setup bar is now spelled out as "double-click `index.html`".
+
+**Test it:** double-click `index.html`, then run the Iteration 2 script in
+[docs/TESTING.md](TESTING.md).
+
+**Deliberately not built:** pane content, panels, splitter, responsive stacking, game systems,
+input handling, a mod loader/manifest. Those are future instructions.
+
+---
+
+## Iteration 1 — two panes, same size
+
+**Asked:** "create two panes, same size, that's it. period."
+
+**Built**
+
+- Project foundation: `package.json`, `.gitignore`, `README.md`.
+- `server.mjs` — zero-dependency static dev server (Node >= 18): binds `0.0.0.0`, port 3000,
+  `PORT` overridable, correct MIME types, no-store caching, path-traversal safe.
+- `index.html` — app shell containing only `<main id="shell">`.
+- `styles/tokens.css` — colours, fonts and spacing as CSS custom properties (retheme point).
+- `styles/layout.css` — `.shell` is a CSS grid; `.pane` boxes cannot be resized by their content.
+- `src/core/layout.js` — `SHELL_CONFIG` plus pure `createPaneSpecs()` / `arePanesEqual()`.
+  Pane count, ids, roles and size weights are **data**.
+- `src/ui/shell.js` — builds one `<section class="pane">` per config entry with equal grid tracks.
+- `src/main.js` — boots the shell, logs the mounted pane ids, fails soft with a visible message.
+- `test/core-layout.test.js` — 8 tests, all passing.
+- Docs: `WORKFLOW.md`, `VINLAND.md`, `ARCHITECTURE.md` (ADR-0001, ADR-0002), `CONVENTIONS.md`,
+  `TESTING.md`.
+
+**How "same size" was guaranteed**
+
+Grid tracks are `minmax(0, 1fr)` each — equal shares, and the `minmax(0, …)` removes the `auto`
+minimum that would let long unbroken text stretch one pane wider than the other. Both axes are
+pinned: `min-inline-size: 0`, `min-block-size: 0`, `overflow: hidden`.
+
+**Superseded by iteration 2:** ES modules (→ registry), and the pane borders/backgrounds/gap
+(→ one shell gradient).

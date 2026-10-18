@@ -1,0 +1,309 @@
+/*
+ * Panel content — what lives INSIDE a pane.
+ *
+ * The pane itself stays transparent and borderless (ADR-0004, ADR-0005): the shell paints
+ * one surface and the panes are regions of it. Anything that needs to look contained has to
+ * draw its own surface, and so far nothing does.
+ *
+ * Left pane (text) sits on the dark tone, right pane (map) on the light tone. Colours are
+ * chosen per pane for contrast — see test/theme-contrast.test.js.
+ */
+
+/* Shared: a pane's content scrolls inside the pane, so the panes stay exactly equal. */
+.text,
+.map {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+/* ---------------------------------------------------------------- text pane (left) */
+
+.text {
+  gap: var(--space-4);
+  padding-block-end: var(--space-6);
+}
+
+.text__region {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.text__title {
+  margin: 0;
+  color: var(--color-text-bright);
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.text__body {
+  margin: 0;
+  max-inline-size: 62ch; /* comfortable measure for prose */
+  color: var(--color-text);
+}
+
+.text__exits {
+  margin: 0;
+  max-inline-size: 62ch;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+  letter-spacing: 0.02em;
+}
+
+/* Interactables — bolded, colored words that reveal a dropdown */
+.interactable-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.interactable {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0 2px;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit; /* overridden inline per type/color */
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 3px;
+  transition: background 120ms ease, filter 120ms ease;
+}
+
+.interactable:hover,
+.interactable:focus-visible {
+  background: var(--color-interactable-hover);
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.interactable:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}
+
+.interactable__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-inline-size: 140px;
+  max-inline-size: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2);
+  background: var(--color-dropdown-bg);
+  border: 1px solid var(--color-dropdown-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px var(--color-shadow-strong), 0 1px 2px var(--color-shadow-soft);
+}
+
+.interactable__action {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 0;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-small);
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+
+.interactable__action:hover,
+.interactable__action:focus-visible {
+  background: var(--color-dropdown-hover);
+  outline: none;
+}
+
+.interactable__action:active {
+  filter: brightness(1.1);
+}
+
+.interactable__label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  padding: 2px 10px 4px;
+}
+
+/* Action result view — shown in the text pane after an action */
+.text--result {
+  gap: var(--space-4);
+}
+
+.text__result-body {
+  margin: 0;
+  max-inline-size: 62ch;
+  color: var(--color-text);
+  line-height: var(--line-height-base);
+}
+
+.text__return {
+  appearance: none;
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--color-dropdown-border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.text__return:hover,
+.text__return:focus-visible {
+  background: var(--color-return-hover);
+  border-color: var(--color-text-dim);
+  outline: none;
+}
+
+/* ----------------------------------------------------------------- map pane (right) — centered */
+
+.map {
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.map__region,
+.map__legend {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-small);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.map__legend {
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/*
+ * The map is custom-rendered SVG: vector connectors between pill-shaped place
+ * nodes. Lines are drawn centre-to-centre UNDER the pills, so they meet each
+ * pill cleanly and can never drift the way character columns did.
+ */
+.map__canvas {
+  inline-size: 100%;
+}
+
+.map__svg {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  /* Visible overflow so the player badge on the top row's pill is not clipped. */
+  overflow: visible;
+}
+
+.map__edge {
+  stroke: var(--color-map-edge);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.map__node-box {
+  fill: var(--color-map-node);
+  stroke: var(--color-map-node-border);
+  stroke-width: 1.5;
+}
+
+.map__node--here .map__node-box {
+  fill: var(--color-map-node-here);
+  stroke: var(--color-map-marker);
+  stroke-width: 2.5;
+}
+
+/* A place you can walk to is clickable: pointer, and it answers the mouse. */
+.map__node--reachable {
+  cursor: pointer;
+}
+
+.map__node--reachable .map__node-box {
+  transition:
+    fill 120ms ease,
+    stroke 120ms ease;
+}
+
+.map__node--reachable:hover .map__node-box,
+.map__node--reachable:focus-visible .map__node-box {
+  fill: var(--color-map-node-hover);
+  stroke: var(--color-text-bright);
+}
+
+.map__node--reachable:focus-visible {
+  outline: none;
+}
+
+.map__node--reachable:active .map__node-box {
+  fill: var(--color-map-node-here);
+}
+
+/* A place no route reaches from here: present, but plainly not on offer. */
+.map__node--unreachable {
+  opacity: 0.55;
+}
+
+.map__node-label {
+  fill: var(--color-text-bright);
+  font-family: var(--font-ui);
+  font-size: var(--map-font-size);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.map__node-marker {
+  fill: var(--color-map-marker);
+}
+
+.map__node-marker-text {
+  fill: var(--color-map-marker-text);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.map__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  /* The map block's width: capped so the SVG stays a comfortable size, and the
+     region header's left edge lines up with it. The block itself is still
+     centred in the right pane by .map's align-items. */
+  inline-size: min(100%, 580px);
+}
+
+/* Straumfjord header: left-aligned with the map, not centred above it. */
+.map__region {
+  align-self: flex-start;
+  text-align: left;
+}

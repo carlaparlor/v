@@ -1,0 +1,93 @@
+/*
+ * Shell layout — two equal panes, each a solid tone, blending only at the seam.
+ * See docs/ARCHITECTURE.md (ADR-0002 equal sizes, ADR-0004 one painted surface,
+ * ADR-0005 held tones with a tip-only fade).
+ *
+ * Pane sizes are decided here (and by the generated grid tracks in src/ui/shell.js),
+ * never by content. `minmax(0, 1fr)` is deliberate: bare `1fr` has an implicit
+ * `min-width: auto` floor, which lets a long word stretch one pane wider than the other.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  /* Fallback colour so any overscroll matches the dark tone. */
+  background: var(--color-shell-dark);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  overflow: hidden; /* the panes own the viewport; nothing scrolls at page level */
+}
+
+.shell {
+  display: grid;
+  /* CSS default in case JS has not run yet. JS replaces this with one track per pane. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--shell-gap);
+  padding: var(--shell-padding);
+  inline-size: 100%;
+  block-size: 100dvh;
+
+  /*
+   * One surface across BOTH panes, so there is no seam to hide — but each tone is
+   * HELD SOLID up to `--fade-span` from the boundary, then blends, then holds again.
+   * Left pane: dark. Right pane: light. The fade lives only at the very tip.
+   *
+   * Composed here (not in tokens.css) because --fade-axis is overridden on this same
+   * element for stacked layouts; custom properties substitute at computed-value time,
+   * so an override only takes effect where the var() is resolved.
+   */
+  --shell-gradient: linear-gradient(
+    var(--fade-axis),
+    var(--color-shell-dark) 0%,
+    var(--color-shell-dark) calc(50% - var(--fade-span)),
+    var(--color-shell-light) calc(50% + var(--fade-span)),
+    var(--color-shell-light) 100%
+  );
+  background: var(--shell-gradient);
+  transition: opacity var(--fade-duration) var(--fade-easing);
+}
+
+.shell.is-fading {
+  opacity: 0;
+}
+
+.shell[data-direction='rows'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  /* Keep "first pane darker, second pane lighter" true when stacked. */
+  --fade-axis: to bottom;
+}
+
+.pane {
+  /* Content may not influence the pane's box in either axis. */
+  min-inline-size: 0;
+  min-block-size: 0;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  padding: var(--pane-padding);
+
+  /* No background, no border, no radius: the shell gradient shows straight through,
+     which is what makes the two tones meet without an edge. */
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.pane--fallback {
+  grid-column: 1 / -1;
+  color: var(--color-text-dim);
+}
