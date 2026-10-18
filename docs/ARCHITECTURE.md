@@ -338,3 +338,9 @@ it fades back in over the glide's second half. Re-rendering everything at landin
 read as glide-stop-bam; syncing the crossfade to the glide makes the transition a
 single gesture, and the landing re-render touches only the map, whose badge is
 already where the glide left it.
+
+**Amendment (Iteration 6, correction 6) — arrivals transition, they do not swap.**
+Landing commit still re-renders, but `prepareArrival` starts the destination's node
+state on the old DOM mid-glide and the stylesheet transitions it, so the re-render
+targets a picture already on screen. Any future "swap at the end of an animation"
+must either pre-transition to its final visual state or not re-render.

@@ -4,6 +4,40 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 6) — the arrival arrives before the marker stops
+
+**Asked:** "it still does that stop, bam thing. i dont know if yk what i mean"
+
+### What the user meant
+
+The @ glides over, slows to a complete stop, and *then* the destination screen
+snaps in. Correction 5 synced the prose fade, but the map's arrival state — which
+pill is lit as "here", which places are dimmed as far — still swapped in a single
+frame at the landing, after the motion ended. Two events, not one.
+
+### The fix (`ui/panel-map`, `app/game`, styles)
+
+- **`prepareArrival`:** at 58% of the glide, while the marker is still in flight,
+  the already-rendered map swaps its nodes' state classes to the destination's.
+  New CSS transitions on `.map__node` (opacity) and `.map__node-box` (fill, stroke,
+  stroke-width) ease that change over the last stretch of the glide: the
+  destination pill lights up and the old one recedes *as* the @ arrives.
+- At landing the world commits and the map re-renders as before — into a picture
+  already on screen, badge already where the glide left it. Nothing is left to
+  snap, and there is no beat of "stopped, waiting for the swap."
+
+### Tests: 160 → 161
+
+`test/step-motion.test.js` now also asserts the arrival transitions in the
+stylesheet and that `prepareArrival` re-lights the destination and recedes the
+origin on the live map DOM.
+
+**Test it:** double-click `index.html` and click a neighbouring place; the
+destination should already be lit as the @ settles onto it. (Correction-3 script
+in [docs/TESTING.md](TESTING.md).)
+
+---
+
 ## Iteration 6 (correction 5) — the step is one motion, not glide-stop-bam
 
 **Asked:** "i dont like how it glides, stops, then bam / it also a bit too fast /

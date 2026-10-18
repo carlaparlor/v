@@ -142,12 +142,60 @@ Vinland.define('ui/panel-map', function (require) {
     return true;
   }
 
+  /**
+   * Begin the arrival on the already-rendered map, while the marker is
+   * still gliding: swap each node's state classes (here / reachable / far /
+   * unreachable) to those of the destination `model`. The stylesheet
+   * transitions those classes, so the destination pill lights up and the
+   * old one recedes gradually instead of both snapping at the landing.
+   * The caller still re-renders at landing (for handlers/ARIA) — but by
+   * then the old DOM already looks exactly like the new one, so the swap
+   * is invisible. Returns false when the map cannot be found.
+   */
+  function prepareArrival(pane, model) {
+    const nodes = (model && model.nodes) || [];
+    if (nodes.length === 0) return false;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const groups = findAllByClass(pane, 'map__node');
+    if (groups.length === 0) return false;
+    const STATE_CLASSES = ['map__node--here', 'map__node--reachable', 'map__node--far', 'map__node--unreachable'];
+    let foundHere = false;
+    for (const g of groups) {
+      const node = byId.get(g.dataset && g.dataset.location);
+      if (!node) continue;
+      const wanted = node.isHere
+        ? 'map__node--here'
+        : node.adjacent
+          ? 'map__node--reachable'
+          : node.reachable
+            ? 'map__node--far'
+            : 'map__node--unreachable';
+      if (node.isHere) foundHere = true;
+      // SVG-safe class swap: classList works on SVG in browsers, with the
+      // class-attribute fallback for stubs that lack it.
+      for (const cls of STATE_CLASSES) {
+        if (g.classList && typeof g.classList.remove === 'function') g.classList.remove(cls);
+      }
+      if (g.classList && typeof g.classList.add === 'function') {
+        g.classList.add(wanted);
+      } else if (typeof g.getAttribute === 'function' && typeof g.setAttribute === 'function') {
+        const kept = String(g.getAttribute('class') || '').split(/\s+/).filter((c) => c && STATE_CLASSES.indexOf(c) === -1);
+        kept.push(wanted);
+        g.setAttribute('class', kept.join(' '));
+      }
+      if (node.isHere && typeof g.setAttribute === 'function') g.setAttribute('aria-current', 'true');
+    }
+    return foundHere;
+  }
+
   const panel = {
     role: 'map',
 
     model: renderMap,
 
     animateMarker,
+
+    prepareArrival,
 
     render(pane, model) {
       const body = el('div', 'map');
