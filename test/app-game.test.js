@@ -11,6 +11,8 @@ import { installDocument, makeDocument, makeElement, findByClass, findAllByClass
 const Vinland = loadScripts([
   'src/kernel.js',
   'src/core/layout.js',
+  'src/core/environment.js',
+  'src/core/time.js',
   'src/core/world.js',
   'src/core/interactables.js',
   'src/core/actions.js',
@@ -489,4 +491,62 @@ test('the map frame never resizes: same viewBox on the shore, inside, and upstai
 test('the running game is reachable for testing and the console', () => {
   const g = start();
   assert.equal(game.getGame(), g);
+});
+
+test('clock below place heading stays synced through failures, free views, back and movement', () => {
+  const g = start();
+  const clock = () => findByClass(doc.shell, 'map__clock');
+  assert.equal(clock().textContent, 'Day 1 · 06:00 · dawn');
+  const center = findByClass(doc.shell, 'map__center');
+  assert.equal(center.children[0], findByClass(doc.shell, 'map__region'));
+  assert.equal(center.children[1], clock(), 'clock is directly below the place heading');
+  g.performAction('barrel', 'examine');
+  g.back();
+  assert.equal(g.getState().timeSeconds, 21600);
+  const failed = g.performAction('elder', 'talk');
+  assert.equal(failed.failed, true);
+  assert.equal(g.getState().timeSeconds, 21630);
+  assert.equal(clock().textContent, 'Day 1 · 06:00 · dawn');
+  g.back();
+  assert.equal(g.getState().timeSeconds, 21630, 'back does not refund time');
+  g.performAction('elder', 'talk');
+  assert.equal(clock().textContent, 'Day 1 · 06:01 · dawn');
+  g.back();
+  g.travel('east');
+  assert.equal(clock().textContent, 'Day 1 · 06:06 · dawn');
+});
+
+test('a failed take displays the reason without claiming the item was taken', () => {
+  const g = start();
+  const out = g.performAction('herring', 'take');
+  assert.equal(out.failed, true);
+  assert.equal(g.getMode(), 'action');
+  assert.equal(g.getState().inventory.length, 0);
+  assert.equal(g.getState().timeSeconds, 21630);
+  assert.equal(findByClass(doc.shell, 'take-toast'), null);
+});
+
+test('season and weather sit below the clock and stay synced through sheltered crossings', () => {
+  const g = start();
+  const center = findByClass(doc.shell, 'map__center');
+  const label = () => findByClass(doc.shell, 'map__environment');
+  assert.equal(center.children[2], label());
+  assert.equal(label().textContent, 'Spring · Day 1/30 · clear');
+  const env = Vinland.require('core/environment');
+  let snowy;
+  for (let seed = 0; seed < 1000; seed++) {
+    const candidate = { ...g.getState(), current: 'hall', timeSeconds: 90 * 86400 + 12 * 3600, weatherSeed: seed };
+    if (env.weather(candidate) === 'snow') { snowy = candidate; break; }
+  }
+  assert.ok(snowy);
+  g.setState(Object.freeze(snowy));
+  assert.match(label().textContent, /Winter · Day 1\/30 · snow$/);
+  g.performAction('longhall-building', 'enter');
+  assert.equal(g.getState().timeSeconds - snowy.timeSeconds, 600);
+  assert.match(label().textContent, /snow outside · sheltered/);
+  assert.equal(findByClass(doc.shell, 'map').dataset.weather, 'snow');
+  const indoorStart = g.getState().timeSeconds;
+  g.performAction('longhall-stairs', 'climb');
+  assert.equal(g.getState().timeSeconds - indoorStart, 300);
+  assert.match(label().textContent, /sheltered/);
 });

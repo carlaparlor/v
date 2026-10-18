@@ -436,3 +436,76 @@ Iteration 2 removed all four (ADR-0004).
 
 Give me: the check number, what you expected, what you saw, browser + window size, whether you
 were on `file://` or `localhost`, and any console output. That is enough to fix it in one pass.
+
+
+## Action-driven time
+
+1. Open index.html directly or the preview. Below the place/region name in the right map pane, confirm
+   **Day 1 · 06:00 · dawn**. Wait: the clock does not tick.
+2. Examine the barrel, go Back, and open/close dropdowns: no elapsed time.
+   Open the barrel: 06:01. Close it: 06:02. Walk one map edge: 06:07.
+3. Enter the Longhall (5 minutes). At this early hour the elder is resting.
+   Attempt Talk: a reason appears, with no conversation. Two failed attempts
+   add one visible minute; Back never refunds time. At 07:00 Talk succeeds
+   and costs 10 minutes.
+4. For boundary checks, use the console to set time without hundreds of moves:
+   `var g = Vinland.require('app/game').getGame();`
+   `g.setState(Object.freeze({ ...g.getState(), timeSeconds: 20 * 3600 }));`
+   Confirm night atmosphere, Talk refusal, and Approach refusal for wildlife.
+   Examining, movement, items, doors and containers still work normally.
+5. Set `timeSeconds` to `86370` (23:59:30) and attempt a nighttime conversation.
+   Confirm **Day 2 · 00:00 · night**. Back and examining do not alter that time.
+6. On the first spring day, at 05:00 wildlife can be approached unless stormy;
+   at 07:00 NPCs can be spoken to;
+   at 18:00 the phase is dusk; at 20:00 both restricted actions fail.
+   An action begun just before closing finishes normally and pays its full cost.
+7. While the marker is gliding, try another action: it must not change time or
+   inventory. Once it lands, the step costs five minutes in fair weather
+   (seven in rain; ten in snow or storms).
+
+Automated coverage: core-time.test.js plus app-game clock integration tests.
+
+
+## Seasons and weather
+
+1. Refresh the preview or open index.html directly. Under the place name and
+   clock, confirm **Spring · Day 1/30 · clear**. Waiting, examining, and Back
+   must not reroll the weather or advance the calendar.
+2. Use the console to explore conditions without playing through thirty days:
+   ```js
+   var g = Vinland.require('app/game').getGame();
+   var e = Vinland.require('core/environment');
+   function conditions(day, hour, weather, current = 'yard') {
+     for (var seed = 0; seed < 1000; seed++) {
+       var next = Object.freeze({ ...g.getState(), current,
+         timeSeconds: (day - 1) * 86400 + hour * 3600, weatherSeed: seed });
+       if (e.weather(next) === weather) { g.setState(next); return; }
+     }
+     throw new Error('No matching weather at that date/hour');
+   }
+   ```
+3. `conditions(1, 6, 'rain')`: walk one edge. Confirm seven in-game minutes
+   elapsed. With `'storm'` at that same time, travel takes ten minutes.
+   `conditions(91, 6, 'snow')`: winter snow also costs ten minutes per outdoor step.
+4. `conditions(91, 12, 'snow', 'hall')`: enter the Longhall. Entering takes ten
+   minutes; the label now says **snow outside · sheltered**. Indoor steps and
+   stairs cost five minutes. Leaving the building costs ten. Prose describes
+   shelter, not being soaked by outdoor weather.
+5. `conditions(1, 6, 'fog', 'cairn')`: approach the raven; ten minutes pass.
+   With `'storm'`, approach fails with an explanation and costs thirty seconds.
+   Examining stays free, and containers and inventory actions keep normal costs.
+6. Set a summer day: `conditions(31, 21, 'cloudy', 'cairn')`. Confirm dusk;
+   wildlife can still be approached, but NPCs are resting. On winter day 91 at
+   07:00 it is night and outdoor wildlife cannot be approached. At 08:00 winter
+   dawn starts, and at 16:00 winter night begins.
+7. Set `timeSeconds` to `30 * 86400 - 30`; inspect the environment, then advance
+   thirty seconds using a valid failed attempt or console state replacement.
+   Confirm summer day 1/30 (absolute Day 31). At absolute Day 121, spring returns.
+8. Check a storm just before its next three-hour boundary. Travel pays its
+   departure cost even if it arrives in rain; the next action uses the new weather.
+   Reapply a JSON-round-tripped world state and confirm identical conditions.
+
+Automated: core-environment.test.js covers calendar/year rollover, seasonal light,
+front coherence and weighting, deterministic weather, seed validation, action-start
+pricing, shelter and failure costs. app-game.test.js checks display order and
+sheltered transitions; the existing time/navigation tests remain passing.

@@ -6,8 +6,10 @@
  * never be rendered from different versions of the world (that is the whole sync
  * guarantee — see ADR-0006).
  */
-Vinland.define('core/world', function () {
+Vinland.define('core/world', function (require) {
   'use strict';
+
+  const time = require('core/time');
 
   /** Canonical exit order: how the game lists directions everywhere. */
   const DIRECTIONS = ['north', 'east', 'south', 'west'];
@@ -42,6 +44,10 @@ Vinland.define('core/world', function () {
     }
     if (!Array.isArray(pack.exits)) throw new Error('world pack must declare an exits array');
 
+    if (pack.weatherSeed !== undefined && (!Number.isInteger(pack.weatherSeed) || pack.weatherSeed < 0 || pack.weatherSeed > 0xffffffff)) {
+      throw new Error('weatherSeed must be an unsigned 32-bit integer');
+    }
+
     const byId = new Map();
     for (const loc of pack.locations) {
       if (!loc || typeof loc.id !== 'string' || loc.id.length === 0) {
@@ -53,6 +59,17 @@ Vinland.define('core/world', function () {
       }
       if (typeof loc.passage !== 'string' || loc.passage.trim().length === 0) {
         throw new Error(`location "${loc.id}" needs a passage`);
+      }
+      if (loc.passages !== undefined) {
+        if (!loc.passages || typeof loc.passages !== 'object' || Array.isArray(loc.passages)) {
+          throw new Error(`location "${loc.id}" passages must be a phase-to-text object`);
+        }
+        for (const phase of Object.keys(loc.passages)) {
+          if (!['dawn', 'day', 'dusk', 'night'].includes(phase) ||
+              typeof loc.passages[phase] !== 'string' || !loc.passages[phase].trim()) {
+            throw new Error(`location "${loc.id}" has an invalid phase passage`);
+          }
+        }
       }
       if (!Array.isArray(loc.at) || loc.at.length !== 2 || !loc.at.every(Number.isInteger)) {
         throw new Error(`location "${loc.id}" needs an integer grid position at: [x, y]`);
@@ -245,6 +262,7 @@ Vinland.define('core/world', function () {
         name: loc.name,
         at: [loc.at[0], loc.at[1]],
         passage: loc.passage,
+        passages: Object.freeze({ ...(loc.passages || {}) }),
         within: loc.within ?? null,
         entry: loc.entry ?? null,
         floor: loc.floor ?? null,
@@ -283,6 +301,8 @@ Vinland.define('core/world', function () {
     }
 
     return Object.freeze({
+      timeSeconds: time.START,
+      weatherSeed: pack.weatherSeed === undefined ? 0 : pack.weatherSeed,
       region: pack.region ?? 'Unnamed shore',
       cellWidth: Number.isInteger(pack.cellWidth) && pack.cellWidth > 0 ? pack.cellWidth : 16,
       locations,
@@ -334,7 +354,7 @@ Vinland.define('core/world', function () {
   function travel(world, direction) {
     const to = world?.exits?.[world.current]?.[direction];
     if (!to) return null;
-    return Object.freeze({ ...world, current: to });
+    return time.advance(Object.freeze({ ...world, current: to }), 'walk', world);
   }
 
   /**
@@ -476,7 +496,7 @@ Vinland.define('core/world', function () {
   function crossPortal(world) {
     const to = portalTarget(world, world && world.current);
     if (!to) return null;
-    return Object.freeze({ ...world, current: to });
+    return time.advance(Object.freeze({ ...world, current: to }), 'walk', world);
   }
 
   /**
@@ -498,7 +518,7 @@ Vinland.define('core/world', function () {
   function crossStairs(world, verb) {
     const to = stairsTarget(world, world && world.current, verb);
     if (!to) return null;
-    return Object.freeze({ ...world, current: to });
+    return time.advance(Object.freeze({ ...world, current: to }), 'walk', world);
   }
 
   /**

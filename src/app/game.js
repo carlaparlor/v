@@ -446,9 +446,10 @@ Vinland.define('app/game', function (require) {
        * @returns {{ nextWorld: object, result: object }|null}
        */
       performAction(interactableId, action) {
+        if (stepping) return null;
         var mod = Vinland.require('core/actions');
         var outcome = mod.perform(state, interactableId, action);
-        if (!outcome || outcome.error) {
+        if (!outcome || (outcome.error && !outcome.failed)) {
           // Invalid action: still show error in result view? For now just log.
           if (outcome && outcome.error) console.error('[vinland] ' + outcome.error);
           return outcome;
@@ -458,7 +459,7 @@ Vinland.define('app/game', function (require) {
         // stack. You stay exactly where you are — the current view simply
         // re-renders (which un-highlights the word: it is yours now, not a
         // thing in the world to click) — and the popup says what happened.
-        if (action === 'take') {
+        if (action === 'take' && !outcome.failed) {
           settleAfterTake(interactableId);
           showToast('You have taken ' + outcome.result.title);
           return outcome;
@@ -469,7 +470,7 @@ Vinland.define('app/game', function (require) {
         // along between layers, so the crossing takes the game's soft fade
         // instead of cutting (state is already the destination; the fade
         // swaps the panes while the shell is faded, then fades back in).
-        if (action === 'enter' || action === 'exit' || action === 'climb' || action === 'descend') {
+        if (!outcome.failed && (action === 'enter' || action === 'exit' || action === 'climb' || action === 'descend')) {
           cancelPendingTake();
           mode = { kind: 'place' };
           pendingResult = null;

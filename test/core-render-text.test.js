@@ -8,6 +8,8 @@ import { loadScripts } from '../tools/load-scripts.js';
 
 const Vinland = loadScripts([
   'src/kernel.js',
+  'src/core/environment.js',
+  'src/core/time.js',
   'src/core/world.js',
   'src/core/interactables.js',
   'src/core/render-text.js',
@@ -36,7 +38,7 @@ test('it describes where you actually are', () => {
   assert.equal(model.place, pack.start);
   assert.equal(model.title, pack.locations.find((l) => l.id === pack.start).name);
   // paragraphs may have placeholders resolved, so just check they contain the plain passage's core
-  assert.ok(model.paragraphs.length === 1);
+  assert.ok(model.paragraphs.length === 3);
   assert.ok(model.paragraphs[0].includes('You cross the yard'));
 });
 

@@ -43,7 +43,9 @@ test('the arrival state eases on the map instead of snapping at the landing', ()
   const { doc } = installDocument();
   const Vinland = loadScripts([
     'src/kernel.js',
-    'src/core/world.js',
+    'src/core/environment.js',
+  'src/core/time.js',
+  'src/core/world.js',
     'src/core/render-map.js',
     'src/ui/panels.js',
     'src/ui/panel-map.js',
@@ -75,7 +77,9 @@ test('the @ badge glides from the node you are on to the node you clicked', () =
   const { doc } = installDocument();
   const Vinland = loadScripts([
     'src/kernel.js',
-    'src/core/world.js',
+    'src/core/environment.js',
+  'src/core/time.js',
+  'src/core/world.js',
     'src/core/render-map.js',
     'src/ui/panels.js',
     'src/ui/panel-map.js',

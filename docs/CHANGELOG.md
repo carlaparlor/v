@@ -4,6 +4,57 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 8 — seasons, weather and shelter
+
+**Asked:** A season and weather system with real systemic gameplay effects.
+
+- Four 30-day seasons form a 120-day year, starting on spring day one at 06:00.
+  The map shows season, day within the season and regional weather below the clock.
+- Daylight follows the season, not a fixed wildlife schedule. NPC waking hours
+  remain 07:00–20:00. Summer nights are shorter; winter nights are longer.
+- Clear, cloudy, fog, rain, storm and snow derive from the world seed and time.
+  Season-weighted weather fronts use three-hour slots and coherent transitions;
+  storms build/ease through rain. Reopening views or serializing state cannot reroll
+  weather. Snow belongs to winter. A `weatherSeed` in a content pack changes the
+  reproducible schedule; the default is zero (clear on the first morning).
+- Exposed movement takes seven minutes in rain, ten in snow or storms, and five
+  otherwise. Entering/leaving shelter counts as exposed; indoor steps and stairs
+  remain five minutes. Conditions at departure determine the entire action's cost.
+- Outdoor wildlife approaches take ten minutes in fog, five otherwise. Storms
+  or seasonal darkness block them, costing thirty seconds with a reason. Indoor
+  wildlife is sheltered. Examining and UI navigation remain free.
+- Prose reflects both season and weather and distinguishes indoor shelter from
+  outdoor exposure. No damage, equipment protection or survival meters were added.
+
+**Test:** `npm test` (180 tests); Seasons and weather in docs/TESTING.md.
+
+## Iteration 7 (correction 1) — clock below the place name
+
+Moved the clock directly below the map’s place/region heading, aligned with its
+left edge. Time rules are unchanged. The integration test checks this order.
+
+## Iteration 7 — action-driven time
+
+**Asked:** A 24-hour action-based clock starting at 06:00, visible above the right
+map, with days, varying action costs, cheaper failures and time-dependent gameplay.
+
+- World state stores elapsed seconds from Day 1 midnight. New games start at 06:00;
+  the map displays `Day 1 · 06:00 · dawn`. No real-time ticking.
+- Walking and crossings cost 5 minutes; taking/opening/closing/using cost 1 minute;
+  talking costs 10 minutes; approaching wildlife costs 5 minutes. Examining and UI
+  navigation are free. Genuine failed attempts cost 30 seconds (failed examining
+  remains free); invalid ids/verbs/navigation commands cost nothing.
+- NPC conversations are available 07:00–20:00 and wildlife approaches 05:00–20:00,
+  evaluated when the attempt starts. Blocked attempts explain the reason without
+  changing inventory, location or containers.
+- Dawn 05:00–07:00, day 07:00–18:00, dusk 18:00–20:00, night otherwise.
+  Prose adds indoor/outdoor atmosphere; authored hall and landing phase passages
+  avoid resting/daylight contradictions. Other actions remain available at night.
+- Clock, structural effects and prose derive from the same immutable state.
+  Attempts during an animated step are ignored so arrival cannot overwrite them.
+
+**Test:** `npm test`; manual steps in docs/TESTING.md under Action-driven time.
+
 ## Iteration 6 (correction 7) — the @ rides over the pills, never behind them
 
 **Asked:** "sometimes, the @ goes behind the pallets, i dont like that. idk ifywim"

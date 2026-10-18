@@ -372,3 +372,19 @@
   align-self: flex-start;
   text-align: left;
 }
+
+/* Shared world clock: below the place heading, never driven by wall time. */
+.map__clock,
+.map__environment {
+  align-self: flex-start;
+  text-align: left;
+  margin: 0;
+  color: var(--color-text-bright);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.map__environment {
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+}

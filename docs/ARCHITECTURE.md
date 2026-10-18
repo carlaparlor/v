@@ -349,3 +349,73 @@ must either pre-transition to its final visual state or not re-render.
 has no z-index; paint order is document order. Anything animated *across* the map
 must be reparented to the end of its layer for the journey, or siblings drawn later
 will cover it mid-flight.
+
+
+### ADR-0011 — action-driven time belongs to world state
+
+**Decision:** `core/time` is a pure classic-script module. A world has a
+`timeSeconds` integer counting seconds since Day 1 midnight, initially 21600.
+`COSTS` centralizes durations in seconds; `advance` returns a frozen state, while
+`clock`, `blocked` and `atmosphere` derive display and rules without mutation.
+The display floors to whole minutes; two 30-second failures visibly add one minute.
+No wall-clock timers advance gameplay time. Animation timers remain presentation only.
+
+`core/world` charges each successful movement leg, including direct doorway/stairs
+transitions; `core/actions` charges its own resolved action exactly once (crossing
+verbs construct the destination directly, so they do not also charge world travel).
+Failed attempts return `failed: true`, a reason result, and the charged `nextWorld`;
+invalid commands return the unchanged world and an error. Examining is always free.
+Availability uses action-start time, inclusive opening and exclusive closing hours.
+
+Both render models read the same state. `core/render-map` supplies the formatted
+clock, and the UI places it directly below the map's place/region heading. `core/render-text`
+selects an optional location `passages` override keyed by `dawn`, `day`, `dusk`, or
+`night` (validated, cloned and frozen by world creation), otherwise the base passage,
+then adds phase-appropriate indoor/outdoor atmosphere. Content stays data-only.
+
+The app commits failed attempts like result views, never as successful takes or
+crossings. While a step is in flight, additional action attempts are ignored so a
+pending arrival cannot overwrite a later clock/inventory update.
+
+
+### ADR-0012 — environment is derived from seed, calendar and action-start context
+
+**Decision:** `core/environment` owns a pure 30-day/season, 120-day/year calendar,
+seasonal daylight, deterministic regional weather, shelter checks and environmental
+modifiers. It depends on no other module. `core/time` depends on environment, not
+vice versa, so all transitions still run without the DOM or a server.
+
+World creation stores a validated unsigned 32-bit `weatherSeed` (content-pack
+configurable; default zero). Calendar and weather are derived, never duplicated
+in mutable pane state. The year and season follow elapsed world seconds; day one
+is spring day one. Advancing time, even across many seasons, computes conditions
+in constant time. JSON round trips preserve the seed and clock and therefore the
+same weather; no global RNG or wall-clock input exists.
+
+Weather uses a hash of seed and absolute day to choose a season-weighted daily
+front and direction. A front contains eight three-hour slots; coherent fronts
+start/end cloudy, and storms have rain on either side. Reversed fronts preserve
+those transitions while varying the time of arrival. Repeated slots allow longer
+spells. Winter weights snow; summer weights fair weather; autumn weights rain,
+fog and storms. Changing weather never depends on action count or render count.
+`FRONTS`, `FRONT_WEIGHTS` and `DAYLIGHT` are frozen, exported rule tables.
+
+Seasonal phase hours (dawn start / full day / dusk start / night start):
+
+| Spring | Summer | Autumn | Winter |
+| --- | --- | --- | --- |
+| 05 / 07 / 18 / 20 | 03 / 05 / 20 / 22 | 06 / 08 / 16 / 18 | 08 / 10 / 14 / 16 |
+
+Wildlife approaches require outdoor daylight and no storm; fog doubles duration.
+NPC waking hours remain independent. A location with `within` is sheltered.
+Movement is exposed if either endpoint is outdoors. Rain adds 120 seconds and
+snow/storm adds 300 seconds to the base movement cost. Other activities have no
+weather penalty. Sheltered wildlife ignores outdoor visibility/weather restrictions.
+
+`time.advance(nextWorld, action, sourceWorld)` prices conditions at action start
+and receives the destination through `nextWorld.current`. World movement and
+resolved actions pass their pre-transition state, avoiding accidental arrival-time
+pricing or double-charging crossings. The final state drives the map, clock and
+prose together, including when an action crosses a slot or season boundary.
+`core/render-map` supplies the environment label; `core/render-text` adds authored
+season/weather atmosphere. UI only displays those models.
