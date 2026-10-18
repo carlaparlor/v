@@ -103,10 +103,23 @@ test('the @ badge glides from the node you are on to the node you clicked', () =
     for (const kid of node.children || []) browserify(kid);
   })(pane);
 
-  // Yard -> Smithy is one cell east: badge travels exactly that vector.
+  // Yard -> Smithy is one cell east. The badge is lifted out of its home
+  // pill to the top of the node layer (so it rides OVER every pill, never
+  // behind one) and glides in absolute map coordinates to the Smithy's
+  // badge perch.
+  const smithy = model.nodes.find((n) => n.id === 'smithy');
   assert.equal(panel.animateMarker(pane, 'yard', 'smithy', model, 720), true);
-  assert.match(badge.style.transform, new RegExp(`translate\\(${CELL_W}px,`));
+  assert.match(
+    badge.style.transform,
+    new RegExp(`translate\\(${smithy.x}px, ${smithy.y - smithy.height / 2}px\\)`),
+  );
   assert.match(badge.style.transition, /cubic-bezier\(0\.37, 0, 0\.63, 1\)/, 'the glide eases in-out');
+  assert.notEqual(badge.parentNode, here, 'the badge leaves its home pill for the glide');
+  assert.equal(
+    badge.parentNode.children[badge.parentNode.children.length - 1],
+    badge,
+    'the badge is the last-painted element in the node layer: on top of every pill',
+  );
 
   // Nothing to glide to: same place, or a place not on this map.
   assert.equal(panel.animateMarker(pane, 'yard', 'yard', model, 720), false);
