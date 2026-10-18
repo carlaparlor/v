@@ -81,6 +81,43 @@ Vinland.define('core/actions', function (require) {
     return fallbackText(interactable, action);
   }
 
+  /** One highlighted word: an interactable segment for `held`, as seen in `world`. */
+  function interactableSegment(world, held, display) {
+    var seg = {
+      type: 'interactable',
+      id: held.id,
+      name: held.name,
+      display: display || held.name,
+      interactable: held,
+      color: interactablesMod.colorFor(held),
+      actions: interactablesMod.actionsFor(held, held.type === 'container' ? worldMod.containerState(world, held.id) : undefined),
+      typeName: held.type,
+    };
+    if (held.type === 'container') seg.state = worldMod.containerState(world, held.id);
+    return seg;
+  }
+
+  /**
+   * Re-derive a stored result's highlighted words against the current world,
+   * for when navigation returns to that view: a word whose thing has since
+   * been taken (so it is in your inventory) or sealed back inside a closed
+   * container becomes plain text again; one still in reach stays highlighted.
+   * The prose itself never changes — only what is clickable in it.
+   */
+  function refreshResult(world, result) {
+    if (!result || !Array.isArray(result.segments)) return result;
+    var segments = result.segments.map(function (seg) {
+      if (seg.type !== 'interactable') return seg;
+      var found = locateInteractable(world, seg.id);
+      var sealed = found.containerId && worldMod.containerState(world, found.containerId) !== 'open';
+      if (!found.interactable || sealed || found.fromInventory) {
+        return { type: 'text', text: seg.display || seg.name || seg.id };
+      }
+      return interactableSegment(world, found.interactable, seg.display);
+    });
+    return Object.assign({}, result, { segments: segments });
+  }
+
   /**
    * Parse an action's result text into segments, resolving {id} / {id|Display}
    * placeholders inline — in the normal flow of the sentence, never as an
@@ -106,18 +143,7 @@ Vinland.define('core/actions', function (require) {
       var sealed = found.containerId && worldMod.containerState(world, found.containerId) !== 'open';
       // In your inventory it is no longer in there, so it no longer highlights.
       if (held && !sealed && !found.fromInventory) {
-        var seg = {
-          type: 'interactable',
-          id: held.id,
-          name: held.name,
-          display: display || held.name,
-          interactable: held,
-          color: interactablesMod.colorFor(held),
-          actions: interactablesMod.actionsFor(held, held.type === 'container' ? worldMod.containerState(world, held.id) : undefined),
-          typeName: held.type,
-        };
-        if (held.type === 'container') seg.state = worldMod.containerState(world, held.id);
-        segments.push(seg);
+        segments.push(interactableSegment(world, held, display));
       } else {
         segments.push({ type: 'text', text: display || (held ? held.name : id) });
       }
@@ -226,5 +252,5 @@ Vinland.define('core/actions', function (require) {
     };
   }
 
-  return { perform, locateInteractable, resultTextFor, fallbackText, segmentsForText, plainFromSegments };
+  return { perform, locateInteractable, resultTextFor, fallbackText, segmentsForText, plainFromSegments, refreshResult };
 });

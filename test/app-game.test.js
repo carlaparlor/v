@@ -275,6 +275,48 @@ test('container contents live in the open view, not the place prose', () => {
   assert.equal(findByDataset(left, 'interactableId', 'herring'), null);
 });
 
+test('back from a nested view returns to the view you came from, not the place', () => {
+  const g = start();
+  const [left] = doc.shell.children;
+  const title = () => findByClass(left, 'text__title').textContent;
+
+  // Yard -> barrel (open) -> the herring inside it: two views deep.
+  g.performAction('barrel', 'open');
+  assert.equal(title(), 'barrel');
+  g.performAction('herring', 'examine');
+  assert.equal(title(), 'herring');
+
+  // Back once: the barrel view again, herring still highlighted in its flow.
+  g.back();
+  assert.equal(g.getMode(), 'action');
+  assert.equal(title(), 'barrel');
+  assert.ok(findByDataset(left, 'interactableId', 'herring'));
+
+  // Back again: now the place.
+  g.back();
+  assert.equal(g.getMode(), 'place');
+  assert.equal(left.dataset.view, 'place');
+  assert.equal(title(), 'The Yard');
+});
+
+test('a view returned to reflects what changed while you were deeper', () => {
+  const g = start();
+  const [left] = doc.shell.children;
+
+  g.performAction('barrel', 'open');
+  g.performAction('herring', 'take'); // dive into the take view
+  g.back(); // back to the barrel
+
+  assert.equal(findByClass(left, 'text__title').textContent, 'barrel');
+  // The herring is in your inventory now — its word in the barrel's prose
+  // is plain text again, not a clickable thing in there.
+  assert.equal(findByDataset(left, 'interactableId', 'herring'), null);
+  // ...while returnToPlace from a nested view still exits straight out.
+  g.returnToPlace();
+  assert.equal(g.getMode(), 'place');
+  assert.equal(findByClass(left, 'text__title').textContent, 'The Yard');
+});
+
 test('the running game is reachable for testing and the console', () => {
   const g = start();
   assert.equal(game.getGame(), g);

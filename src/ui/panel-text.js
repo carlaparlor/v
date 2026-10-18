@@ -112,8 +112,9 @@ Vinland.define('ui/panel-text', function (require) {
     return p;
   }
 
-  /** Render the action result view (called by app/game, not directly bound as a panel) */
-  function renderResult(pane, result, onReturn) {
+  /** Render the action result view (called by app/game, not directly bound as a panel).
+   * The button steps back one view (see app/game's view stack), so it says Back. */
+  function renderResult(pane, result, onBack) {
     const body = el('div', 'text text--result');
     body.appendChild(el('p', 'text__region', 'Straumfjord'));
     body.appendChild(el('h1', 'text__title', result.title || 'You act'));
@@ -127,10 +128,10 @@ Vinland.define('ui/panel-text', function (require) {
       body.appendChild(el('p', 'text__result-body', result.text || ''));
     }
 
-    const btn = el('button', 'text__return', 'Return');
+    const btn = el('button', 'text__return', 'Back');
     btn.type = 'button';
     btn.addEventListener('click', function () {
-      if (typeof onReturn === 'function') onReturn();
+      if (typeof onBack === 'function') onBack();
     });
     body.appendChild(btn);
 

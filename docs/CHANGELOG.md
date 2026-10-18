@@ -4,6 +4,26 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 (correction 3) — Back from inside a container returns to the container
+
+**Asked:** "pressing back while examining herring in the barrel took me back to the main
+prose tf"
+
+Fair. Result views were a single flat slot: examining the herring *overwrote* the barrel
+view, and the Return button always jumped to the place, so the barrel you were looking
+inside of was gone.
+
+**Fixed:** `app/game` now keeps a **view stack**. Diving from one result view into
+another (barrel → herring) pushes the view you left; the button — now labelled **Back** —
+pops one level, and only reaches the place when the stack is empty. The view returned to
+is refreshed against the current world (`core/actions.refreshResult`), so if you took
+the herring while deeper, its word in the barrel's prose is plain again rather than a
+stale clickable. `returnToPlace()` still exits all views at once and is what travel and
+`setState` use. Tests: 126 → **128, all passing**, covering back-to-container,
+back-to-place, and the un-highlighting after a take.
+
+---
+
 ## Iteration 5 (correction 2) — contents highlighted in the flow, not listed at the end
 
 **Asked:** "nah man, the word should be highlighted in the normal flow, not a sentence at

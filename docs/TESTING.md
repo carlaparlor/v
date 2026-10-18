@@ -22,7 +22,7 @@ state, opening reveals contents.
 npm test
 ```
 
-Expected: **126 tests, 0 failures.** New: `test/core-containers.test.js` — state-filtered
+Expected: **128 tests, 0 failures.** New: `test/core-containers.test.js` — state-filtered
 menus, refused redundant Open/Close, persistence across travel, contents gated while
 closed, take-from-container, open vs closed examine prose, content validation for
 `contains`; plus the rule that contents are highlighted in the flow of the open/examine
@@ -37,12 +37,13 @@ prose — never listed after it, and never in the main prose.
 | 1 | Closed menu | Click **barrel** → label reads `barrel · closed`; actions are **examine, open** — no close. Examining it now shows no contents. |
 | 2 | Close is impossible | There is no way to close it: the verb is not offered. (Console: `Vinland.require('core/actions').perform(Vinland.require('app/game').getGame().getState(), 'barrel', 'close')` → error `"close" not available`.) |
 | 3 | Open it | Choose **open** → one paragraph: "…leaving the barrel open. Salt, water, and a **herring** stares up at you." Herring is highlighted *inside that sentence* — there is no extra "Inside the barrel…" sentence below it. |
-| 4 | Prose stays clean | **Return**. The yard prose is exactly as it was — its contents are never listed there, open or not. |
+| 4 | Prose stays clean | **Back**. The yard prose is exactly as it was — its contents are never listed there, open or not. |
 | 5 | Open menu / look in again | Click **barrel** again → label reads `barrel · open`; actions are **examine, close** — no open. **Examine** gives the open-barrel prose with **herring** highlighted in its flow. |
-| 6 | Take the contents | In that view, click **herring** → **take**. Examine the barrel once more → the word herring is still in the sentence, but no longer highlighted/clickable. The barrel is still open. |
-| 7 | Leave it open | Walk to The Longhall (click it on the map) and back. The barrel is still open, its menu still Examine + Close. |
-| 8 | Close it | Choose **close**. Return → menu is Examine + Open again, and examining it shows no contents. |
-| 9 | Other containers | **cargo** (The Harbour) highlights salt-fish (takeable) and linen-bundle (Examine only — no take offered) inside its open prose. **quench-barrel** (The Smithy) highlights cold-slag the same way. Its closed Examine speaks of the fast lid, not the water inside. |
+| 6 | Back means one step | In that view, click **herring** → **examine**. Press **Back** → you are back in the barrel view (not the yard), herring still highlighted. **Back** again → the yard. |
+| 7 | Take the contents | Open the barrel, click **herring** → **take**. Press **Back** → the barrel view, with the word herring now plain, not clickable. The barrel is still open. |
+| 8 | Leave it open | Walk to The Longhall (click it on the map) and back. The barrel is still open, its menu still Examine + Close. |
+| 9 | Close it | Choose **close**. Back → menu is Examine + Open again, and examining it shows no contents. |
+| 10 | Other containers | **cargo** (The Harbour) highlights salt-fish (takeable) and linen-bundle (Examine only — no take offered) inside its open prose. **quench-barrel** (The Smithy) highlights cold-slag the same way. Its closed Examine speaks of the fast lid, not the water inside. |
 
 ### Regression checks
 
@@ -54,7 +55,7 @@ prose — never listed after it, and never in the main prose.
 
 ### Definition of pass
 
-Checks 1-9 pass, both regression checks behave, `npm test` green (126).
+Checks 1-10 pass, both regression checks behave, `npm test` green (128).
 
 ---
 

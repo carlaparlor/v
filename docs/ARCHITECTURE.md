@@ -211,6 +211,24 @@ action gate, and the renderer — they cannot disagree, per ADR-0006. Costs: con
 invisible to any system that only scans top-level interactables; such systems must go
 through `contentsOf` / `findInteractable`, which know about the one nested level.
 
+### ADR-0009 — Result views stack; Back pops one view
+**Context:** Result views were a single flat slot: performing an action overwrote the
+current view, so examining a content from inside its container erased the container view,
+and the Return button always jumped to the place.
+**Decision:** `app/game` keeps a stack of result views. Performing an action from within
+a view pushes the view it leaves; the view's button (labelled **Back**) pops one level
+and only reaches the place (clearing the stack, as travel and `setState` do) when the
+stack is empty. A view returned to is passed through `core/actions.refreshResult`, which
+re-derives its highlighted words against the current world — a thing taken while deeper
+reads as plain text again in the prose it left.
+**Rejected:** Back always returning to the place (the bug reported); re-performing the
+parent action to rebuild its view (open/close/take mutate, so replay is not safe, and an
+opened container would have to be re-described as an examine).
+**Consequences:** Navigation depth follows what the player actually did, and a view can
+never offer a word for a thing that is no longer there. Costs: one more piece of
+composition-root state (`resultStack` next to `pendingResult`), and stored views can
+drift from the world between visits — which is exactly what `refreshResult` exists to fix.
+
 ### ADR-0006 — Second person, one world state, panes bound to panels by role
 **Context:** Iteration 4 asks for a map of words and lines in one pane, a text pane synced to it,
 and a second-person voice. "Synced" is the load-bearing word: two panes showing the same world
