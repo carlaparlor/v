@@ -64,6 +64,12 @@
   --fade-duration: 400ms;
   --fade-easing: ease-in-out;
 
+  /* Take motion — a fair amount, not too much: the taken word settles to
+     plain over --duration-take; the popup eases in/out over --duration-toast. */
+  --duration-take: 520ms;
+  --duration-toast: 480ms;
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Interactables — each type has its own color (plus per-instance color override).
      Chosen for visibility on the dark pane (#0b0a08): all clear WCAG AA there. */
   --color-interactable-object: #8ecae6;

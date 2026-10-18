@@ -304,14 +304,49 @@ test('a view returned to reflects what changed while you were deeper', () => {
   const [left] = doc.shell.children;
 
   g.performAction('barrel', 'open');
-  g.performAction('herring', 'take'); // dive into the take view
-  g.back(); // back to the barrel
+  g.performAction('herring', 'examine');
+  g.back(); // back to the barrel view
 
   assert.equal(findByClass(left, 'text__title').textContent, 'barrel');
-  // The herring is in your inventory now — its word in the barrel's prose
-  // is plain text again, not a clickable thing in there.
-  assert.equal(findByDataset(left, 'interactableId', 'herring'), null);
+  assert.ok(findByDataset(left, 'interactableId', 'herring'), 'still in there, still highlighted');
+});
+
+test('taking an item never fades to a result view: popup, same view, plain word', () => {
+  const g = start();
+  const [left] = doc.shell.children;
+  assert.ok(!doc.shell.className.includes('is-fading'));
+
+  // From the place prose: taking the ropes changes nothing you are looking at,
+  // except the word itself goes plain (no longer bold/coloured/clickable).
+  g.performAction('ropes', 'take');
+  assert.equal(g.getMode(), 'place');
+  assert.equal(left.dataset.view, 'place');
+  assert.equal(findByClass(left, 'text__title').textContent, 'The Yard');
+  assert.equal(findByDataset(left, 'interactableId', 'ropes'), null, 'ropes no longer an interactable word');
+  assert.ok(findByClass(left, 'text__body').textContent.includes('ropes'), 'the word is still in the sentence');
+  assert.equal(g.getToast(), 'You have taken ropes');
+  const toast = findByClass(doc.body, 'toast');
+  assert.ok(toast, 'popup exists');
+  assert.ok(toast.classList.contains('is-visible'));
+  assert.ok(g.getState().inventory.some((i) => i.id === 'ropes'));
+});
+
+test('taking from inside a container stays in that container view', () => {
+  const g = start();
+  const [left] = doc.shell.children;
+
+  g.performAction('barrel', 'open');
+  g.performAction('herring', 'take');
+
+  // Still the barrel view — not a take view, and nothing stacked under Back.
+  assert.equal(g.getMode(), 'action');
+  assert.equal(findByClass(left, 'text__title').textContent, 'barrel');
+  assert.equal(findByDataset(left, 'interactableId', 'herring'), null, 'herring word is plain in the barrel prose');
+  assert.equal(g.getToast(), 'You have taken herring');
+  g.back();
+  assert.equal(g.getMode(), 'place', 'Back from the barrel reaches the place: the take stacked nothing');
   // ...while returnToPlace from a nested view still exits straight out.
+  g.performAction('barrel', 'open');
   g.returnToPlace();
   assert.equal(g.getMode(), 'place');
   assert.equal(findByClass(left, 'text__title').textContent, 'The Yard');

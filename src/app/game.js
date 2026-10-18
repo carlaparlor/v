@@ -59,6 +59,105 @@ Vinland.define('app/game', function (require) {
     // Back pops one; only when it is empty does Back reach the place.
     let resultStack = [];
 
+    // "You have taken …" popup: taking never leaves the view you are in,
+    // so the confirmation lives outside the panes and eases itself away.
+    let toastEl = null;
+    let toastTimer = null;
+    let takeTimer = null;
+
+    const TOAST_HOLD_MS = 3400; // plus the ~0.5s ease on each side
+    const TAKE_SETTLE_MS = 520; // mirrors --duration-take in tokens.css
+
+    function isInertMotion() {
+      // No CSS transitions to wait for in Node tests: settle immediately.
+      return typeof process !== 'undefined' && process.versions && process.versions.node;
+    }
+
+    function showToast(message) {
+      if (typeof document === 'undefined' || !document.createElement) return;
+      if (!toastEl) {
+        toastEl = document.createElement('div');
+        toastEl.className = 'toast';
+        toastEl.setAttribute('role', 'status');
+        const host = document.body || shell.parentNode;
+        if (host && host.appendChild) host.appendChild(toastEl);
+      }
+      toastEl.textContent = message;
+      if (toastTimer) clearTimeout(toastTimer);
+      // A freshly inserted element needs a frame before the class change
+      // can transition, or it would simply appear. One still up just resets.
+      if (toastEl.classList && toastEl.classList.contains('is-visible')) {
+        // already in: nothing to animate
+      } else if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (toastEl && toastEl.classList) toastEl.classList.add('is-visible');
+          });
+        });
+      } else if (toastEl.classList) {
+        toastEl.classList.add('is-visible');
+      }
+      toastTimer = setTimeout(function () {
+        if (toastEl && toastEl.classList) toastEl.classList.remove('is-visible');
+      }, TOAST_HOLD_MS);
+      if (toastTimer && typeof toastTimer.unref === 'function') toastTimer.unref();
+    }
+
+    /** The taken item's word, anywhere under the panes, if it is on screen. */
+    function findWord(node, id) {
+      if (!node) return null;
+      if (node.dataset && node.dataset.interactableId === id) return node;
+      const kids = node.children || [];
+      for (let i = 0; i < kids.length; i++) {
+        const hit = findWord(kids[i], id);
+        if (hit) return hit;
+      }
+      return null;
+    }
+
+    /**
+     * Smooth the take itself: the word on screen is told it is taken (its
+     * colour drains, its weight drops, over --duration-take), and only once
+     * it has settled does the view re-render onto what is already a plain
+     * word — the swap is invisible. In tests the render is immediate.
+     */
+    function settleAfterTake(interactableId) {
+      const renderCurrent = function () {
+        if (mode.kind === 'action' && pendingResult) {
+          pendingResult = Vinland.require('core/actions').refreshResult(state, pendingResult);
+          renderResult(pendingResult);
+        } else {
+          renderPlace();
+        }
+      };
+      let marked = false;
+      for (const binding of bindings) {
+        const word = findWord(binding.pane, interactableId);
+        if (word) {
+          if (word.classList) word.classList.add('is-taken');
+          if (word.style) word.style.color = ''; // let the .is-taken colour apply
+          marked = true;
+          break;
+        }
+      }
+      if (!marked || isInertMotion()) {
+        renderCurrent();
+        return;
+      }
+      takeTimer = setTimeout(function () {
+        takeTimer = null;
+        renderCurrent();
+      }, TAKE_SETTLE_MS);
+      if (takeTimer && typeof takeTimer.unref === 'function') takeTimer.unref();
+    }
+
+    function cancelPendingTake() {
+      if (takeTimer) {
+        clearTimeout(takeTimer);
+        takeTimer = null;
+      }
+    }
+
     function findBinding(role) {
       for (let i = 0; i < bindings.length; i++) if (bindings[i].role === role) return bindings[i];
       return null;
@@ -136,6 +235,7 @@ Vinland.define('app/game', function (require) {
     }
 
     function returnToPlace() {
+      cancelPendingTake();
       mode = { kind: 'place' };
       pendingResult = null;
       resultStack = [];
@@ -154,6 +254,7 @@ Vinland.define('app/game', function (require) {
         returnToPlace();
         return;
       }
+      cancelPendingTake();
       var previous = resultStack.pop();
       pendingResult = Vinland.require('core/actions').refreshResult(state, previous);
       fadeSwap(function () { renderResult(pendingResult); });
@@ -204,6 +305,7 @@ Vinland.define('app/game', function (require) {
 
       /** Replace the state wholesale (future: systems, loading saves) and re-render. */
       setState(next) {
+        cancelPendingTake();
         state = next;
         mode = { kind: 'place' };
         pendingResult = null;
@@ -226,6 +328,16 @@ Vinland.define('app/game', function (require) {
           return outcome;
         }
         state = outcome.nextWorld;
+        // Taking is not a view: no fade, no result screen, no place on the
+        // stack. You stay exactly where you are — the current view simply
+        // re-renders (which un-highlights the word: it is yours now, not a
+        // thing in the world to click) — and the popup says what happened.
+        if (action === 'take') {
+          settleAfterTake(interactableId);
+          showToast('You have taken ' + outcome.result.title);
+          return outcome;
+        }
+        cancelPendingTake();
         // Diving from one view into another (barrel -> the herring inside it)
         // stacks the view you left, so Back lands there, not at the place.
         if (mode.kind === 'action' && pendingResult) resultStack.push(pendingResult);
@@ -252,6 +364,11 @@ Vinland.define('app/game', function (require) {
 
       getResult() {
         return pendingResult;
+      },
+
+      /** The current popup text ('' before the first one) — for tests. */
+      getToast() {
+        return toastEl ? toastEl.textContent : '';
       },
 
       render,
