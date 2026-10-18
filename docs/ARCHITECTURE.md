@@ -192,9 +192,12 @@ the menu, so you could Close a container you had never opened.
   `containerStates` across travel until the player flips it — leaving a container open is
   a deliberate act the world remembers.
 - **Contents are data on the container (`contains`), revealed by state.**
-  `core/world.contentsOf` returns them only while open; `core/render-text` appends an
-  "Inside the X, you see …" paragraph of clickable contents to the location. While closed,
-  contents appear nowhere in the view model and `perform` refuses to examine or take them.
+  `core/world.contentsOf` returns them only while open. Where they are revealed is the
+  container's own view, not the room: `core/actions` attaches `result.contentsSegments`
+  ("Inside the X, you see …", contents as clickable segments) to an **open** action, or an
+  **examine** of a container that stands open — and `ui/panel-text.renderResult` paints
+  them there. The location prose never mentions contents, open or closed. `perform`
+  likewise refuses to examine or take contents while the container is closed.
   Validation: only containers hold contents, contents cannot themselves be containers
   (one level deep), and held ids are globally unique.
 - **Prose follows the state.** Examining an open container uses authored `examineOpen`

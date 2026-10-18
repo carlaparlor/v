@@ -4,6 +4,29 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 (correction) — contents live in the container's view, not the prose
+
+**Asked:** "instead of revealing contents in the main prose, the items should be in the
+open/examine view ifykwim"
+
+Yep. An open container left standing in a room appended an "Inside the barrel, you see
+herring." paragraph to the location prose, for as long as it stayed open. That is the
+room describing the inside of a barrel it can see into — wrong place for it. What a
+container holds is something you see when you look in, not something the room announces.
+
+**Changed:** `core/render-text` no longer appends the contents paragraph or lists contents
+in the place model — open or closed, the main prose never mentions them. Instead
+`core/actions` attaches `result.contentsSegments` (the contents as clickable interactable
+segments) to the result when a container is **opened**, or **examined while open**.
+Examining it shut, or closing it, carries no contents. `ui/panel-text.renderResult`
+renders those segments in the result view, so the herring is clickable (examine/take)
+right there in the barrel's view. Tests: 124 → **126, all passing** — the container tests
+now assert the prose stays silent and the open/examine view carries the contents, and an
+app-level test proves the herring is a clickable word in the result view and absent from
+the place after Return.
+
+---
+
 ## Iteration 5 — containers open once, stay open, and reveal what they hold
 
 **Asked:** "why is there an open AND close action for a container interactable? there should

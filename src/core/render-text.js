@@ -15,7 +15,7 @@
 Vinland.define('core/render-text', function (require) {
   'use strict';
 
-  const { here, exitsOf, location, interactablesAt, containerState, contentsOf } = require('core/world');
+  const { here, exitsOf, location, interactablesAt, containerState } = require('core/world');
   const interactablesMod = require('core/interactables');
 
   /**
@@ -103,27 +103,9 @@ Vinland.define('core/render-text', function (require) {
       return parseSegments(p, byId, world);
     });
 
-    // An open container reveals what it holds: one extra paragraph naming its
-    // contents as clickable interactables. A closed container reveals nothing,
-    // and its contents appear nowhere in the model.
-    const revealed = [];
-    for (let ci = 0; ci < list.length; ci++) {
-      const holder = list[ci];
-      if (holder.type !== 'container' || containerState(world, holder.id) !== 'open') continue;
-      const held = contentsOf(world, holder.id);
-      revealed.push.apply(revealed, held);
-      if (held.length === 0) {
-        richParagraphs.push([{ type: 'text', text: 'Inside the ' + holder.name + ', you see nothing left.' }]);
-      } else {
-        const segs = [{ type: 'text', text: 'Inside the ' + holder.name + ', you see ' }];
-        for (let hi = 0; hi < held.length; hi++) {
-          if (hi > 0) segs.push({ type: 'text', text: hi === held.length - 1 ? ' and ' : ', ' });
-          segs.push(segmentFor(held[hi], null, world));
-        }
-        segs.push({ type: 'text', text: '.' });
-        richParagraphs.push(segs);
-      }
-    }
+    // Contents are NOT revealed here: what a container holds lives in that
+    // container's own open/examine view (core/actions result), not in the
+    // location prose — an open container left behind must not clutter the room.
     const paragraphs = richParagraphs.map(plainFromSegments);
 
     return {
@@ -134,7 +116,7 @@ Vinland.define('core/render-text', function (require) {
       richParagraphs: richParagraphs,
       // backward compat alias
       segments: richParagraphs,
-      interactables: list.slice().concat(revealed),
+      interactables: list.slice(),
       exits,
       exitsLine: exits.length === 0
         ? 'There is no way out of here that you can see.'

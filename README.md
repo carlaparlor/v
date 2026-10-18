@@ -29,7 +29,8 @@ npm test      # run the unit tests (needs Node 18+)
 right pane is a map of the same shore made of words and lines, with `@` marking you. Both are views
 of one immutable world state rendered in one pass, so they cannot disagree. Moving updates both.
 Coloured words in the prose are interactables with dropdown actions; containers offer Open while
-closed and Close while open, stay as you leave them, and reveal what they hold while open.
+closed and Close while open, stay as you leave them, and show what they hold in their own
+open/examine view — never in the room's prose.
 See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ```

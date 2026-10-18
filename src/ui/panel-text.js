@@ -119,6 +119,12 @@ Vinland.define('ui/panel-text', function (require) {
     body.appendChild(el('h1', 'text__title', result.title || 'You act'));
     body.appendChild(el('p', 'text__result-body', result.text || ''));
 
+    // A container's contents live in this view (open / examine-while-open),
+    // as clickable words with their own dropdowns — not in the place prose.
+    if (Array.isArray(result.contentsSegments) && result.contentsSegments.length > 0) {
+      body.appendChild(renderParagraph(result.contentsSegments));
+    }
+
     const btn = el('button', 'text__return', 'Return');
     btn.type = 'button';
     btn.addEventListener('click', function () {
