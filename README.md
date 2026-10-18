@@ -25,6 +25,17 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 9 — the player.** You have a body now, and it has opinions. Three tiers, one frozen
+piece of world state: **attributes** (strength, charisma, intelligence, dexterity, constitution)
+are fixed for the run and modify the rules; **skills** (travel, talk, approach, craft, gather)
+grow by practice and make that practice faster; **stats** (health, hunger, thirst, energy,
+warmth) drift with time, weather and shelter, are spent by effort, and restored by eating the
+herring, drinking the trough, sitting the bench or sleeping the blankets. Exhaustion slows
+everything, freezing slows the open ground, and starvation, thirst and cold drain health —
+health zero ends the day, not the game: you collapse, stay down two hours, and wake where you
+fell. A status block in the left pane shows who you are, what you have learned and how you are,
+in every view. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 8 — seasons and weather.** The left pane narrates where you are, in the second person. The
 right pane is a map of the same shore made of words and lines, with `@` marking you. Both are views
 of one immutable world state rendered in one pass, so they cannot disagree. Moving updates both.

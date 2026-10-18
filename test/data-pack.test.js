@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 
 import { loadScripts } from '../tools/load-scripts.js';
 
-const Vinland = loadScripts(['src/kernel.js', 'src/core/environment.js', 'src/core/time.js', 'src/core/world.js', 'src/data/vinland.js']);
+const Vinland = loadScripts(['src/kernel.js', 'src/core/environment.js', 'src/core/time.js', 'src/core/player.js', 'src/core/world.js', 'src/data/vinland.js']);
 const pack = Vinland.require('data/vinland');
 const { validatePack, DIRECTIONS, OPPOSITE } = Vinland.require('core/world');
 

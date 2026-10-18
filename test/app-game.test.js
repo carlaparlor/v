@@ -13,6 +13,7 @@ const Vinland = loadScripts([
   'src/core/layout.js',
   'src/core/environment.js',
   'src/core/time.js',
+  'src/core/player.js',
   'src/core/world.js',
   'src/core/interactables.js',
   'src/core/actions.js',
@@ -548,6 +549,8 @@ test('season and weather sit below the clock and stay synced through sheltered c
   assert.equal(findByClass(doc.shell, 'map').dataset.weather, 'snow');
   const indoorStart = g.getState().timeSeconds;
   g.performAction('longhall-stairs', 'climb');
-  assert.equal(g.getState().timeSeconds - indoorStart, 300);
+  // 298.5, not 300: the enter just trained travel to 2, and a trained walk is
+  // a shade cheaper (1 - 0.25 * 2/100).
+  assert.equal(g.getState().timeSeconds - indoorStart, 298.5);
   assert.equal(label().textContent, 'Winter · snow');
 });

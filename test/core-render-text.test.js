@@ -10,6 +10,7 @@ const Vinland = loadScripts([
   'src/kernel.js',
   'src/core/environment.js',
   'src/core/time.js',
+  'src/core/player.js',
   'src/core/world.js',
   'src/core/interactables.js',
   'src/core/render-text.js',

@@ -28,6 +28,56 @@
   padding-block-end: var(--space-6);
 }
 
+/* Player status block — pinned above the prose in the text pane, in every view.
+   Compact: who you are, what you have learned, how you are. The dark pane owns
+   it, so the dim/band tokens are the ones that clear contrast there. */
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-block-end: var(--space-1);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  border-block-end: 1px solid var(--color-status-border);
+}
+
+.status__head {
+  color: var(--color-status-bright);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.status__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--font-size-small);
+  color: var(--color-status);
+}
+
+.status__item {
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.status__item--low {
+  color: var(--color-stat-low);
+}
+
+.status__item--critical {
+  color: var(--color-stat-critical);
+  font-weight: 600;
+}
+
+.status__note {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-small);
+  font-style: italic;
+}
+
 .text__region {
   margin: 0;
   color: var(--color-text-dim);

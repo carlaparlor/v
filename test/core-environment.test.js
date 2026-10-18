@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from '../tools/load-scripts.js';
 const V = loadScripts(['src/kernel.js', 'src/core/environment.js', 'src/core/time.js',
+  'src/core/player.js',
   'src/core/world.js', 'src/core/interactables.js', 'src/core/actions.js',
   'src/core/render-text.js', 'src/core/render-map.js', 'src/data/vinland.js']);
 const env = V.require('core/environment');
@@ -126,7 +127,8 @@ test('actions price conditions at departure, then arrivals reflect the new slot'
   assert.equal(next.timeSeconds - w.timeSeconds, 600);
   assert.equal(env.weather(next), 'rain');
   const after = world.travel(next, 'south');
-  assert.equal(after.timeSeconds - next.timeSeconds, 420);
+  // 418.5, not 420: the first leg trained travel to 2 (300 * 0.995 + 120 rain).
+  assert.equal(after.timeSeconds - next.timeSeconds, 418.5);
 });
 
 test('both view models use the calendar and weather and distinguish indoor shelter', () => {

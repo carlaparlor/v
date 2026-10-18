@@ -10,6 +10,7 @@ Vinland.define('core/actions', function (require) {
   var interactablesMod = require('core/interactables');
   var time = require('core/time');
   var worldMod = require('core/world');
+  var playerMod = require('core/player');
 
   /**
    * Find the location that contains an interactable id, searching all locations
@@ -60,6 +61,9 @@ Vinland.define('core/actions', function (require) {
       case 'use': return 'You put the ' + name + ' to use.';
       case 'talk': return 'You speak to ' + name + '. They do not answer yet.';
       case 'approach': return 'You approach the ' + name + ' cautiously.';
+      case 'eat': return 'You eat the ' + name + '.';
+      case 'drink': return 'You drink from the ' + name + '.';
+      case 'rest': return 'You rest on the ' + name + '.';
       default: return 'You ' + action + ' the ' + name + '.';
     }
   }
@@ -76,6 +80,12 @@ Vinland.define('core/actions', function (require) {
     if (interactable && action === 'examine' && containerState === 'open' &&
         typeof interactable.examineOpen === 'string' && interactable.examineOpen.length > 0) {
       return interactable.examineOpen;
+    }
+    // The rest verb's prose lives in restText: the rest field itself holds the
+    // spec (minutes, energy), so the verb and its data cannot share a key.
+    if (interactable && action === 'rest' &&
+        typeof interactable.restText === 'string' && interactable.restText.length > 0) {
+      return interactable.restText;
     }
     if (interactable && typeof interactable[action] === 'string' && interactable[action].length > 0) {
       return interactable[action];
@@ -186,6 +196,42 @@ Vinland.define('core/actions', function (require) {
     return through ? doorTarget : null;
   }
 
+  /**
+   * Remove an item from the world: from your inventory, from the location it
+   * stands in, or from inside its container. The container (and its open/closed
+   * state) is kept — only the held item goes.
+   */
+  function detachItem(world, found, interactableId) {
+    var newLocations = {};
+    var ids = Object.keys(world.locations);
+    for (var i = 0; i < ids.length; i++) {
+      var locId = ids[i];
+      var loc = world.locations[locId];
+      if (locId === found.locationId && !found.fromInventory) {
+        var list = loc.interactables || [];
+        if (found.containerId) {
+          var rebuilt = list.map(function (holder) {
+            if (holder.id !== found.containerId) return holder;
+            var remaining = (holder.contains || []).filter(function (held) { return held.id !== interactableId; });
+            return Object.assign({}, holder, { contains: Object.freeze(remaining) });
+          });
+          newLocations[locId] = Object.assign({}, loc, { interactables: rebuilt });
+        } else {
+          var filtered = [];
+          for (var k = 0; k < list.length; k++) if (list[k].id !== interactableId) filtered.push(list[k]);
+          newLocations[locId] = Object.assign({}, loc, { interactables: filtered });
+        }
+      } else {
+        newLocations[locId] = loc;
+      }
+    }
+    var newWorld = Object.assign({}, world, { locations: newLocations });
+    if (found.fromInventory) {
+      newWorld.inventory = (world.inventory || []).filter(function (it) { return it.id !== interactableId; });
+    }
+    return Object.freeze(newWorld);
+  }
+
   /** Plain text of a segmented result: placeholders resolved to their words. */
   function plainFromSegments(segments) {
     return segments.map(function (s) { return s.type === 'text' ? s.text : (s.display || s.name || s.id); }).join('');
@@ -193,7 +239,8 @@ Vinland.define('core/actions', function (require) {
 
   function failedAttempt(world, inter, action, text, reportError) {
     return {
-      nextWorld: time.advance(world, action === 'examine' ? 'examine' : 'failure'),
+      // A failed examine stays free; anything else tried and refused pays thirty seconds.
+      nextWorld: playerMod.payFailure(world, action === 'examine' ? 'examine' : 'failure'),
       failed: true,
       ...(reportError ? { error: text } : {}),
       result: { title: inter.name, text: text, segments: [{ type: 'text', text: text }],
@@ -235,10 +282,24 @@ Vinland.define('core/actions', function (require) {
     }
 
     if (isCrossing(action) && !found.fromInventory && found.locationId) {
-      if (!crossingTarget(world, found, action)) {
+      var provenTarget = crossingTarget(world, found, action);
+      if (!provenTarget) {
         var way = (action === 'climb' || action === 'descend') ? 'stairs' : 'doorway';
         return failedAttempt(world, interactable, action, 'You find no ' + way + ' to ' + action + ' through here.', true);
       }
+      // Exhaustion: an exposed crossing you no longer have the strength for.
+      var exhausted = playerMod.exposedTravelRefused(world, provenTarget);
+      if (exhausted) {
+        return failedAttempt(world, interactable, action, exhausted, false);
+      }
+    }
+
+    // The body says no: a full stomach, a throat that is not dry.
+    if (action === 'eat' && world.player && world.player.stats.hunger >= playerMod.PLAYER_CONFIG.max) {
+      return failedAttempt(world, interactable, action, 'You are too full to eat the ' + interactable.name + '.', false);
+    }
+    if (action === 'drink' && world.player && world.player.stats.thirst >= playerMod.PLAYER_CONFIG.max) {
+      return failedAttempt(world, interactable, action, 'You are not thirsty enough to drink from the ' + interactable.name + '.', false);
     }
 
     var text = resultTextFor(interactable, action, state);
@@ -248,36 +309,18 @@ Vinland.define('core/actions', function (require) {
     var nextWorld = world;
 
     if (action === 'take' && interactable.type === 'item' && !found.fromInventory && found.locationId) {
-      // Remove from its location (or from inside its container), add to inventory
-      var newLocations = {};
-      var ids = Object.keys(world.locations);
-      for (var i = 0; i < ids.length; i++) {
-        var locId = ids[i];
-        var loc = world.locations[locId];
-        if (locId === found.locationId) {
-          var list = loc.interactables || [];
-          if (found.containerId) {
-            var rebuilt = list.map(function (holder) {
-              if (holder.id !== found.containerId) return holder;
-              var remaining = (holder.contains || []).filter(function (held) { return held.id !== interactableId; });
-              return Object.assign({}, holder, { contains: Object.freeze(remaining) });
-            });
-            newLocations[locId] = Object.assign({}, loc, { interactables: rebuilt });
-          } else {
-            var filtered = [];
-            for (var k = 0; k < list.length; k++) if (list[k].id !== interactableId) filtered.push(list[k]);
-            newLocations[locId] = Object.assign({}, loc, { interactables: filtered });
-          }
-        } else {
-          newLocations[locId] = loc;
-        }
-      }
-      var newInventory = (world.inventory || []).slice();
-      newInventory.push(interactable);
-      nextWorld = Object.freeze(Object.assign({}, world, {
-        locations: newLocations,
-        inventory: newInventory,
+      // Detach from the world (location or inside its container), add to inventory.
+      nextWorld = Object.freeze(Object.assign({}, detachItem(world, found, interactableId), {
+        inventory: Object.freeze((world.inventory || []).slice().concat([interactable])),
       }));
+    } else if (action === 'eat' && interactable.type === 'item' && interactable.food) {
+      // Consume it from wherever it is reachable, and let it go into you.
+      nextWorld = detachItem(world, found, interactableId);
+      nextWorld = playerMod.applyFood(nextWorld, interactable.food);
+    } else if (action === 'drink' && interactable.water) {
+      // A water item is consumed; a source (a trough) is not.
+      nextWorld = interactable.type === 'item' ? detachItem(world, found, interactableId) : world;
+      nextWorld = playerMod.applyWater(nextWorld, interactable.water);
     } else if ((action === 'open' || action === 'close') && interactable.type === 'container') {
       var states = Object.assign({}, world.containerStates || {});
       states[interactableId] = action === 'open' ? 'open' : 'closed';
@@ -290,24 +333,39 @@ Vinland.define('core/actions', function (require) {
       nextWorld = crossTo
         ? Object.freeze(Object.assign({}, world, { current: crossTo }))
         : world;
-    } else if (action === 'use' || action === 'talk' || action === 'approach' || action === 'examine') {
-      // These verbs have no structural effect.
+    } else if (action === 'use' || action === 'rest' || action === 'talk' || action === 'approach' || action === 'examine') {
+      // These verbs have no structural effect (rest restores, priced below).
       nextWorld = world;
     }
 
+    // A sit or a sleep is its own clock: the rest spec's minutes, not the verb's.
+    var restSpec = (action === 'rest' || action === 'use') ? interactable.rest : undefined;
+
     // The result view renders the prose with any {contents} highlighted in
     // the flow of the sentence; `text` stays the same prose, placeholders
-    // resolved, for plain-text consumers.
-    nextWorld = time.advance(nextWorld, action, world);
-    var segments = segmentsForText(nextWorld, text);
-    var result = {
-      title: title,
-      text: plainFromSegments(segments),
-      segments: segments,
-      action: action,
-      interactableId: interactableId,
-      type: interactable.type,
-    };
+    // resolved, for plain-text consumers. The pipeline prices the time
+    // (attributes -> skill -> condition -> weather), drifts the body, spends
+    // the energy, trains the skill, and collapses if health has run out.
+    nextWorld = playerMod.step(nextWorld, action, {
+      source: world,
+      base: restSpec ? restSpec.minutes * 60 : undefined,
+      restEnergy: restSpec ? restSpec.energy : undefined,
+    });
+
+    var result;
+    if (nextWorld.lastEvent && !world.lastEvent) {
+      result = playerMod.collapseResult();
+    } else {
+      var segments = segmentsForText(nextWorld, text);
+      result = {
+        title: title,
+        text: plainFromSegments(segments),
+        segments: segments,
+        action: action,
+        interactableId: interactableId,
+        type: interactable.type,
+      };
+    }
 
     return {
       nextWorld: nextWorld,

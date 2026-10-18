@@ -19,6 +19,7 @@ Vinland.define('core/render-text', function (require) {
   const time = require('core/time');
   const environment = require('core/environment');
   const interactablesMod = require('core/interactables');
+  const playerMod = require('core/player');
 
   /**
    * Parse a passage string into segments, resolving {id} placeholders.
@@ -120,6 +121,8 @@ Vinland.define('core/render-text', function (require) {
       // backward compat alias
       segments: richParagraphs,
       interactables: list.slice(),
+      // The always-on status block in the text pane reads from here (pure data).
+      player: playerMod.model(world.player),
       exits,
       exitsLine: exits.length === 0
         ? 'There is no way out of here that you can see.'

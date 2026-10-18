@@ -7,14 +7,19 @@ Vinland.define('core/time', function (require) {
   const START = 6 * 3600;
   const COSTS = Object.freeze({ walk: 300, enter: 300, exit: 300, climb: 300,
     descend: 300, take: 60, open: 60, close: 60, use: 60, talk: 600,
-    approach: 300, examine: 0, failure: 30 });
+    approach: 300, eat: 60, drink: 60, rest: 60, examine: 0, failure: 30 });
 
   function seconds(world) {
     return world.timeSeconds === undefined ? START : world.timeSeconds;
   }
 
-  function advance(world, action, source) {
-    const base = COSTS[action] === undefined ? 60 : COSTS[action];
+  /**
+   * Advance the clock by an action's cost. `baseOverride` lets a caller price the
+   * action at something other than its flat cost (rest: the sit/sleep itself).
+   */
+  function advance(world, action, source, baseOverride) {
+    const base = baseOverride !== undefined ? baseOverride
+      : (COSTS[action] === undefined ? 60 : COSTS[action]);
     const cost = environment.duration(source || world, action, base, world.current);
     if (!cost) return world;
     return Object.freeze({ ...world, timeSeconds: seconds(world) + cost });

@@ -14,6 +14,7 @@ Vinland.define('ui/panel-text', function (require) {
   'use strict';
 
   const { renderText } = require('core/render-text');
+  const playerMod = require('core/player');
   const panels = require('ui/panels');
 
   let activeMenu = null;
@@ -23,6 +24,36 @@ Vinland.define('ui/panel-text', function (require) {
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
     return node;
+  }
+
+  /**
+   * The always-on status block: who you are (attributes), what you have learned
+   * (skills), how you are (stats), and a second-person note for anything that is
+   * not ok. The values come from the view model — nothing is computed here.
+   */
+  function renderStatus(playerModel) {
+    if (!playerModel) return null;
+    const box = el('div', 'status');
+    box.setAttribute('role', 'status');
+    box.setAttribute('aria-label', 'Your condition');
+    box.appendChild(el('div', 'status__head', 'You'));
+
+    const attrs = el('div', 'status__row status__row--attributes');
+    for (const a of playerModel.attributes) attrs.appendChild(el('span', 'status__item', a.short + ' ' + a.value));
+    box.appendChild(attrs);
+
+    const skills = el('div', 'status__row status__row--skills');
+    for (const s of playerModel.skills) skills.appendChild(el('span', 'status__item', s.key + ' ' + s.value));
+    box.appendChild(skills);
+
+    const stats = el('div', 'status__row status__row--stats');
+    for (const st of playerModel.stats) {
+      stats.appendChild(el('span', 'status__item status__item--' + st.band, st.key + ' ' + st.value));
+    }
+    box.appendChild(stats);
+
+    for (const note of playerModel.notes) box.appendChild(el('p', 'status__note', note));
+    return box;
   }
 
   function closeActiveMenu() {
@@ -114,8 +145,10 @@ Vinland.define('ui/panel-text', function (require) {
 
   /** Render the action result view (called by app/game, not directly bound as a panel).
    * The button steps back one view (see app/game's view stack), so it says Back. */
-  function renderResult(pane, result, onBack) {
+  function renderResult(pane, result, onBack, world) {
     const body = el('div', 'text text--result');
+    const status = world && world.player ? renderStatus(playerMod.model(world.player)) : null;
+    if (status) body.appendChild(status);
     body.appendChild(el('p', 'text__region', 'Straumfjord'));
     body.appendChild(el('h1', 'text__title', result.title || 'You act'));
     // Contents are highlighted words in the flow of this prose (result.segments),
@@ -147,6 +180,8 @@ Vinland.define('ui/panel-text', function (require) {
 
     render(pane, model) {
       const body = el('div', 'text');
+      const status = renderStatus(model.player);
+      if (status) body.appendChild(status);
       body.appendChild(el('p', 'text__region', model.region));
       body.appendChild(el('h1', 'text__title', model.title));
 

@@ -10,6 +10,33 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 9 — the player: attributes, skills, stats
+
+**Asked:** a stats system, carefully designed — three distinct tiers (attributes,
+skills, stats), full dynamics, collapse instead of death, eat/rest, and an
+always-on status block in the left pane.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **208 tests, 0 failures.** `test/core-player.test.js` covers the
+pipeline (attributes → skill → condition → weather), drift by season/weather/
+night/shelter, health drain and recovery, practice with diminishing returns,
+exhaustion and numbness, the full-stomach and not-thirsty refusals, eating,
+drinking, resting, the collapse (two hours of darkness, wake values, no death),
+JSON round trips, and the second-person voice of the condition notes.
+`test/ui-status.test.js` pins the status block in every view of the left pane;
+`test/theme-contrast.test.js` keeps its colours AA on the dark pane. Legacy cost
+tests now pin BOTH the untrained price and the trained one (the second walk is
+298.5s, the close after an open 59.7s).
+
+### Manual
+
+See "Player and survival" below.
+
 ## Iteration 6 (correction 3, refined by corrections 4-5) — clicking through the map glides, not cuts
 
 **Asked:** clicking through the map was abrupt. Clarified: the @ marker glides along
@@ -509,3 +536,62 @@ Automated: core-environment.test.js covers calendar/year rollover, seasonal ligh
 front coherence and weighting, deterministic weather, seed validation, action-start
 pricing, shelter and failure costs. app-game.test.js checks display order and
 sheltered transitions; the existing time/navigation tests remain passing.
+
+## Player and survival
+
+1. Refresh the preview or open index.html directly. Above the prose in the left
+   pane, confirm the status block: **You**, then `str 10 · cha 10 · int 10 ·
+   dex 10 · con 10`, then `travel 0 · talk 0 · approach 0 · craft 0 · gather 0`,
+   then `health 100 · hunger 75 · thirst 75 · energy 100 · warmth 100`. No notes.
+2. Open the barrel and take the herring (you now carry it). Eat it: hunger jumps
+   toward full, thirst dips a shade (the brine), the herring is gone from your
+   pack, and gather trained. Drink from the {trough} in the yard: thirst
+   recovers and the trough stays. Examine Back: the block follows the world
+   through every view.
+3. Sit on the bench in the Longhall: twenty minutes pass and energy comes back.
+   Sleep on the loft's blankets: two hours pass (the clock makes the jump),
+   energy and warmth recover, hunger paid for the sleep.
+4. Confirm practice: the first walk of a fresh day costs five minutes; the second
+   costs a shade less (the block shows travel above 0 and the clock pays 4:58.5).
+   Talking to the elder trains talk; working the grindstone trains craft.
+5. For condition checks, use the console to set the body without starved hours:
+   ```js
+   var g = Vinland.require('app/game').getGame();
+   function body(stats) {
+     var s = g.getState();
+     g.setState(Object.freeze({ ...s, player: Object.freeze({ ...s.player,
+       stats: Object.freeze({ ...s.player.stats, ...stats }) }) }));
+   }
+   ```
+   `body({ energy: 24 })`: every action now takes 50% longer (a walk is 7:30).
+   `body({ warmth: 24 })`: an outdoor walk takes another 20% longer (numb);
+   indoor actions do not. `body({ energy: 0 })`: the open ground refuses you with
+   a reason and a thirty-second attempt; indoors you can still drag yourself
+   between rooms. The block bands the stat (low/critical) and gains a note for
+   each stat that is not ok.
+6. `body({ health: 1, hunger: 0 })` and take any slow action (a walk works):
+   the action happens, then the day cuts out — the collapse view, two hours
+   later, health 25, energy 20, "You are alive, and the shore has not changed
+   its mind about you." Back to the place: the world went on, the block shows
+   the wake values, and the next step is ordinary again. There is no death
+   screen and no reset — nothing in the game ends a run.
+7. Set a winter storm night:
+   ```js
+   var e = Vinland.require('core/environment');
+   for (var seed = 0; seed < 1000; seed++) {
+     var next = Object.freeze({ ...g.getState(), timeSeconds: 90 * 86400 + 7 * 3600, weatherSeed: seed });
+     if (e.weather(next) === 'storm') { g.setState(next); break; }
+   }
+   body({ warmth: 0 });
+   ```
+   Walk one edge: warmth 0 drains health while you walk (a starting health of 1
+   collapses mid-walk — the step still happens, then two hours of darkness).
+   Indoors the same night, warmth and health come back.
+8. Reapply a JSON-round-tripped state and confirm the block is identical:
+   `g.setState(JSON.parse(JSON.stringify(g.getState())))` — same values, same
+   notes, and the next action prices the same cost as before the round trip.
+
+Automated: core-player.test.js (pipeline, drift, practice, collapse, round
+trips), ui-status.test.js (the block in every view), theme-contrast.test.js
+(block colours on the dark pane), plus the legacy cost tests which now pin the
+trained prices alongside the untrained ones.

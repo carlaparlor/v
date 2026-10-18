@@ -71,3 +71,12 @@ test('body text is readable on the light tone (WCAG AA)', () => {
   const ratio = contrast(text, light);
   assert.ok(ratio >= 4.5, `text ${text} on ${light} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
 });
+
+test('the status block is readable on the dark tone it lives on (WCAG AA)', () => {
+  // The block is pinned in the LEFT pane, which is the dark pane.
+  for (const name of ['--color-status', '--color-stat-low', '--color-stat-critical', '--color-status-bright']) {
+    const colour = token(name);
+    const ratio = contrast(colour, dark);
+    assert.ok(ratio >= 4.5, `${name} ${colour} on ${dark} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
+  }
+});
