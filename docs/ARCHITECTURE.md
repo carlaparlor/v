@@ -193,11 +193,12 @@ the menu, so you could Close a container you had never opened.
   a deliberate act the world remembers.
 - **Contents are data on the container (`contains`), revealed by state.**
   `core/world.contentsOf` returns them only while open. Where they are revealed is the
-  container's own view, not the room: `core/actions` attaches `result.contentsSegments`
-  ("Inside the X, you see …", contents as clickable segments) to an **open** action, or an
-  **examine** of a container that stands open — and `ui/panel-text.renderResult` paints
-  them there. The location prose never mentions contents, open or closed. `perform`
-  likewise refuses to examine or take contents while the container is closed.
+  container's own view, not the room — and inside its prose, not after it: container
+  `open:`/`examineOpen:` text names contents with `{id}` placeholders, and `core/actions`
+  resolves them into highlighted interactable segments (`result.segments`) against the
+  world after the action. A sealed or already-taken content resolves to a plain word.
+  The location prose never mentions contents, open or closed, and `perform` refuses to
+  examine or take contents while the container is closed.
   Validation: only containers hold contents, contents cannot themselves be containers
   (one level deep), and held ids are globally unique.
 - **Prose follows the state.** Examining an open container uses authored `examineOpen`

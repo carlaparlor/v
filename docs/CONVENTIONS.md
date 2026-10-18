@@ -31,8 +31,10 @@
 - **Containers hold contents as data:** a `container` may declare `contains: [...]` (one level
   deep — contents cannot be containers). Never offer both `open` and `close` in an `actions`
   list: the offered verb is derived from the container's state. Write `open:` prose that
-  leaves it open, and `examineOpen:` for how it reads while open, if that differs. Contents
-  are shown only in the container's open/examine view — never in the location prose.
+  leaves it open, and `examineOpen:` for how it reads while open, if that differs. Name
+  contents in `open:`/`examineOpen:` with `{id}` placeholders so the word highlights in
+  the flow of the prose — never list contents in a sentence after it, and never in the
+  location prose.
 
 ## Panels (`src/ui/`)
 - A panel is `{ role, model(world), render(pane, viewModel) }` and registers itself on require.

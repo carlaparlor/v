@@ -82,36 +82,55 @@ Vinland.define('core/actions', function (require) {
   }
 
   /**
-   * The "look inside" paragraph for a container view: its contents as
-   * interactable segments (same shape core/render-text produces), so the
-   * open/examine view can offer them as clickable words. Contents live here,
-   * in the container's own view — never in the location prose.
-   * @param {object} world world AFTER the action (an `open` has taken effect)
-   * @param {object} container
-   * @returns {Array<object>} segments
+   * Parse an action's result text into segments, resolving {id} / {id|Display}
+   * placeholders inline — in the normal flow of the sentence, never as an
+   * appended list. A placeholder becomes a clickable segment only while that
+   * interactable is reachable in `world` (the world AFTER the action, so an
+   * `open` has taken effect): contents of a still-closed container, and
+   * contents already taken, resolve to plain text instead.
+   * @param {object} world world AFTER the action
+   * @param {string} text authored result text, possibly with placeholders
+   * @returns {Array<object>} segments (same shape core/render-text produces)
    */
-  function contentsSegmentsFor(world, container) {
-    var name = container.name || container.id;
-    var held = worldMod.contentsOf(world, container.id);
-    if (held.length === 0) {
-      return [{ type: 'text', text: 'Inside the ' + name + ', you see nothing left.' }];
+  function segmentsForText(world, text) {
+    var segments = [];
+    var re = /\{([^}|]+)(?:\|([^}]+))?\}/g;
+    var last = 0;
+    var match;
+    while ((match = re.exec(text)) !== null) {
+      if (match.index > last) segments.push({ type: 'text', text: text.slice(last, match.index) });
+      var id = match[1].trim();
+      var display = match[2] ? match[2].trim() : null;
+      var found = locateInteractable(world, id);
+      var held = found.interactable;
+      var sealed = found.containerId && worldMod.containerState(world, found.containerId) !== 'open';
+      // In your inventory it is no longer in there, so it no longer highlights.
+      if (held && !sealed && !found.fromInventory) {
+        var seg = {
+          type: 'interactable',
+          id: held.id,
+          name: held.name,
+          display: display || held.name,
+          interactable: held,
+          color: interactablesMod.colorFor(held),
+          actions: interactablesMod.actionsFor(held, held.type === 'container' ? worldMod.containerState(world, held.id) : undefined),
+          typeName: held.type,
+        };
+        if (held.type === 'container') seg.state = worldMod.containerState(world, held.id);
+        segments.push(seg);
+      } else {
+        segments.push({ type: 'text', text: display || (held ? held.name : id) });
+      }
+      last = re.lastIndex;
     }
-    var segs = [{ type: 'text', text: 'Inside the ' + name + ', you see ' }];
-    for (var i = 0; i < held.length; i++) {
-      if (i > 0) segs.push({ type: 'text', text: i === held.length - 1 ? ' and ' : ', ' });
-      segs.push({
-        type: 'interactable',
-        id: held[i].id,
-        name: held[i].name,
-        display: held[i].name,
-        interactable: held[i],
-        color: interactablesMod.colorFor(held[i]),
-        actions: interactablesMod.actionsFor(held[i]),
-        typeName: held[i].type,
-      });
-    }
-    segs.push({ type: 'text', text: '.' });
-    return segs;
+    if (last < text.length) segments.push({ type: 'text', text: text.slice(last) });
+    if (segments.length === 0) segments.push({ type: 'text', text: text });
+    return segments;
+  }
+
+  /** Plain text of a segmented result: placeholders resolved to their words. */
+  function plainFromSegments(segments) {
+    return segments.map(function (s) { return s.type === 'text' ? s.text : (s.display || s.name || s.id); }).join('');
   }
 
   /**
@@ -188,14 +207,18 @@ Vinland.define('core/actions', function (require) {
       nextWorld = world;
     }
 
-    var result = { title: title, text: text, action: action, interactableId: interactableId, type: interactable.type };
-    // Opening a container — or examining one that stands open — is when you
-    // see inside it. The result view carries the contents; closing it, or
-    // examining it shut, carries nothing.
-    if (interactable.type === 'container' && (action === 'open' || action === 'examine') &&
-        worldMod.containerState(nextWorld, interactableId) === 'open') {
-      result.contentsSegments = contentsSegmentsFor(nextWorld, interactable);
-    }
+    // The result view renders the prose with any {contents} highlighted in
+    // the flow of the sentence; `text` stays the same prose, placeholders
+    // resolved, for plain-text consumers.
+    var segments = segmentsForText(nextWorld, text);
+    var result = {
+      title: title,
+      text: plainFromSegments(segments),
+      segments: segments,
+      action: action,
+      interactableId: interactableId,
+      type: interactable.type,
+    };
 
     return {
       nextWorld: nextWorld,
@@ -203,5 +226,5 @@ Vinland.define('core/actions', function (require) {
     };
   }
 
-  return { perform, locateInteractable, resultTextFor, fallbackText, contentsSegmentsFor };
+  return { perform, locateInteractable, resultTextFor, fallbackText, segmentsForText, plainFromSegments };
 });
