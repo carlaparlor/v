@@ -17,6 +17,7 @@ Vinland.define('app/game', function (require) {
   const { mountShell } = require('ui/shell');
   const panels = require('ui/panels');
   const playerMod = require('core/player');
+  const ribbons = require('ui/ribbons');
 
   // Requiring a panel module registers it. A mod adds or replaces panels the same way.
   require('ui/panel-text');
@@ -157,6 +158,7 @@ Vinland.define('app/game', function (require) {
               // The map alone re-renders: the badge lands exactly where the
               // glide left it. The prose is already here and faded in.
               if (mapBinding) mapBinding.panel.render(mapBinding.pane, mapBinding.panel.model(state));
+              ribbons.render(shell, state);
               setMapDimmed(false);
               if (textBinding && textBinding.pane.classList) {
                 textBinding.pane.classList.remove('pane--step-fade');
@@ -326,6 +328,9 @@ Vinland.define('app/game', function (require) {
       for (const binding of bindings) {
         binding.panel.render(binding.pane, binding.panel.model(state));
       }
+      // Ribbons are shell chrome, not a pane: the bar (and the open sheet,
+      // rebuilt with fresh world data) is rendered on the same pass.
+      ribbons.render(shell, state);
       setMapDimmed(false);
       return state;
     }
@@ -335,6 +340,7 @@ Vinland.define('app/game', function (require) {
       // not with the map, so it waits dimmed rather than asking for travel.
       var mapBinding = findBinding('map');
       if (mapBinding) mapBinding.panel.render(mapBinding.pane, mapBinding.panel.model(state));
+      ribbons.render(shell, state);
       setMapDimmed(true);
       // Text pane shows result (with the status block, still synced to world)
       var textBinding = findBinding('text');

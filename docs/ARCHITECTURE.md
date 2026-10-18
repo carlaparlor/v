@@ -31,9 +31,10 @@ v/
 │     ├─ shell.js             builds the pane elements
 │     ├─ panels.js            panel registry, keyed by pane role
 │     ├─ panel-text.js        paints a text view model into the left pane
-│     └─ panel-map.js         paints a map view model into the right pane
+│     ├─ panel-map.js         paints a map view model into the right pane
+│     └─ ribbons.js           the profile/settings ribbons and their sheets (shell chrome)
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (208)
+├─ test/                      node:test unit tests (215)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
@@ -473,3 +474,49 @@ relieved ones). A second walk of the day is already a shade cheaper, so
 "five minutes a step" is now the *untrained* price — docs and tests say so.
 The status block adds a fixed few lines to the left pane in every view; the
 panes themselves are untouched (ADR-0002 stands).
+
+### ADR-0014 — the panes keep one job; character and settings live on ribbons
+
+**Context:** Iteration 9's status block put all three tiers above the prose in
+the left pane — who you are, what you have learned, how you are. The next step
+in the UI's shape is the opposite of more lines in that pane: the left pane is
+condition and prose (the playable surface), and the app chrome (character,
+settings) belongs to the map pane, where the player's eye is when they are not
+reading. A second requirement: the game must still run from `file://` with
+nothing to fetch, so the requested lucide icons cannot come from a CDN.
+
+**Decision:**
+
+1. **The left pane keeps condition and prose.** The status block renders the
+   five vitals (banded, with the second-person notes) and nothing else.
+   Attributes and skills move to the profile sheet — the data is unchanged
+   (`core/player.model` still exposes all three tiers; only the pane's display
+   narrowed).
+2. **Ribbons are shell chrome, not pane content.** The two ribbons (profile,
+   settings) and their sheets are children of the SHELL, rendered by app/game
+   on every pass (the same pass that renders the panes) with the current
+   world. The map pane's `overflow: hidden` is load-bearing (it clips the
+   police tape), so nothing that must stick out of a pane may live inside it:
+   the shell is `position: relative`, owns a top band
+   (`--shell-padding-top`) the ribbons hang from, and the ribbon bar sits
+   `top: var(--ribbon-top)` / `right: …` on the shell. Open/closed is chrome
+   state in the module — never world state — the same split as the
+   interactable dropdown in `ui/panel-text`.
+3. **A sheet is its render pass.** The open sheet is rebuilt from the current
+   world on every render pass (walk once with it open and the travel skill
+   ticks over in front of you), so it can never show a stale body. One sheet
+   at a time; close by the X, by the ribbon again, or by Escape; focus goes to
+   the close button on open and back to the ribbon on close. Render itself
+   never moves focus.
+4. **Icons are inlined lucide.** Only the path data ships (24×24 stroke grid,
+   `stroke: currentColor`, so the colour is a token), in `ui/ribbons.js`. No
+   CDN, no font, no extra request: double-click-to-run (ADR-0001/0003) and the
+   setup-is-trivial guards are untouched; the new colours are tokens in
+   `tokens.css` and checked for WCAG AA by `theme-contrast.test.js`.
+
+**Consequences:** The shell's children are no longer "exactly the panes"
+(boot and app-game tests filter for the pane sections); the shell gains a top
+band (the fade gradient paints it, so it is part of the surface, not a header);
+adding a third ribbon is a data edit (`ui/ribbons.js`'s `RIBBONS`) plus one
+sheet branch. The settings sheet is a placeholder on purpose — its content
+arrives with the first real setting, and this ADR does not reserve one.

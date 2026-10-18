@@ -87,11 +87,34 @@ key). A pack may set `player.attributes` to override starting attributes
 and verbs without their values. All rates live in `PLAYER_CONFIG`
 (`core/player`), next to `COSTS` in `core/time`.
 
-**Display:** the status block lives in the LEFT pane, in every view, rendered
-from `core/player.model` via the view model — the pane never computes a value.
-Bands: ≥ 50 ok, 25–49 low, < 25 critical; one second-person note per stat that
-is not ok. The block's colours are tokens (`--color-status*`,
+**Display:** the left pane carries **condition and prose only**. The status
+block lives in the LEFT pane, in every view, rendered from
+`core/player.model` via the view model — the pane never computes a value — and
+shows the five STATS (banded: ≥ 50 ok, 25–49 low, < 25 critical) plus one
+second-person note per stat that is not ok. Attributes and skills are not
+displayed in the pane; they live in the profile sheet on the map pane's
+ribbons (below). The block's colours are tokens (`--color-status*`,
 `--color-stat-*`) and must clear WCAG AA on the dark pane (tested).
+
+## Ribbons and sheets (map-pane chrome)
+- The ribbons and their sheets are **shell chrome**: children of the shell,
+  rendered by app/game on every pass with the current world (see ADR-0014).
+  They are not a panel — they never own a pane. Nothing that must stick out of
+  a pane may live inside one (the pane's `overflow: hidden` is load-bearing).
+- Open/closed is module state in `ui/ribbons`, never world state. The open
+  sheet is rebuilt from the current world on every render pass, so it can
+  never show a stale body. One sheet at a time; close by the X, by the ribbon
+  again, or by Escape. `render` never moves focus; open hands focus to the
+  close button, close hands it back to the ribbon.
+- Adding a ribbon: one entry in `RIBBONS` in `ui/ribbons.js`, one icon case
+  in `icon()`, one sheet branch in `buildSheet()`, and the sheet's colours
+  must come from tokens and clear WCAG AA (theme-contrast.test.js).
+- Icons are **inlined lucide** path data (24×24 stroke grid, `stroke:
+  currentColor` so the colour is a token). No CDN, no icon font — the game
+  must run from `file://` with nothing to fetch.
+- Sheet copy follows the voice rules; section labels are the tier names
+  ("Attributes", "Skills"). The settings sheet is a placeholder until a real
+  setting exists.
 
 ## Calendar and environment
 - Time is action-driven; never use wall-clock time or `Math.random()` for weather.

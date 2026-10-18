@@ -62,13 +62,16 @@ test('booting the real scripts renders both panes from one world state', () => {
   loadScripts(SCRIPTS);
 
   assert.equal(doc.documentElement.dataset.booted, 'true', 'boot must succeed');
-  assert.equal(doc.shell.children.length, 2, 'two panes');
+  // The shell also carries the map pane's ribbon bar; the PANES are the
+  // two sections mountShell built.
+  const panes = doc.shell.children.filter((el) => el.className === 'pane');
+  assert.equal(panes.length, 2, 'two panes');
   assert.deepEqual(
-    doc.shell.children.map((el) => el.id),
+    panes.map((el) => el.id),
     ['pane-a', 'pane-b'],
   );
   assert.deepEqual(
-    doc.shell.children.map((el) => el.dataset.panel),
+    panes.map((el) => el.dataset.panel),
     ['text', 'map'],
   );
   assert.equal(doc.shell.style.gap, '0px', 'no seam between the panes');

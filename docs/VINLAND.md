@@ -41,6 +41,14 @@ never crash).
 
 ## Current state
 
+**Iteration 10** — the left pane carries condition and prose: the five vitals
+(health, hunger, thirst, energy, warmth) with their notes, above the words.
+Who you are and what you have learned moved to the map pane: two ribbons stick
+out of its top-right corner — profile opens your character sheet (attributes
+and skills), settings is a placeholder for now. The sheet is rebuilt with the
+live world on every pass, so it never shows a stale body. See
+`docs/CHANGELOG.md`.
+
 **Iteration 9** — the player: three tiers in one frozen body. **Attributes**
 (strength, charisma, intelligence, dexterity, constitution) are fixed for the
 run and modify the rules; **skills** (travel, talk, approach, craft, gather)

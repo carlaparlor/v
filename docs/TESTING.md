@@ -10,6 +10,34 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 10 — ribbons on the map pane, vitals in the left
+
+**Asked:** remove everything except the stats from the left pane (prose stays
+under the vitals), and two ribbons with lucide icons (profile, settings)
+sticking out of the top-right of the right pane — for now.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **215 tests, 0 failures.** `test/ui-ribbons.test.js` pins the bar on
+the shell (not inside a pane), the two ribbons with their inlined lucide icons,
+the profile sheet (both tiers, five rows each, plain values), the settings
+placeholder, one sheet at a time, all three ways of closing (X, ribbon,
+Escape), the sheet surviving into the result view, and the sheet following the
+world (a walk trains travel, and the open sheet shows it).
+`test/ui-status.test.js` now pins the opposite: the left pane carries the five
+vitals and the notes, and NO head, attributes row or skills row.
+`test/theme-contrast.test.js` covers the ribbon and sheet tokens; boot and
+app-game filter the shell's children for the panes (the ribbon bar is a third
+child, on purpose).
+
+### Manual
+
+See "Ribbons and sheets" below.
+
 ## Iteration 9 — the player: attributes, skills, stats
 
 **Asked:** a stats system, carefully designed — three distinct tiers (attributes,
@@ -595,3 +623,37 @@ Automated: core-player.test.js (pipeline, drift, practice, collapse, round
 trips), ui-status.test.js (the block in every view), theme-contrast.test.js
 (block colours on the dark pane), plus the legacy cost tests which now pin the
 trained prices alongside the untrained ones.
+
+## Ribbons and sheets
+
+1. Refresh the preview or open index.html directly. At the top-right corner of
+   the map pane, confirm two dark ribbons sticking out of the pane's top edge
+   into the thin band above the panes, each with a V-notched tail: the profile
+   icon (a person) and the settings icon (a gear). The left pane now shows only
+   the five vitals (health, hunger, thirst, energy, warmth) and the prose — no
+   "You" head, no attribute or skill rows.
+2. Click the profile ribbon: a dark sheet drops from the corner under the
+   ribbons, titled **You**, with **Attributes** (Strength, Charisma,
+   Intelligence, Dexterity, Constitution — each 10, with a one-line note) and
+   **Skills** (Travel, Talk, Approach, Craft, Gather — each 0, with a one-line
+   note). The clicked ribbon lifts and stays lifted while its sheet is open.
+3. Watch it live: with the profile sheet open, walk one edge of the map. The
+   sheet stays open and **Travel** ticks from 0 to 2 — the sheet is rebuilt
+   with the new world on the same pass, so it can never show a stale body.
+   Doing things from the left pane (open the barrel, eat the herring) does not
+   close it either.
+4. Click the settings ribbon: the sheet swaps — one sheet at a time, never
+   stacked — and says **Settings** / "There is nothing to configure yet."
+   Close it three ways: the X in the sheet's corner, clicking the same ribbon
+   again, and pressing Escape.
+5. With the profile sheet open, enter a view (examine the barrel): the map
+   recedes with its police tape and the sheet stays, still on top of it.
+   Coming Back, everything is as you left it.
+6. Keyboard: Tab reaches both ribbons (they are real buttons with labels);
+   Enter opens the sheet; focus lands on the sheet's close button; Escape or
+   the close button returns focus to the ribbon.
+
+Automated: ui-ribbons.test.js (bar on the shell, icons, sheet content, one
+sheet at a time, closing, the sheet following the world, the result view),
+ui-status.test.js (the left pane carries no head/attributes/skills),
+theme-contrast.test.js (ribbon and sheet tokens on their surfaces).

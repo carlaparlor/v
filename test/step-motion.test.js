@@ -50,6 +50,7 @@ test('the arrival state eases on the map instead of snapping at the landing', ()
     'src/core/render-map.js',
     'src/ui/panels.js',
     'src/ui/panel-map.js',
+  'src/ui/ribbons.js',
     'src/data/vinland.js',
   ]);
   const { createWorld, travel } = Vinland.require('core/world');
