@@ -25,7 +25,7 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
-**Iteration 6 — Straumfjord, layered.** The left pane narrates where you are, in the second person. The
+**Iteration 8 — seasons and weather.** The left pane narrates where you are, in the second person. The
 right pane is a map of the same shore made of words and lines, with `@` marking you. Both are views
 of one immutable world state rendered in one pass, so they cannot disagree. Moving updates both.
 Coloured words in the prose are interactables with dropdown actions; containers offer Open while
@@ -33,6 +33,13 @@ closed and Close while open, stay as you leave them, and show what they hold in 
 open/examine view — never in the room's prose. Places nest: the Longhall on the shore is a
 building you can enter, and inside it has a map of its own — floors included: the
 Longhall's loft is a real upper storey, up the stairs from the hall.
+The map clock starts at **Day 1 · 06:00**. Actions advance time by their cost, not
+real-world waiting; examining and UI navigation are free. Dawn, day, dusk and night
+change the atmosphere. Thirty-day seasons begin in spring and change daylight hours.
+Weather persists in three-hour periods: rain, snow and storms slow outdoor travel;
+fog slows wildlife approaches, and storms prevent them. Indoor shelter matters.
+NPC conversations are available 07:00–20:00; wildlife needs seasonal daylight.
+Failed attempts cost half a minute. Season and weather appear below the map clock.
 See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ```

@@ -13,6 +13,8 @@ import { loadScripts } from '../tools/load-scripts.js';
 
 const Vinland = loadScripts([
   'src/kernel.js',
+  'src/core/environment.js',
+  'src/core/time.js',
   'src/core/world.js',
   'src/core/interactables.js',
   'src/core/actions.js',
@@ -115,7 +117,8 @@ test('contents cannot be examined or taken while the container is closed', () =>
   for (const action of ['examine', 'take']) {
     const out = perform(closed(), 'herring', action);
     assert.match(out.error, /the barrel is closed/, action);
-    assert.equal(out.result, null);
+    assert.equal(out.failed, true);
+    assert.match(out.result.text, /closed/);
   }
 });
 

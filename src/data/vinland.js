@@ -43,6 +43,10 @@ Vinland.define('data/vinland', function () {
         ],
       },
       {
+        passages: {
+          dawn: 'You stand under the ridge-beam in the pale dawn. The {elder} rests against the far wall. A {bench} stands by the {longhall-door|door}, the {firepit} smoulders, and the {longhall-stairs|stairs} lead up into smoke.',
+          night: 'You stand beneath the ridge-beam in the dark. The {elder} rests against the far wall. You can make out a {bench} by the {longhall-door|door}, the embers of the {firepit}, and the foot of the {longhall-stairs|stairs}.'
+        },
         id: 'longhall-hall',
         name: 'The Hall',
         at: [1, 1],
@@ -72,6 +76,10 @@ Vinland.define('data/vinland', function () {
         ],
       },
       {
+        passages: {
+          dusk: 'You arrive on the landing beside the {longhall-stairs-down|stairs}. The last light at the {loft-window|window} fades beneath the low roof.',
+          night: 'You arrive on the landing beside the {longhall-stairs-down|stairs}. The {loft-window|window} is a dark slit beneath the low roof; you smell smoke in the shadows.'
+        },
         id: 'longhall-landing',
         name: 'The Landing',
         at: [1, 1],

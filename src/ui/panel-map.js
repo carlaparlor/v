@@ -227,6 +227,18 @@ Vinland.define('ui/panel-map', function (require) {
         ? model.breadcrumb.join(' › ')
         : model.region;
       center.appendChild(el('p', 'map__region', heading));
+      if (model.clock) {
+        const clock = el('p', 'map__clock', model.clock.label);
+        clock.setAttribute('aria-label', model.clock.label);
+        center.appendChild(clock);
+        body.dataset.phase = model.clock.phase;
+      }
+
+      if (model.environment) {
+        center.appendChild(el('p', 'map__environment', model.environment.label));
+        body.dataset.season = model.environment.season;
+        body.dataset.weather = model.environment.weather;
+      }
 
       const hereNode = (model.nodes || []).find((n) => n.isHere);
       const svg = svgEl('svg', 'map__svg', {

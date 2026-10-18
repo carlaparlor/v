@@ -43,6 +43,16 @@
   the flow of the prose — never list contents in a sentence after it, and never in the
   location prose.
 
+## Calendar and environment
+- Time is action-driven; never use wall-clock time or `Math.random()` for weather.
+- Content packs may set `weatherSeed` to an unsigned 32-bit integer. The default
+  zero gives a repeatable spring start; the seed and elapsed seconds determine
+  weather independently of renders, action count and JSON round trips.
+- Environment rules live in `core/environment`: thirty-day seasons, daylight
+  windows, season-weighted three-hour weather fronts and exposure modifiers.
+- A location with `within` is sheltered. Outdoor penalties apply to crossings
+  with either endpoint exposed, priced at departure, never arrival.
+
 ## Panels (`src/ui/`)
 - A panel is `{ role, model(world), render(pane, viewModel) }` and registers itself on require.
 - `model` must be pure and normally just delegates to a `core/render-*` module. `render` must not

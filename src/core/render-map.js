@@ -30,6 +30,8 @@
 Vinland.define('core/render-map', function (require) {
   'use strict';
 
+  const time = require('core/time');
+  const environment = require('core/environment');
   const { DIRECTIONS, locationIds, location, pathTo, parentOf, floorOf, locationsInLayer, breadcrumb } = require('core/world');
 
   const MARKER = '@';
@@ -198,6 +200,8 @@ Vinland.define('core/render-map', function (require) {
     }
 
     return {
+      clock: time.clock(world),
+      environment: environment.conditions(world),
       region: world.region,
       breadcrumb: breadcrumb(world),
       layer: layerParent,

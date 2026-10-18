@@ -8,6 +8,7 @@ Vinland.define('core/actions', function (require) {
   'use strict';
 
   var interactablesMod = require('core/interactables');
+  var time = require('core/time');
   var worldMod = require('core/world');
 
   /**
@@ -190,6 +191,16 @@ Vinland.define('core/actions', function (require) {
     return segments.map(function (s) { return s.type === 'text' ? s.text : (s.display || s.name || s.id); }).join('');
   }
 
+  function failedAttempt(world, inter, action, text, reportError) {
+    return {
+      nextWorld: time.advance(world, action === 'examine' ? 'examine' : 'failure'),
+      failed: true,
+      ...(reportError ? { error: text } : {}),
+      result: { title: inter.name, text: text, segments: [{ type: 'text', text: text }],
+        action: action, interactableId: inter.id, type: inter.type }
+    };
+  }
+
   /**
    * Perform an action: returns { nextWorld, result, performed }
    * @param {object} world frozen world state
@@ -204,12 +215,6 @@ Vinland.define('core/actions', function (require) {
       return { nextWorld: world, result: null, error: 'no such interactable \"' + interactableId + '\"' };
     }
 
-    // Contents are only reachable while their container is open.
-    if (found.containerId && worldMod.containerState(world, found.containerId) !== 'open') {
-      var holderName = (found.container && (found.container.name || found.container.id)) || found.containerId;
-      return { nextWorld: world, result: null, error: 'you cannot reach "' + interactableId + '" — the ' + holderName + ' is closed' };
-    }
-
     var state = interactable.type === 'container' ? worldMod.containerState(world, interactableId) : undefined;
     var validActions = interactablesMod.actionsFor(interactable, state);
     if (validActions.indexOf(action) === -1) {
@@ -218,17 +223,28 @@ Vinland.define('core/actions', function (require) {
       return { nextWorld: world, result: null, error: 'action \"' + action + '\" not available for ' + interactableId };
     }
 
+    // Contents are only reachable while their container is open.
+    if (found.containerId && worldMod.containerState(world, found.containerId) !== 'open') {
+      var holderName = (found.container && (found.container.name || found.container.id)) || found.containerId;
+      return failedAttempt(world, interactable, action, 'You cannot reach the ' + interactable.name + ' — the ' + holderName + ' is closed.', true);
+    }
+
+    var restriction = time.blocked(world, interactable, action);
+    if (restriction) {
+      return failedAttempt(world, interactable, action, restriction, false);
+    }
+
     if (isCrossing(action) && !found.fromInventory && found.locationId) {
       if (!crossingTarget(world, found, action)) {
         var way = (action === 'climb' || action === 'descend') ? 'stairs' : 'doorway';
-        return { nextWorld: world, result: null, error: 'there are no ' + way + ' to ' + action + ' through "' + interactableId + '"' };
+        return failedAttempt(world, interactable, action, 'You find no ' + way + ' to ' + action + ' through here.', true);
       }
     }
 
     var text = resultTextFor(interactable, action, state);
     var title = interactable.name || interactable.id;
 
-    // State mutations — only these mutate; examine/talk/approach/use are view-only for now
+    // Structural effects resolve first; the action clock advances once below.
     var nextWorld = world;
 
     if (action === 'take' && interactable.type === 'item' && !found.fromInventory && found.locationId) {
@@ -275,13 +291,14 @@ Vinland.define('core/actions', function (require) {
         ? Object.freeze(Object.assign({}, world, { current: crossTo }))
         : world;
     } else if (action === 'use' || action === 'talk' || action === 'approach' || action === 'examine') {
-      // No structural mutation yet — could later tick systems
+      // These verbs have no structural effect.
       nextWorld = world;
     }
 
     // The result view renders the prose with any {contents} highlighted in
     // the flow of the sentence; `text` stays the same prose, placeholders
     // resolved, for plain-text consumers.
+    nextWorld = time.advance(nextWorld, action, world);
     var segments = segmentsForText(nextWorld, text);
     var result = {
       title: title,

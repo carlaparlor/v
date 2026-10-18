@@ -16,6 +16,8 @@ Vinland.define('core/render-text', function (require) {
   'use strict';
 
   const { here, exitsOf, location, interactablesAt, containerState } = require('core/world');
+  const time = require('core/time');
+  const environment = require('core/environment');
   const interactablesMod = require('core/interactables');
 
   /**
@@ -98,7 +100,8 @@ Vinland.define('core/render-text', function (require) {
 
     // A passage could be multiline? Currently single string; treat as one paragraph.
     // If it contains newlines, split.
-    const rawParagraphs = loc.passage.split('\n\n');
+    const passage = (loc.passages || {})[time.clock(world).phase] || loc.passage;
+    const rawParagraphs = passage.split('\n\n').concat(time.atmosphere(world, !!loc.within), environment.atmosphere(world));
     const richParagraphs = rawParagraphs.map(function (p) {
       return parseSegments(p, byId, world);
     });
