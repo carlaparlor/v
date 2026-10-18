@@ -4,6 +4,56 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 — containers open once, stay open, and reveal what they hold
+
+**Asked:** "why is there an open AND close action for a container interactable? there should
+only be open, then once opened, can either be left as such, or closed"
+
+**Clarified before building:** an open container's menu is Examine + Close; it stays open
+across travel until closed; the prose reflects the open state; and opening reveals contents.
+
+It was a real bug: `container: ['examine','open','close']` was a static menu, and the
+`containerStates` plumbing recorded open/closed without anything ever reading it to build
+that menu. You could Close a barrel you had never opened.
+
+### What changed
+
+- **`core/interactables.actionsFor(interactable, containerState)`** — containers are now
+  state-filtered: closed → `examine, open`; open → `examine, close`. The state-flipping verb
+  is always offered, even if an explicit `actions` list forgets it.
+- **`core/actions`** — `perform` validates against the state-aware list, so a redundant
+  Open/Close is refused with the same "not available" error as any other invalid verb.
+  Examining an open container uses its authored `examineOpen` prose (falling back to
+  `examine`). Contents are gated: examining or taking something inside a closed container
+  is refused, naming the closed container.
+- **Contents (`contains`)** — a container may hold interactables. `core/world` validates
+  them (containers only, one level deep, ids globally unique alongside top-level ones) and
+  freezes them into state; `world.contentsOf(world, id)` returns them only while open.
+  Taking one removes it from the container into inventory, like taking from a location.
+- **`core/render-text`** — segments carry container `state`, and an open container appends
+  a paragraph to its location: "Inside the barrel, you see herring." — contents as clickable
+  interactables, or "…you see nothing left." once emptied. Closed containers reveal nothing.
+- **Content** — the three containers now hold things: cargo → salt-fish (takeable) and a
+  linen-bundle (examine-only, deliberately knot-tied); barrel → herring; quench-barrel →
+  cold-slag. Every `open:` text was rewritten to leave the container open (they previously
+  closed it again in the same sentence), and each gained `examineOpen` prose. The
+  quench-barrel's closed `examine` no longer peers inside a lidded barrel.
+- **`ui/panel-text`** — the dropdown label shows the state (`barrel · open`).
+
+### Tests: 113 → 124
+
+- `test/core-containers.test.js` (11) — menu flips with state; redundant Open/Close refused
+  with state untouched; open persists across a return trip; contents hidden while closed,
+  revealed while open; contents unreachable while closed; take-from-container moves to
+  inventory and empties the reveal; `examineOpen` vs `examine`; no `open:` prose closes the
+  container again; `validatePack` rejects contents on non-containers, nested containers and
+  duplicate held ids; an examine-only content can be examined but not taken.
+
+**Test it:** double-click `index.html`, then run the Iteration 5 script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
 ## Iteration 4 (correction) — an unrequested parser, removed
 
 **Asked:** "did i say i need a parser?"

@@ -28,6 +28,10 @@
 - A declared direction must match the grid delta. `validatePack` rejects content that lies about
   its own geography, with a message naming the two locations.
 - Adding a location is a data edit. If it needs a code edit, that is a design bug — say so.
+- **Containers hold contents as data:** a `container` may declare `contains: [...]` (one level
+  deep — contents cannot be containers). Never offer both `open` and `close` in an `actions`
+  list: the offered verb is derived from the container's state. Write `open:` prose that
+  leaves it open, and `examineOpen:` for how it reads while open, if that differs.
 
 ## Panels (`src/ui/`)
 - A panel is `{ role, model(world), render(pane, viewModel) }` and registers itself on require.

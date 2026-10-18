@@ -21,7 +21,9 @@ Vinland.define('core/interactables', function () {
     wildlife: '#f9c74f',
   };
 
-  /** Default actions per type. 'examine' is always present. */
+  /** Default actions per type. 'examine' is always present. For containers this
+   * lists every verb the type can ever offer; actionsFor() filters it by the
+   * container's current state (closed -> open, open -> close). */
   const DEFAULT_ACTIONS = {
     object: ['examine'],
     item: ['examine', 'take'],
@@ -39,19 +41,36 @@ Vinland.define('core/interactables', function () {
   /**
    * Actions for an interactable: explicit `actions` override, else defaults by type,
    * always ensuring 'examine' first if missing.
+   *
+   * Containers are stateful: a closed container offers 'open' (never 'close'),
+   * an open container offers 'close' (never 'open'). It stays in that state
+   * until the player changes it, so the menu is derived from state, not static.
    * @param {{ type?: string, actions?: string[] }} interactable
+   * @param {string} [containerState] 'open' | 'closed' (containers only; default 'closed')
    * @returns {string[]}
    */
-  function actionsFor(interactable) {
+  function actionsFor(interactable, containerState) {
+    let list;
     if (Array.isArray(interactable.actions) && interactable.actions.length > 0) {
       // Ensure examine present and first
-      const list = interactable.actions.slice();
+      list = interactable.actions.slice();
       if (list.indexOf('examine') === -1) list.unshift('examine');
-      return list;
+    } else {
+      const type = interactable.type;
+      const defaults = DEFAULT_ACTIONS[type] || ['examine'];
+      list = defaults.slice();
     }
-    const type = interactable.type;
-    const defaults = DEFAULT_ACTIONS[type] || ['examine'];
-    return defaults.slice();
+    if (interactable && interactable.type === 'container') {
+      const isOpen = containerState === 'open';
+      list = list.filter(function (a) {
+        return isOpen ? a !== 'open' : a !== 'close';
+      });
+      // A container must always offer the verb that flips its current state,
+      // even if an explicit actions list forgot it.
+      const flip = isOpen ? 'close' : 'open';
+      if (list.indexOf(flip) === -1) list.push(flip);
+    }
+    return list;
   }
 
   /**

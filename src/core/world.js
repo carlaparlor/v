@@ -23,6 +23,18 @@ Vinland.define('core/world', function () {
    */
   const INTERACTABLE_TYPES = ['object', 'item', 'container', 'fixture', 'npc', 'wildlife'];
 
+  function validateInteractable(inter, locId) {
+    if (!inter || typeof inter.id !== 'string' || inter.id.length === 0) throw new Error(`an interactable in "${locId}" needs a non-empty string id`);
+    if (typeof inter.name !== 'string' || inter.name.length === 0) throw new Error(`interactable "${inter.id}" in "${locId}" needs a name`);
+    if (typeof inter.type !== 'string' || INTERACTABLE_TYPES.indexOf(inter.type) === -1) throw new Error(`interactable "${inter.id}" in "${locId}" needs a type (${INTERACTABLE_TYPES.join(', ')})`);
+    if (inter.examine !== undefined && inter.examine !== null && typeof inter.examine !== 'string') throw new Error(`interactable "${inter.id}" examine must be a string`);
+    if (inter.examineOpen !== undefined && inter.examineOpen !== null && typeof inter.examineOpen !== 'string') throw new Error(`interactable "${inter.id}" examineOpen must be a string`);
+    if (inter.color !== undefined && inter.color !== null && typeof inter.color !== 'string') throw new Error(`interactable "${inter.id}" color must be a string`);
+    if (inter.actions !== undefined && inter.actions !== null) {
+      if (!Array.isArray(inter.actions)) throw new Error(`interactable "${inter.id}" actions must be an array`);
+    }
+  }
+
   function validatePack(pack) {
     if (!pack || typeof pack !== 'object') throw new Error('world pack must be an object');
     if (!Array.isArray(pack.locations) || pack.locations.length === 0) {
@@ -50,28 +62,38 @@ Vinland.define('core/world', function () {
         if (!Array.isArray(loc.interactables)) throw new Error(`location "${loc.id}" interactables must be an array`);
         const seenIds = new Set();
         for (const inter of loc.interactables) {
-          if (!inter || typeof inter.id !== 'string' || inter.id.length === 0) throw new Error(`an interactable in "${loc.id}" needs a non-empty string id`);
+          validateInteractable(inter, loc.id);
           if (seenIds.has(inter.id)) throw new Error(`duplicate interactable id "${inter.id}" in "${loc.id}"`);
           seenIds.add(inter.id);
-          if (typeof inter.name !== 'string' || inter.name.length === 0) throw new Error(`interactable "${inter.id}" in "${loc.id}" needs a name`);
-          if (typeof inter.type !== 'string' || INTERACTABLE_TYPES.indexOf(inter.type) === -1) throw new Error(`interactable "${inter.id}" in "${loc.id}" needs a type (${INTERACTABLE_TYPES.join(', ')})`);
-          if (inter.examine !== undefined && inter.examine !== null && typeof inter.examine !== 'string') throw new Error(`interactable "${inter.id}" examine must be a string`);
-          if (inter.color !== undefined && inter.color !== null && typeof inter.color !== 'string') throw new Error(`interactable "${inter.id}" color must be a string`);
-          if (inter.actions !== undefined && inter.actions !== null) {
-            if (!Array.isArray(inter.actions)) throw new Error(`interactable "${inter.id}" actions must be an array`);
+          // Contents: only a container may hold them, and contents cannot
+          // themselves be (or hold) containers — one level is enough to read.
+          if (inter.contains !== undefined && inter.contains !== null) {
+            if (inter.type !== 'container') throw new Error(`interactable "${inter.id}" in "${loc.id}" has contents but is not a container`);
+            if (!Array.isArray(inter.contains)) throw new Error(`interactable "${inter.id}" in "${loc.id}" contains must be an array`);
+            const seenContents = new Set();
+            for (const held of inter.contains) {
+              validateInteractable(held, loc.id);
+              if (seenContents.has(held.id)) throw new Error(`duplicate interactable id "${held.id}" in "${loc.id}"`);
+              seenContents.add(held.id);
+              if (held.type === 'container' || held.contains !== undefined) throw new Error(`interactable "${held.id}" in "${loc.id}" is inside a container and cannot itself be a container`);
+            }
           }
         }
       }
       byId.set(loc.id, loc);
     }
 
-    // Interactable ids must be globally unique (and not clash with location ids)
+    // Interactable ids must be globally unique (and not clash with location ids),
+    // including ids held inside containers.
     const globalInterIds = new Set();
     for (const loc of pack.locations) {
       for (const inter of loc.interactables || []) {
-        if (byId.has(inter.id)) throw new Error(`interactable id "${inter.id}" clashes with a location id`);
-        if (globalInterIds.has(inter.id)) throw new Error(`duplicate interactable id "${inter.id}" across locations`);
-        globalInterIds.add(inter.id);
+        const all = [inter].concat(inter.contains || []);
+        for (const each of all) {
+          if (byId.has(each.id)) throw new Error(`interactable id "${each.id}" clashes with a location id`);
+          if (globalInterIds.has(each.id)) throw new Error(`duplicate interactable id "${each.id}" across locations`);
+          globalInterIds.add(each.id);
+        }
       }
     }
 
@@ -122,9 +144,17 @@ Vinland.define('core/world', function () {
     const locations = {};
     for (const loc of pack.locations) {
       const inters = (loc.interactables || []).map(function (inter) {
-        // Clone shallowly — all fields are primitives or arrays of primitives.
+        // Clone shallowly — all fields are primitives or arrays of primitives,
+        // except `contains`, whose entries get the same treatment.
         const copy = {};
         for (const k in inter) if (Object.prototype.hasOwnProperty.call(inter, k)) copy[k] = inter[k];
+        if (Array.isArray(inter.contains)) {
+          copy.contains = Object.freeze(inter.contains.map(function (held) {
+            const heldCopy = {};
+            for (const hk in held) if (Object.prototype.hasOwnProperty.call(held, hk)) heldCopy[hk] = held[hk];
+            return Object.freeze(heldCopy);
+          }));
+        }
         return Object.freeze(copy);
       });
       locations[loc.id] = {
@@ -255,7 +285,8 @@ Vinland.define('core/world', function () {
     return loc ? loc.interactables || [] : [];
   }
 
-  /** Here + inventory combined lookup: find interactable by id anywhere */
+  /** Here + inventory combined lookup: find interactable by id anywhere,
+   * including inside containers (open or closed — gating is core/actions' job). */
   function findInteractable(world, id) {
     if (!world || !id) return null;
     var inv = world.inventory || [];
@@ -263,9 +294,24 @@ Vinland.define('core/world', function () {
     var ids = Object.keys(world.locations || {});
     for (var li = 0; li < ids.length; li++) {
       var list = world.locations[ids[li]].interactables || [];
-      for (var j = 0; j < list.length; j++) if (list[j].id === id) return list[j];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j].id === id) return list[j];
+        var held = list[j].contains || [];
+        for (var k = 0; k < held.length; k++) if (held[k].id === id) return held[k];
+      }
     }
     return null;
+  }
+
+  /**
+   * What a container currently reveals: its contents if it is open, nothing
+   * if it is closed. Unknown / non-container ids reveal nothing.
+   */
+  function contentsOf(world, containerId) {
+    if (!world || containerState(world, containerId) !== 'open') return [];
+    var holder = findInteractable(world, containerId);
+    if (!holder || holder.type !== 'container' || !Array.isArray(holder.contains)) return [];
+    return holder.contains.slice();
   }
 
   /** Interactables you currently have */
@@ -297,5 +343,6 @@ Vinland.define('core/world', function () {
     findInteractable,
     inventory,
     containerState,
+    contentsOf,
   };
 });

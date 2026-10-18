@@ -15,7 +15,7 @@
 Vinland.define('core/render-text', function (require) {
   'use strict';
 
-  const { here, exitsOf, location, interactablesAt } = require('core/world');
+  const { here, exitsOf, location, interactablesAt, containerState, contentsOf } = require('core/world');
   const interactablesMod = require('core/interactables');
 
   /**
@@ -25,7 +25,25 @@ Vinland.define('core/render-text', function (require) {
    * @param {Map<string, object>} byId
    * @returns {Array<{ type: string, text?: string, id?: string, name?: string, interactable?: object, display?: string, color?: string, actions?: string[] }>}
    */
-  function parseSegments(passage, byId) {
+  function segmentFor(inter, display, world) {
+    const isContainer = inter.type === 'container';
+    const state = isContainer && world ? containerState(world, inter.id) : undefined;
+    const seg = {
+      type: 'interactable',
+      id: inter.id,
+      name: inter.name,
+      display: display || inter.name,
+      interactable: inter,
+      color: interactablesMod.colorFor(inter),
+      actions: interactablesMod.actionsFor(inter, state),
+      typeName: inter.type,
+    };
+    // Only containers carry a state, so the model stays plain JSON data.
+    if (isContainer) seg.state = state || 'closed';
+    return seg;
+  }
+
+  function parseSegments(passage, byId, world) {
     const segments = [];
     const re = /\{([^}|]+)(?:\|([^}]+))?\}/g;
     let last = 0;
@@ -38,16 +56,7 @@ Vinland.define('core/render-text', function (require) {
       const display = match[2] ? match[2].trim() : null;
       const inter = byId.get(id);
       if (inter) {
-        segments.push({
-          type: 'interactable',
-          id: inter.id,
-          name: inter.name,
-          display: display || inter.name,
-          interactable: inter,
-          color: interactablesMod.colorFor(inter),
-          actions: interactablesMod.actionsFor(inter),
-          typeName: inter.type,
-        });
+        segments.push(segmentFor(inter, display, world));
       } else {
         // Unknown placeholder: show its display or id as plain text
         segments.push({ type: 'text', text: display || id });
@@ -91,8 +100,30 @@ Vinland.define('core/render-text', function (require) {
     // If it contains newlines, split.
     const rawParagraphs = loc.passage.split('\n\n');
     const richParagraphs = rawParagraphs.map(function (p) {
-      return parseSegments(p, byId);
+      return parseSegments(p, byId, world);
     });
+
+    // An open container reveals what it holds: one extra paragraph naming its
+    // contents as clickable interactables. A closed container reveals nothing,
+    // and its contents appear nowhere in the model.
+    const revealed = [];
+    for (let ci = 0; ci < list.length; ci++) {
+      const holder = list[ci];
+      if (holder.type !== 'container' || containerState(world, holder.id) !== 'open') continue;
+      const held = contentsOf(world, holder.id);
+      revealed.push.apply(revealed, held);
+      if (held.length === 0) {
+        richParagraphs.push([{ type: 'text', text: 'Inside the ' + holder.name + ', you see nothing left.' }]);
+      } else {
+        const segs = [{ type: 'text', text: 'Inside the ' + holder.name + ', you see ' }];
+        for (let hi = 0; hi < held.length; hi++) {
+          if (hi > 0) segs.push({ type: 'text', text: hi === held.length - 1 ? ' and ' : ', ' });
+          segs.push(segmentFor(held[hi], null, world));
+        }
+        segs.push({ type: 'text', text: '.' });
+        richParagraphs.push(segs);
+      }
+    }
     const paragraphs = richParagraphs.map(plainFromSegments);
 
     return {
@@ -103,7 +134,7 @@ Vinland.define('core/render-text', function (require) {
       richParagraphs: richParagraphs,
       // backward compat alias
       segments: richParagraphs,
-      interactables: list.slice(),
+      interactables: list.slice().concat(revealed),
       exits,
       exitsLine: exits.length === 0
         ? 'There is no way out of here that you can see.'
@@ -117,5 +148,5 @@ Vinland.define('core/render-text', function (require) {
     };
   }
 
-  return { renderText, parseSegments, plainFromSegments };
+  return { renderText, parseSegments, plainFromSegments, segmentFor };
 });

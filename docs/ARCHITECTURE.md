@@ -180,6 +180,33 @@ Costs: tones are flat, so any future depth (vignette, texture, glow) has to be a
 and `--color-text-dim` on the light tone is only ~2.4:1 — de-emphasised text must either live on
 the dark pane or get its own darker token. Flagged, not fixed (no text exists yet).
 
+### ADR-0008 — Containers are stateful and reveal their contents only while open
+**Context:** Iteration 5: containers offered Open and Close at all times — a static menu.
+The `containerStates` plumbing already recorded open/closed, but nothing read it to build
+the menu, so you could Close a container you had never opened.
+**Decision:**
+- **The menu is derived from state.** `actionsFor(interactable, containerState)` filters a
+  container's verbs: closed offers `open` (never `close`), open offers `close` (never
+  `open`); Examine is always offered. `core/actions.perform` validates against that same
+  filtered list, so a redundant verb is refused, not ignored. State persists in
+  `containerStates` across travel until the player flips it — leaving a container open is
+  a deliberate act the world remembers.
+- **Contents are data on the container (`contains`), revealed by state.**
+  `core/world.contentsOf` returns them only while open; `core/render-text` appends an
+  "Inside the X, you see …" paragraph of clickable contents to the location. While closed,
+  contents appear nowhere in the view model and `perform` refuses to examine or take them.
+  Validation: only containers hold contents, contents cannot themselves be containers
+  (one level deep), and held ids are globally unique.
+- **Prose follows the state.** Examining an open container uses authored `examineOpen`
+  prose; `open:` prose must leave the container open.
+**Rejected:** a single `toggle` verb (hides which state you are in and what will happen);
+auto-closing on leaving a location (the player chose "leave it as such" — the world should
+not tidy up behind them).
+**Consequences:** Open/closed is now one fact (`containerStates`) read by the menu, the
+action gate, and the renderer — they cannot disagree, per ADR-0006. Costs: contents are
+invisible to any system that only scans top-level interactables; such systems must go
+through `contentsOf` / `findInteractable`, which know about the one nested level.
+
 ### ADR-0006 — Second person, one world state, panes bound to panels by role
 **Context:** Iteration 4 asks for a map of words and lines in one pane, a text pane synced to it,
 and a second-person voice. "Synced" is the load-bearing word: two panes showing the same world
