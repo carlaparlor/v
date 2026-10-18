@@ -4,6 +4,30 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 (correction 2) — contents highlighted in the flow, not listed at the end
+
+**Asked:** "nah man, the word should be highlighted in the normal flow, not a sentence at
+the end"
+
+Right — the previous correction moved contents into the open/examine view but as an
+appended "Inside the barrel, you see herring." sentence after the prose. That is a
+inventory list stapled to the bottom of a paragraph. The item should be a highlighted,
+clickable word *inside* the sentence you are already reading.
+
+**Changed:** container `open:`/`examineOpen:` prose now names its contents with the same
+`{id}` placeholders the location prose uses — "…leaving the barrel open. Salt, water, and
+a {herring} stares up at you." `core/actions` resolves those placeholders into
+interactable segments (`result.segments`) against the world *after* the action, so an
+opening actually reveals them; a still-sealed or already-taken content resolves to a
+plain, un-highlighted word. The appended `contentsSegments` sentence is gone, as is the
+"nothing left" report — a taken item simply stops being highlighted. `result.text`
+remains the same prose with placeholders resolved, and `ui/panel-text` renders the
+result view from `result.segments`. Tests: 126, all passing — the container tests now
+assert the word is highlighted mid-sentence, plain text matches, and no appended list
+exists.
+
+---
+
 ## Iteration 5 (correction) — contents live in the container's view, not the prose
 
 **Asked:** "instead of revealing contents in the main prose, the items should be in the

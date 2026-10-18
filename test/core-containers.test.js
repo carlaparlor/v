@@ -88,23 +88,27 @@ test('contents never appear in the main prose, closed or open', () => {
   assert.deepEqual(contentsOf(opened(), 'barrel').map((i) => i.id), ['herring']);
 });
 
-test('contents appear in the open view, and in examine-while-open — nowhere else', () => {
+test('contents are highlighted in the flow of the open/examine prose — not appended after it', () => {
   const segText = (segs) => (segs || []).map((s) => (s.type === 'text' ? s.text : s.display)).join('');
+  const clickable = (result, id) => result.segments.find((s) => s.type === 'interactable' && s.id === id);
 
-  // Opening shows what is inside, as a clickable herring (examine + take).
+  // Opening: the herring is a clickable word inside the sentence itself,
+  // and the plain text is that same sentence with the word resolved.
   const openResult = perform(closed(), 'barrel', 'open').result;
-  assert.ok(segText(openResult.contentsSegments).includes('Inside the barrel, you see herring.'));
-  const herring = openResult.contentsSegments.find((s) => s.type === 'interactable' && s.id === 'herring');
-  assert.ok(herring, 'herring is clickable in the open view');
+  const herring = clickable(openResult, 'herring');
+  assert.ok(herring, 'herring is highlighted in the open prose');
   assert.deepEqual(herring.actions, ['examine', 'take']);
+  assert.ok(segText(openResult.segments).includes('leaving the barrel open. Salt, water, and a herring stares up at you.'));
+  assert.equal(openResult.text, segText(openResult.segments));
+  assert.ok(!openResult.text.includes('{'), 'no raw placeholders leak into the plain text');
+  assert.equal(openResult.contentsSegments, undefined, 'no appended contents sentence anymore');
 
-  // Examining it while it stands open shows the same inside view.
-  const examineOpen = perform(opened(), 'barrel', 'examine').result;
-  assert.ok(segText(examineOpen.contentsSegments).includes('herring'));
+  // Examining it while it stands open highlights the word the same way.
+  assert.ok(clickable(perform(opened(), 'barrel', 'examine').result, 'herring'));
 
-  // Examining it shut, and closing it, show nothing inside.
-  assert.equal(perform(closed(), 'barrel', 'examine').result.contentsSegments, undefined);
-  assert.equal(perform(opened(), 'barrel', 'close').result.contentsSegments, undefined);
+  // Examining it shut, and closing it, highlight nothing.
+  assert.equal(clickable(perform(closed(), 'barrel', 'examine').result, 'herring'), undefined);
+  assert.equal(clickable(perform(opened(), 'barrel', 'close').result, 'herring'), undefined);
 });
 
 test('contents cannot be examined or taken while the container is closed', () => {
@@ -115,16 +119,16 @@ test('contents cannot be examined or taken while the container is closed', () =>
   }
 });
 
-test('taking from an open container moves it to inventory and empties the inside view', () => {
+test('taking from an open container moves it to inventory and un-highlights it', () => {
   const world = perform(opened(), 'herring', 'take').nextWorld;
   assert.deepEqual(contentsOf(world, 'barrel'), []);
   assert.ok(world.inventory.some((i) => i.id === 'herring'));
-  // Looking in again (examine while open) is what reports it empty —
-  // the main prose never mentions it either way.
-  const inside = perform(world, 'barrel', 'examine').result.contentsSegments
-    .map((s) => (s.type === 'text' ? s.text : s.display)).join('');
-  assert.ok(inside.includes('Inside the barrel, you see nothing left.'));
-  assert.ok(!renderText(world).paragraphs.join(' ').includes('nothing left'));
+  // Looking in again: the word is still in the sentence, but no longer a
+  // clickable thing — it is not in there anymore. The main prose never
+  // mentions it either way.
+  const result = perform(world, 'barrel', 'examine').result;
+  assert.equal(result.segments.find((s) => s.type === 'interactable' && s.id === 'herring'), undefined);
+  assert.ok(!renderText(world).paragraphs.join(' ').includes('Inside the barrel'));
   // The container itself is untouched and still open.
   assert.equal(containerState(world, 'barrel'), 'open');
 });
@@ -166,8 +170,8 @@ test('validatePack rejects contents on non-containers, nested containers, and du
 test('a non-takeable content can still be examined once revealed', () => {
   const outcome = perform(createWorld(pack), 'cargo', 'open');
   const world = outcome.nextWorld;
-  // Both contents are offered, in the cargo's open view only.
-  const ids = outcome.result.contentsSegments.filter((s) => s.type === 'interactable').map((s) => s.id);
+  // Both contents are highlighted, in the flow of the cargo's open prose.
+  const ids = outcome.result.segments.filter((s) => s.type === 'interactable').map((s) => s.id);
   assert.deepEqual(ids, ['salt-fish', 'linen-bundle']);
   assert.ok(!renderText(travel(world, 'west')).paragraphs.join(' ').includes('salt-fish'));
   const out = perform(world, 'linen-bundle', 'examine');

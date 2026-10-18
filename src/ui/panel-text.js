@@ -117,12 +117,14 @@ Vinland.define('ui/panel-text', function (require) {
     const body = el('div', 'text text--result');
     body.appendChild(el('p', 'text__region', 'Straumfjord'));
     body.appendChild(el('h1', 'text__title', result.title || 'You act'));
-    body.appendChild(el('p', 'text__result-body', result.text || ''));
-
-    // A container's contents live in this view (open / examine-while-open),
-    // as clickable words with their own dropdowns — not in the place prose.
-    if (Array.isArray(result.contentsSegments) && result.contentsSegments.length > 0) {
-      body.appendChild(renderParagraph(result.contentsSegments));
+    // Contents are highlighted words in the flow of this prose (result.segments),
+    // never a list appended after it.
+    if (Array.isArray(result.segments) && result.segments.length > 0) {
+      const p = renderParagraph(result.segments);
+      p.className = 'text__result-body';
+      body.appendChild(p);
+    } else {
+      body.appendChild(el('p', 'text__result-body', result.text || ''));
     }
 
     const btn = el('button', 'text__return', 'Return');
