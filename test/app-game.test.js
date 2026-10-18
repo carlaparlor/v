@@ -470,6 +470,22 @@ test('climbing the longhall stairs swaps the map to the upper floor, and descend
   assert.deepEqual(mapIds(), ['longhall-hall', 'longhall-store']);
 });
 
+test('the map frame never resizes: same viewBox on the shore, inside, and upstairs', () => {
+  const g = start();
+  const [, right] = doc.shell.children;
+  const frame = () => findByClass(right, 'map__svg').getAttribute('viewBox');
+
+  assert.equal(frame(), '0 0 528 312', 'the shore frame');
+  g.travel('north');
+  g.performAction('longhall-building', 'enter');
+  assert.equal(frame(), '0 0 528 312', 'entering does not resize the map');
+  g.performAction('longhall-stairs', 'climb');
+  assert.equal(frame(), '0 0 528 312', 'climbing does not resize the map');
+  g.performAction('longhall-stairs-down', 'descend');
+  g.performAction('longhall-door', 'exit');
+  assert.equal(frame(), '0 0 528 312', 'leaving does not resize the map');
+});
+
 test('the running game is reachable for testing and the console', () => {
   const g = start();
   assert.equal(game.getGame(), g);

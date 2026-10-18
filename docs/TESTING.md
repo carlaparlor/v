@@ -10,6 +10,38 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 6 (correction 2) — the map frame never resizes
+
+**Asked:** the map changed size on each layer — entering the longhall, and again up
+the stairs. Straumfjord's map size is just right; keep it.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **157 tests, 0 failures.** New: fixed-frame and centring tests in
+`test/core-render-map.test.js`, and a `viewBox` stability test in
+`test/app-game.test.js`.
+
+### Manual
+
+**Double-click `index.html`.**
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | Note the shore map's size | The Straumfjord map as before — that exact size is now the frame everywhere. |
+| 2 | Enter the longhall | The map does **not** resize. The ground floor (The Hall, The Store Room) appears centred in the same-sized frame, pills the same size as outdoors. |
+| 3 | Climb the stairs | Same frame again: The Landing and The Loft, centred, same scale. Only the header changes (`… › Upper Floor`). |
+| 4 | Go back down and out | The shore map returns at exactly the size from check 1. Nothing breathes at any crossing. |
+
+### Definition of pass
+
+Checks 1-4 pass, `npm test` green (157).
+
+---
+
 ## Iteration 6 (correction 1) — multiple floors: up the longhall stairs
 
 **Asked:** "so what about if a building has multiple floors?" Clarified: build it with

@@ -10,6 +10,9 @@
  *
  * Geometry (in viewBox units, consumed by the SVG panel):
  *   - the world grid is normalised so its top-left cell is (0, 0)
+ *   - the viewBox is ONE fixed frame for the whole world (the largest layer
+ *     or floor in it), so the rendered map never changes size as you cross
+ *     doorways or climb stairs; a smaller layer is centred in that frame
  *   - each cell is CELL_W x CELL_H; a node's centre is its cell's centre
  *   - a node is a pill (NODE_H tall) whose width fits its label, capped so
  *     neighbouring pills can never touch
@@ -84,6 +87,31 @@ Vinland.define('core/render-map', function (require) {
   }
 
   /**
+   * The one map frame for the whole world: the widest/tallest layer (or
+   * floor) in it. Every map is drawn in this same viewBox, smaller layers
+   * centred at the same scale — so entering a building or climbing stairs
+   * never resizes the map. For Straumfjord the shore is the largest layer,
+   * so the frame is exactly the shore map's size.
+   */
+  function viewportBounds(world) {
+    const groups = new Map();
+    for (const id of locationIds(world)) {
+      const loc = location(world, id);
+      const key = `${loc.within ?? ''}#${loc.floor ?? ''}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(id);
+    }
+    let cols = 1;
+    let rows = 1;
+    for (const ids of groups.values()) {
+      const b = bounds(world, ids);
+      if (b.cols > cols) cols = b.cols;
+      if (b.rows > rows) rows = b.rows;
+    }
+    return { cols, rows };
+  }
+
+  /**
    * @param {object} world
    * @returns {{ region: string, place: string, nodes: object[], edges: object[],
    *             gridCols: number, gridRows: number, viewWidth: number, viewHeight: number,
@@ -106,6 +134,11 @@ Vinland.define('core/render-map', function (require) {
     const layerLocs = locationsInLayer(world, layerParent, layerFloor);
     const ids = layerLocs.map(function (loc) { return loc.id; });
     const b = bounds(world, ids);
+    // The frame never changes size between layers: this layer is centred
+    // in the world's one viewport, at the same cell scale.
+    const view = viewportBounds(world);
+    const offsetX = ((view.cols - b.cols) / 2) * CELL_W;
+    const offsetY = ((view.rows - b.rows) / 2) * CELL_H;
 
     const nodes = [];
     const byId = new Map();
@@ -123,8 +156,8 @@ Vinland.define('core/render-map', function (require) {
         label,
         gx,
         gy,
-        x: (gx + 0.5) * CELL_W,
-        y: (gy + 0.5) * CELL_H,
+        x: offsetX + (gx + 0.5) * CELL_W,
+        y: offsetY + (gy + 0.5) * CELL_H,
         width: nodeWidth(label),
         height: NODE_H,
         isHere,
@@ -172,10 +205,12 @@ Vinland.define('core/render-map', function (require) {
       place: world.current,
       nodes,
       edges,
-      gridCols: b.cols,
-      gridRows: b.rows,
-      viewWidth: b.cols * CELL_W,
-      viewHeight: b.rows * CELL_H,
+      gridCols: view.cols,
+      gridRows: view.rows,
+      layerCols: b.cols,
+      layerRows: b.rows,
+      viewWidth: view.cols * CELL_W,
+      viewHeight: view.rows * CELL_H,
       cellWidth: CELL_W,
       cellHeight: CELL_H,
       marker: MARKER,
@@ -183,5 +218,5 @@ Vinland.define('core/render-map', function (require) {
     };
   }
 
-  return { renderMap, bounds, fit, MARKER, ELLIPSIS, CELL_W, CELL_H, NODE_H, NODE_MAX_W };
+  return { renderMap, bounds, viewportBounds, fit, MARKER, ELLIPSIS, CELL_W, CELL_H, NODE_H, NODE_MAX_W };
 });

@@ -4,6 +4,45 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 2) — the map frame never resizes
+
+**Asked:** "i absolutely detest how the map changes size on each layer / it changes
+when i enter the longhall, and changes again when i go up the stairs / i like
+Straumfjord's map's size / it's just right"
+
+### What was wrong
+
+The map's viewBox was fitted to whichever layer you were on: the shore's 3×3, the
+ground floor's 2×1, the upper floor's 1×2. The SVG fills the pane's width, so every
+doorway or staircase re-scaled and re-shaped the whole map. The geometry was true;
+the frame breathed.
+
+### The fix (`core/render-map`)
+
+- **One fixed frame for the whole world.** The viewBox is now sized once, from the
+  largest layer (or floor) in the world, and every map is drawn inside it. Grid
+  dimensions in the model (`gridCols`/`gridRows`, `viewWidth`/`viewHeight`) describe
+  that fixed frame; the layer's own size is still reported as `layerCols`/`layerRows`.
+- **Smaller layers are centred at the same scale.** The ground floor sits in the
+  middle of the shore-sized frame, pills and connectors exactly the size they are
+  outdoors — no zoom, no shrink. Edges still join node centres exactly.
+- For Straumfjord the shore is the largest layer, so the frame is exactly the map
+  as it was: 3×3 cells, 528×312. A future interior larger than the shore would set
+  the frame instead, so nothing can be clipped — but it still never changes while
+  you play.
+
+### Tests: 153 → 157
+
+Three in `test/core-render-map.test.js` (fixed frame on shore/ground/upper, centring
+at the same scale, a larger-than-shore interior setting the frame without clipping)
+and one in `test/app-game.test.js` (the rendered SVG's `viewBox` is `0 0 528 312`
+on the shore, inside, upstairs, and back out).
+
+**Test it:** double-click `index.html`, then run the correction-2 script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
 ## Iteration 6 (correction 1) — multiple floors: a building's storeys are maps too
 
 **Asked:** "so what about if a building has multiple floors?"
