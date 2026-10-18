@@ -1,0 +1,62 @@
+/*
+ * Shell layout — two equal panes. See docs/ARCHITECTURE.md (ADR-0002).
+ *
+ * Pane sizes are decided here (and by the generated grid tracks in src/ui/shell.js),
+ * never by content. `minmax(0, 1fr)` is deliberate: bare `1fr` has an implicit
+ * `min-width: auto` floor, which lets a long word stretch one pane wider than the other.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  overflow: hidden; /* the panes own the viewport; nothing scrolls at page level */
+}
+
+.shell {
+  display: grid;
+  /* CSS default in case JS has not run yet. JS replaces this with one track per pane. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--shell-gap);
+  padding: var(--shell-padding);
+  inline-size: 100%;
+  block-size: 100dvh;
+}
+
+.shell[data-direction='rows'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.pane {
+  /* Content may not influence the pane's box in either axis. */
+  min-inline-size: 0;
+  min-block-size: 0;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  padding: var(--pane-padding);
+  background: var(--color-pane-bg);
+  border: 1px solid var(--color-pane-border);
+  border-radius: var(--pane-radius);
+}
+
+.pane--fallback {
+  grid-column: 1 / -1;
+  color: var(--color-text-dim);
+}

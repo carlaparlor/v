@@ -1,0 +1,34 @@
+/*
+ * Design tokens — the single source of theme truth.
+ * Retheming Vinland (including by a mod) means overriding these, not editing layout.css.
+ * See docs/CONVENTIONS.md.
+ */
+
+:root {
+  /* Colour */
+  --color-bg: #100e0c;
+  --color-pane-bg: #17140f;
+  --color-pane-border: #35302a;
+  --color-text: #ded4c3;
+  --color-text-dim: #8d8377;
+  --color-accent: #c8873c;
+
+  /* Type */
+  --font-ui: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  --font-size-base: 15px;
+  --line-height-base: 1.55;
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  /* Shell */
+  --shell-gap: var(--space-4);
+  --shell-padding: var(--space-4);
+  --pane-radius: 4px;
+  --pane-padding: var(--space-4);
+}
