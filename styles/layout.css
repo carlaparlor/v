@@ -1,6 +1,7 @@
 /*
- * Shell layout — two equal panes that fade into each other.
- * See docs/ARCHITECTURE.md (ADR-0002 for equal sizes, ADR-0004 for the fade).
+ * Shell layout — two equal panes, each a solid tone, blending only at the seam.
+ * See docs/ARCHITECTURE.md (ADR-0002 equal sizes, ADR-0004 one painted surface,
+ * ADR-0005 held tones with a tip-only fade).
  *
  * Pane sizes are decided here (and by the generated grid tracks in src/ui/shell.js),
  * never by content. `minmax(0, 1fr)` is deliberate: bare `1fr` has an implicit
@@ -20,7 +21,7 @@ body {
 }
 
 body {
-  /* Fallback colour so any overscroll matches the dark end of the gradient. */
+  /* Fallback colour so any overscroll matches the dark tone. */
   background: var(--color-shell-dark);
   color: var(--color-text);
   font-family: var(--font-ui);
@@ -38,7 +39,22 @@ body {
   inline-size: 100%;
   block-size: 100dvh;
 
-  /* One gradient across BOTH panes: darker left, lighter right, no seam. */
+  /*
+   * One surface across BOTH panes, so there is no seam to hide — but each tone is
+   * HELD SOLID up to `--fade-span` from the boundary, then blends, then holds again.
+   * Left pane: dark. Right pane: light. The fade lives only at the very tip.
+   *
+   * Composed here (not in tokens.css) because --fade-axis is overridden on this same
+   * element for stacked layouts; custom properties substitute at computed-value time,
+   * so an override only takes effect where the var() is resolved.
+   */
+  --shell-gradient: linear-gradient(
+    var(--fade-axis),
+    var(--color-shell-dark) 0%,
+    var(--color-shell-dark) calc(50% - var(--fade-span)),
+    var(--color-shell-light) calc(50% + var(--fade-span)),
+    var(--color-shell-light) 100%
+  );
   background: var(--shell-gradient);
 }
 
@@ -46,11 +62,7 @@ body {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   /* Keep "first pane darker, second pane lighter" true when stacked. */
-  --shell-gradient: linear-gradient(
-    to bottom,
-    var(--color-shell-dark) 0%,
-    var(--color-shell-light) 100%
-  );
+  --fade-axis: to bottom;
 }
 
 .pane {
@@ -64,7 +76,7 @@ body {
   padding: var(--pane-padding);
 
   /* No background, no border, no radius: the shell gradient shows straight through,
-     which is what makes the panes fade into each other. */
+     which is what makes the two tones meet without an edge. */
   background: transparent;
   border: 0;
   border-radius: 0;

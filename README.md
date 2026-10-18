@@ -25,8 +25,9 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
-**Iteration 2:** two equal panes that fade into each other — darker on the left, lighter on the
-right, no borders, no seam. Nothing else. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+**Iteration 3:** two equal panes, each holding its own palpable tone — dark on the left, light on
+the right — blending only at the very tip where they meet. No borders. Nothing else.
+See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## Docs
 

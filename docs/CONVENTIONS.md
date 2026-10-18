@@ -23,6 +23,14 @@
   able to retheme Vinland by overriding tokens alone.
 - The shell paints the background gradient; **panes are transparent** (ADR-0004). Do not give a
   pane its own background or border without an ADR, or the fade gets a seam.
+- **Each pane holds a solid tone; the blend lives only at the seam** (ADR-0005). Do not turn the
+  gradient back into a full-width ramp, and do not widen `--fade-span` past a few percent without
+  saying why.
+- Colour *primitives* live in `tokens.css`; the gradient that composes them lives on `.shell` in
+  `layout.css`, because custom properties substitute at computed-value time and a `--fade-axis`
+  override only applies on the element that resolves it.
+- Contrast is a tested invariant, not a taste call: `test/theme-contrast.test.js` fails if the
+  tones stop being distinguishable (~2:1) or body text drops below WCAG AA on either pane.
 - Layout is CSS Grid / Flexbox. No absolute positioning for page structure. No JS-driven sizing
   beyond the generated grid tracks.
 - Size from the container, not from content (ADR-0002).

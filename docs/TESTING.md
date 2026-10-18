@@ -10,7 +10,9 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
-## Iteration 2 — two panes that fade into each other
+## Iteration 3 — palpable tones, fade only at the tip
+
+**Asked:** the two tones should be palpable; the fade should happen only at the very tip/end.
 
 ### Automated
 
@@ -18,7 +20,66 @@ New iterations are added at the top. Older ones stay as the regression suite.
 npm test
 ```
 
-Expected: **35 tests, 0 failures.** They cover:
+Expected: **44 tests, 0 failures.** New since iteration 2:
+- `test/theme-contrast.test.js` — reads the real token values and asserts the two tones are
+  distinguishable (>= 2:1 luminance), the left one is actually darker, and body text clears
+  WCAG AAA on the dark pane and AA on the light pane.
+- gradient shape — each tone must appear as **two** stops (held + resumed) and the blend must be
+  `calc(50% ± var(--fade-span))`; stacked layouts flip `--fade-axis` only.
+
+### Manual
+
+**Double-click `index.html`.**
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | Two distinct tones | You can immediately say "left is dark, right is light" without looking closely. Each pane body is **flat** — no visible gradient inside the outer parts of a pane. |
+| 2 | Fade only at the tip | The blend is a **narrow band** straddling the centre (~8% of the window wide). Everything outside that band is solid tone. |
+| 3 | No hard edge | Inside the band the transition is smooth — no visible line, step or banding at the boundary. |
+| 4 | Still no borders | No border, outline or box edge on either pane. |
+| 5 | Still exactly equal | Both panes are the same width and height; the band is centred exactly on the boundary (measure: it should straddle 50%). |
+| 6 | Resize the window | The band stays proportional (~8% of width), tones stay flat, panes stay equal, no page scrollbars. |
+| 7 | Readability | `--color-text` (`#ded4c3`) is comfortably readable on **both** tones. (Automated: AA on the light pane.) |
+| 8 | Console | `[vinland] 2 panes mounted: [ 'pane-a', 'pane-b' ]`, no errors. |
+| 9 | Computed styles on `.shell` | `background-image` is a `linear-gradient(to right, rgb(11, 10, 8) 0%, rgb(11, 10, 8) 46%, rgb(84, 72, 57) 54%, rgb(84, 72, 57) 100%)`. |
+
+### Tuning it
+
+Both are single tokens in `styles/tokens.css`:
+
+- Wider/narrower blend → `--fade-span` (default `4%`; the band is twice that).
+- More/less palpable → `--color-shell-light` (default `#544839`). Raising it makes the tones more
+  distinct but drops text contrast on the right pane — `npm test` will fail you below WCAG AA.
+
+### Regression checks
+
+- **Seam under load:** `document.getElementById('pane-a').textContent = 'x'.repeat(5000);` —
+  pane widths stay identical, the band stays centred, text clips inside `pane-a`. Undo after.
+- **Stacked:** temporarily set `direction: 'rows'` in `src/core/layout.js`. Expected: first pane
+  dark on top, second light below, band horizontal across the middle. Revert.
+
+### Definition of pass
+
+Checks 1-9 pass, both regression checks behave, `npm test` green.
+
+---
+
+## Iteration 2 — two panes that fade into each other (visual checks superseded by iteration 3)
+
+> **Superseded by iteration 3:** check 4 ("one continuous gradient, no visible transition band"),
+> check 6, and check 10's `linear-gradient(to right, rgb(11,10,8), rgb(46,40,31))` no longer
+> describe the build — the tones are now held solid and blend only at the seam, and the light tone
+> is `#544839`. Everything else below is still required and still tested: `file://` boot, no
+> borders, equal panes, `gap: 0px`, console output, DOM shape.
+> The test count below is historical; iteration 3 is the current total.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected (at iteration 2): **35 tests, 0 failures.** They cover:
 - `core/layout` — two panes, equal weights, gap 0, stable unique ids, config-driven count.
 - `kernel` — define/require, lazy caching, mod overrides, circular + unknown module errors.
 - `ui/shell` — with a DOM stub: two `<section class="pane">`, identical grid tracks, `gap: 0px`,

@@ -4,6 +4,64 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 3 — palpable tones, fade only at the tip
+
+**Asked:** "the tones should be palpable / only fade at the very tip/end."
+
+Iteration 2's single continuous dark→light ramp made the shell read as one muddy surface — no pane
+had a tone of its own, and the two ends were only ~1.35:1 apart in luminance.
+
+### Visual
+
+- **The ramp became held stops.** The dark tone is held from `0%` to `calc(50% - var(--fade-span))`,
+  the blend runs across the seam, and the light tone is held from `calc(50% + var(--fade-span))` to
+  `100%`. Each pane body is flat; the fade is a narrow band at the very tip where they meet.
+- **`--fade-span: 4%`** — the blend is 8% of the shell wide, centred exactly on the pane boundary.
+  One token to tune.
+- **The light tone was raised** from `#2e281f` to `#544839`: tone-to-tone contrast ~1.35:1 →
+  **~2.2:1** (palpable), while body text `#ded4c3` still clears **~6:1** on the lighter pane
+  (WCAG AA) and ~13:1 on the darker one (AAA).
+- **`--fade-axis: to right`** is now a token; stacked layouts (`direction: 'rows'`) flip it to
+  `to bottom` instead of redefining the whole gradient.
+- Still one painted surface, still no borders, still `gap: 0`, still transparent panes — ADR-0004
+  stands, amended by **ADR-0005**.
+
+### Structural note worth knowing
+
+The gradient moved from `tokens.css` to a composition on `.shell` in `layout.css`. Reason: custom
+properties substitute at computed-value time, so a `--fade-axis` override only takes effect on the
+element that resolves the `var()`. `tokens.css` keeps the primitives (colours, axis, span).
+Recorded in ADR-0005 and `docs/CONVENTIONS.md`.
+
+### Tests
+
+44 passing (was 35). New:
+- `test/theme-contrast.test.js` — reads the real token hex values and asserts WCAG contrast:
+  tones >= 2:1 apart, left is actually darker, text AAA on dark, text AA on light. A retheme that
+  makes a text-based game unreadable now fails the build.
+- gradient-shape assertions in `test/setup-is-trivial.test.js` — each tone must appear as two
+  stops (held + resumed) and the blend must be `calc(50% ± var(--fade-span))`.
+
+### Docs
+
+ADR-0005 added, ADR-0004 amended, `CONVENTIONS.md` CSS rules extended (held tones, primitives vs
+composition, contrast as a tested invariant), `TESTING.md` iteration 3 script (9 checks + tuning
+guide + 2 regression checks) with iteration 2's superseded checks flagged, README current state.
+`package.json` → 0.3.0.
+
+### Known limitation, flagged not fixed
+
+- The seam is hardcoded at `50%`, correct only for exactly two equal panes. Revisit when the pane
+  count exceeds 2 or size weights differ: compute cumulative seam positions from the pane specs in
+  `core/layout.js` and emit the stops from `ui/shell.js`. ADR-0005 records this trigger.
+- `--color-text-dim` on the light tone is only ~2.4:1. De-emphasised text must live on the dark
+  pane or get its own darker token once text exists.
+
+**Test it:** double-click `index.html`, then run the Iteration 3 script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
 ## Iteration 2 — the panes fade into each other; setup is now double-click
 
 **Asked:** "make it so the two panes fade into each other, remove the borders, one darker (left),

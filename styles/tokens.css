@@ -2,21 +2,27 @@
  * Design tokens — the single source of theme truth.
  * Retheming Vinland (including by a mod) means overriding these, not editing layout.css.
  * See docs/CONVENTIONS.md.
+ *
+ * These are the PRIMITIVES. The gradient that combines them is composed in layout.css
+ * on `.shell`, so a direction change (rows/columns) only has to flip --fade-axis.
  */
 
 :root {
   /*
-   * The shell fades from dark (left) to light (right) in one continuous gradient.
-   * Panes are transparent and have no border, so the two halves blend instead of
-   * meeting at a seam (ADR-0004).
+   * Two palpable tones: each pane holds its own solid colour for its whole body,
+   * and the blend happens only at the very tip where they meet (ADR-0005).
+   *
+   * Tone-to-tone luminance ratio is ~2.2:1 — clearly visible as two surfaces.
+   * Body text (--color-text) still clears WCAG AA on the lighter tone (~6:1).
    */
   --color-shell-dark: #0b0a08;
-  --color-shell-light: #2e281f;
-  --shell-gradient: linear-gradient(
-    to right,
-    var(--color-shell-dark) 0%,
-    var(--color-shell-light) 100%
-  );
+  --color-shell-light: #544839;
+
+  /* Which way the fade runs. '.shell[data-direction=rows]' flips it to 'to bottom'. */
+  --fade-axis: to right;
+
+  /* Half-width of the blend, measured from the seam. 4% => tones meet over 8% of the shell. */
+  --fade-span: 4%;
 
   /* Text */
   --color-text: #ded4c3;
@@ -36,7 +42,7 @@
   --space-6: 24px;
 
   /* Shell + panes */
-  --shell-gap: 0px; /* 0 keeps the gradient continuous */
+  --shell-gap: 0px; /* 0 keeps the fade continuous across the seam */
   --shell-padding: 0px; /* edge to edge */
   --pane-padding: var(--space-4);
 }

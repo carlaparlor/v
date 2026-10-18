@@ -1,0 +1,73 @@
+/**
+ * Theme contrast tests.
+ *
+ * Vinland is a text-based game: readability is not polish, it is the renderer. And the two
+ * pane tones were asked to be *palpable*, which is a measurable property, not a vibe.
+ *
+ * These tests read the actual token values out of styles/tokens.css and check WCAG contrast,
+ * so a retheme that makes the game unreadable fails `npm test` instead of shipping.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { ROOT } from '../tools/load-scripts.js';
+
+const tokens = readFileSync(join(ROOT, 'styles', 'tokens.css'), 'utf8');
+
+/** Pull a colour token's hex value out of the stylesheet. */
+function token(name) {
+  const match = tokens.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{3,8})`));
+  assert.ok(match, `styles/tokens.css must define ${name} as a hex colour`);
+  return match[1];
+}
+
+/** '#rgb' / '#rrggbb' -> [r, g, b] in 0..255 */
+function toRgb(hex) {
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+}
+
+/** WCAG 2.x relative luminance. */
+function luminance(hex) {
+  const channel = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const [r, g, b] = toRgb(hex).map(channel);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio, 1..21. */
+function contrast(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+const dark = token('--color-shell-dark');
+const light = token('--color-shell-light');
+const text = token('--color-text');
+
+test('the two pane tones are palpably different', () => {
+  const ratio = contrast(dark, light);
+  assert.ok(
+    ratio >= 2,
+    `dark ${dark} vs light ${light} is only ${ratio.toFixed(2)}:1 — the tones must read as two surfaces (>= 2:1)`,
+  );
+});
+
+test('the left pane is the darker one', () => {
+  assert.ok(luminance(dark) < luminance(light), 'dark token must actually be darker');
+});
+
+test('body text is readable on the dark tone (WCAG AAA)', () => {
+  const ratio = contrast(text, dark);
+  assert.ok(ratio >= 7, `text ${text} on ${dark} is ${ratio.toFixed(2)}:1, needs >= 7:1`);
+});
+
+test('body text is readable on the light tone (WCAG AA)', () => {
+  const ratio = contrast(text, light);
+  assert.ok(ratio >= 4.5, `text ${text} on ${light} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
+});

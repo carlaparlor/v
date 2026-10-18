@@ -34,8 +34,8 @@ never crash).
 
 ## Current state
 
-**Iteration 2** — the shell: two equal panes that fade into each other (darker left, lighter
-right, no borders, no seam). Runs by double-clicking `index.html`.
+**Iteration 3** — the shell: two equal panes, each holding a solid tone (dark left, light right),
+blending only at the very tip where they meet. No borders. Runs by double-clicking `index.html`.
 Modules are registered through `src/kernel.js`, and redefining a module id replaces it — that is
 the modding seam everything else will hang off. See `docs/CHANGELOG.md`.
 

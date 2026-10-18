@@ -125,10 +125,32 @@ viewport. Panes are `background: transparent; border: 0`, and the grid gap is `0
 **Rejected:** two per-pane gradients that meet in the middle — that produces a visible seam at
 50% unless the endpoints are hand-tuned, and it breaks the moment the pane count or size weights
 change.
-**Consequences:** There is no seam to hide, because there is only one painted surface; the left
-pane occupies the dark half and the right pane the light half, and they blend continuously.
-Adding a third pane or changing size weights keeps working with no colour maths. Retheming is
-two tokens, or one `--shell-gradient` override. Stacked layouts
-(`SHELL_CONFIG.direction = 'rows'`) flip the gradient to `to bottom` so "first pane darker" stays
-true. Panes are no longer visually bounded boxes, so anything that later needs to look contained
-inside a pane must draw its own surface.
+**Consequences:** There is no seam to hide, because there is only one painted surface. Panes are
+no longer visually bounded boxes, so anything that later needs to look contained inside a pane
+must draw its own surface.
+*Amended by ADR-0005: the single painted surface stays, but the continuous dark→light ramp was
+replaced with held tones that blend only at the seam.*
+
+### ADR-0005 — Palpable tones, fade only at the tip
+**Context:** Iteration 2's single continuous ramp made the shell read as one muddy surface: no
+pane had a tone of its own, and dark→light was only ~1.35:1 luminance across the whole viewport.
+Iteration 3 asks for tones that are *palpable*, fading only at the very tip/end where they meet.
+**Decision:** Keep one painted surface (ADR-0004) but turn the ramp into **held stops** —
+the dark tone is held from `0%` to `calc(50% - var(--fade-span))`, the blend runs across the seam,
+and the light tone is held from `calc(50% + var(--fade-span))` to `100%`. `--fade-span` defaults
+to `4%`, so the tones meet over 8% of the shell and each pane body is flat. The light tone was
+raised from `#2e281f` to `#544839`, taking tone-to-tone contrast to ~2.2:1 while body text stays
+at ~6:1 on the lighter pane (WCAG AA).
+**Also decided:** the gradient is *composed* in `layout.css` on `.shell`, while `tokens.css` keeps
+the primitives (`--color-shell-dark`, `--color-shell-light`, `--fade-axis`, `--fade-span`).
+Custom properties are substituted at computed-value time, so an override only takes effect on the
+element that resolves the `var()` — declaring the gradient on `.shell` is what lets
+`.shell[data-direction='rows']` flip `--fade-axis` without redefining the whole gradient.
+**Known limitation:** the seam is hardcoded at `50%`, which is only correct for exactly two equal
+panes. **Trigger to revisit:** pane count > 2, or unequal `size` weights. The fix is to compute
+cumulative seam positions from the pane specs (`core/layout.js`, pure) and emit the stop list from
+`ui/shell.js`.
+**Consequences:** Each pane reads as its own surface; the blend is a narrow band at the boundary.
+Costs: tones are flat, so any future depth (vignette, texture, glow) has to be a separate layer,
+and `--color-text-dim` on the light tone is only ~2.4:1 — de-emphasised text must either live on
+the dark pane or get its own darker token. Flagged, not fixed (no text exists yet).
