@@ -30,8 +30,13 @@ never crash).
 | **Extensibility** | Adding a system/verb/entity type must not require editing existing systems. Register, don't edit. |
 | **Moddability** | Content is data (JSON/JS modules), not code branches. A mod folder plus a manifest must be enough to add content. This is a first-class feature, not an afterthought — every design decision is checked against "could a modder do this without forking?" |
 | **Tested & documented ruthlessly** | Every iteration ships with tests and docs. Docs that lag the code are treated as a bug. |
-| **Setup is trivial** | Clone, `npm start`, open a browser. No build step, no environment variables, no database, no accounts. |
+| **Setup is trivial** | **Double-click `index.html`.** No install, no build step, no server, no Node, no dependencies, no environment variables, no database, no accounts. Enforced by `test/setup-is-trivial.test.js`. |
 
 ## Current state
 
-Iteration 1 — the shell: two equal panes. See `docs/CHANGELOG.md`.
+**Iteration 2** — the shell: two equal panes that fade into each other (darker left, lighter
+right, no borders, no seam). Runs by double-clicking `index.html`.
+Modules are registered through `src/kernel.js`, and redefining a module id replaces it — that is
+the modding seam everything else will hang off. See `docs/CHANGELOG.md`.
+
+Nothing is simulated yet: no world state, no systems, no verbs, no content.

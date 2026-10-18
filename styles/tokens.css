@@ -5,17 +5,26 @@
  */
 
 :root {
-  /* Colour */
-  --color-bg: #100e0c;
-  --color-pane-bg: #17140f;
-  --color-pane-border: #35302a;
+  /*
+   * The shell fades from dark (left) to light (right) in one continuous gradient.
+   * Panes are transparent and have no border, so the two halves blend instead of
+   * meeting at a seam (ADR-0004).
+   */
+  --color-shell-dark: #0b0a08;
+  --color-shell-light: #2e281f;
+  --shell-gradient: linear-gradient(
+    to right,
+    var(--color-shell-dark) 0%,
+    var(--color-shell-light) 100%
+  );
+
+  /* Text */
   --color-text: #ded4c3;
   --color-text-dim: #8d8377;
   --color-accent: #c8873c;
 
   /* Type */
-  --font-ui: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  --font-ui: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --font-size-base: 15px;
   --line-height-base: 1.55;
 
@@ -26,9 +35,8 @@
   --space-4: 16px;
   --space-6: 24px;
 
-  /* Shell */
-  --shell-gap: var(--space-4);
-  --shell-padding: var(--space-4);
-  --pane-radius: 4px;
+  /* Shell + panes */
+  --shell-gap: 0px; /* 0 keeps the gradient continuous */
+  --shell-padding: 0px; /* edge to edge */
   --pane-padding: var(--space-4);
 }

@@ -1,5 +1,6 @@
 /*
- * Shell layout — two equal panes. See docs/ARCHITECTURE.md (ADR-0002).
+ * Shell layout — two equal panes that fade into each other.
+ * See docs/ARCHITECTURE.md (ADR-0002 for equal sizes, ADR-0004 for the fade).
  *
  * Pane sizes are decided here (and by the generated grid tracks in src/ui/shell.js),
  * never by content. `minmax(0, 1fr)` is deliberate: bare `1fr` has an implicit
@@ -19,7 +20,8 @@ body {
 }
 
 body {
-  background: var(--color-bg);
+  /* Fallback colour so any overscroll matches the dark end of the gradient. */
+  background: var(--color-shell-dark);
   color: var(--color-text);
   font-family: var(--font-ui);
   font-size: var(--font-size-base);
@@ -35,11 +37,20 @@ body {
   padding: var(--shell-padding);
   inline-size: 100%;
   block-size: 100dvh;
+
+  /* One gradient across BOTH panes: darker left, lighter right, no seam. */
+  background: var(--shell-gradient);
 }
 
 .shell[data-direction='rows'] {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  /* Keep "first pane darker, second pane lighter" true when stacked. */
+  --shell-gradient: linear-gradient(
+    to bottom,
+    var(--color-shell-dark) 0%,
+    var(--color-shell-light) 100%
+  );
 }
 
 .pane {
@@ -51,9 +62,12 @@ body {
   display: flex;
   flex-direction: column;
   padding: var(--pane-padding);
-  background: var(--color-pane-bg);
-  border: 1px solid var(--color-pane-border);
-  border-radius: var(--pane-radius);
+
+  /* No background, no border, no radius: the shell gradient shows straight through,
+     which is what makes the panes fade into each other. */
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .pane--fallback {

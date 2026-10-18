@@ -1,15 +1,15 @@
 {
   "name": "vinland",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Vinland — a text-based, systemic sandbox RPG in the browser. Zero dependencies, no build step.",
+  "description": "Vinland — a text-based, systemic sandbox RPG in the browser. Double-click index.html: no install, no build, no server, no dependencies.",
   "type": "module",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
+    "test": "node --test",
     "start": "node server.mjs",
-    "dev": "node server.mjs",
-    "test": "node --test"
+    "serve": "node server.mjs"
   }
 }

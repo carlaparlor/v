@@ -4,26 +4,29 @@ A **text-based, systemic sandbox RPG** that runs in a browser.
 
 ## Run it
 
-Requires [Node.js](https://nodejs.org) 18 or newer. That is the only requirement.
+**Double-click `index.html`.** That is the entire setup.
 
-```bash
-npm start
+No install. No build. No server. No dependencies. No `node_modules`. No environment variables.
+No Node.js. It runs from `file://` in any modern browser — Chrome, Firefox, Safari, Edge.
+
+```
+clone/download  ->  double-click index.html  ->  playing
 ```
 
-Then open <http://localhost:3000>.
-
-There is no `npm install`, no build step, no environment variables, no database, no
-`node_modules`. The server exists only because browsers refuse to load ES modules from
-`file://`.
+### Optional, only if you want them
 
 ```bash
-npm test    # unit tests (node:test, also dependency-free)
-PORT=8080 npm start   # different port
+npm start     # serve over http://localhost:3000 instead of file:// (needs Node 18+)
+npm test      # run the unit tests (needs Node 18+)
 ```
+
+`server.mjs` is a ~90-line static file server that exists for convenience only
+(dev tools, remote preview, hosting). The game never requires it.
 
 ## Current state
 
-**Iteration 1:** the shell — two equal panes. Nothing else. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+**Iteration 2:** two equal panes that fade into each other — darker on the left, lighter on the
+right, no borders, no seam. Nothing else. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ## Docs
 
@@ -31,7 +34,7 @@ PORT=8080 npm start   # different port
 | --- | --- |
 | [docs/WORKFLOW.md](docs/WORKFLOW.md) | How development happens: the ask → read → do → test → fix loop |
 | [docs/VINLAND.md](docs/VINLAND.md) | What the game is and the non-negotiable engineering values |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layout, layers, module rules, extension points, ADRs |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, module registry, extension points, ADRs |
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Naming, CSS, JS, docs, tests, git, dependencies |
 | [docs/TESTING.md](docs/TESTING.md) | The manual test script for the current iteration |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What exists and when it arrived |
@@ -39,11 +42,23 @@ PORT=8080 npm start   # different port
 ## Project layout
 
 ```
-index.html          app shell
-styles/             tokens.css (theme) + layout.css (the two panes)
-src/core/           game logic, no DOM — runs in plain Node
-src/ui/             DOM work lives here and only here
-server.mjs          static dev server
-test/               unit tests
+index.html          double-click this. app shell + script order
+styles/
+  tokens.css        every colour, font and spacing value (the retheme/mod point)
+  layout.css        the pane grid and the dark-to-light fade
+src/
+  kernel.js         tiny module registry: Vinland.define / Vinland.require
+  core/             game logic — no DOM, runs in plain Node
+  ui/               DOM work lives here and only here
+server.mjs          optional static dev server
+test/               unit tests (node:test)
+tools/              dev-only helpers (never loaded by index.html)
 docs/               the docs above
 ```
+
+## Modding
+
+Content is data and modules are registered by id, so a mod is a `<script>` tag added to
+`index.html` before `src/main.js`. `Vinland.define('core/layout', ...)` after the core script
+*replaces* that module — override anything without forking it. Details in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

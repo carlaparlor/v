@@ -28,8 +28,10 @@ Everything is done iteratively. Nothing is built ahead of the instruction.
    of the system changed, `docs/ARCHITECTURE.md` (ADR entry) and `docs/TESTING.md` (test script).
 5. **Test before handing over.** Run `npm test`. Then start the preview (`npm start`) so testing
    step 4 is one click for you.
-6. **Setup must stay trivial.** If a change makes `npm start` slower, adds a required dependency,
-   or adds a manual step, that is a regression. Fix it or flag it.
+6. **Setup must stay trivial.** The bar is: **double-click `index.html` and the game runs.**
+   No install, no build, no server, no Node, no dependencies. If a change adds a required
+   dependency, a build step, a terminal command, or an ES module (they break `file://`), that is
+   a regression — `test/setup-is-trivial.test.js` should catch it, and you should fix it or flag it.
 
 ## Definition of done for one iteration
 

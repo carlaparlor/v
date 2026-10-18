@@ -16,6 +16,14 @@
       </noscript>
     </main>
 
-    <script type="module" src="./src/main.js"></script>
+    <!--
+      Classic scripts, not ES modules, and order matters: kernel first, then modules,
+      then the entry point. This is what lets Vinland run by double-clicking this file
+      (see docs/ARCHITECTURE.md, ADR-0003). A mod is one more <script> tag before main.js.
+    -->
+    <script src="./src/kernel.js"></script>
+    <script src="./src/core/layout.js"></script>
+    <script src="./src/ui/shell.js"></script>
+    <script src="./src/main.js"></script>
   </body>
 </html>

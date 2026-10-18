@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SHELL_CONFIG, createPaneSpecs, arePanesEqual } from '../src/core/layout.js';
+import { loadScripts } from '../tools/load-scripts.js';
+
+const Vinland = loadScripts(['src/kernel.js', 'src/core/layout.js']);
+const { SHELL_CONFIG, createPaneSpecs, arePanesEqual } = Vinland.require('core/layout');
 
 test('default shell has exactly two panes', () => {
   const specs = createPaneSpecs(SHELL_CONFIG);
@@ -22,6 +25,10 @@ test('pane ids are unique and stable', () => {
   const ids = specs.map((s) => s.id);
   assert.equal(new Set(ids).size, ids.length, 'pane ids must be unique');
   assert.deepEqual(ids, ['pane-a', 'pane-b']);
+});
+
+test('panes sit flush against each other so the gradient is continuous', () => {
+  assert.equal(SHELL_CONFIG.gap, 0, 'a gap would show a seam between the panes');
 });
 
 test('panes get an id and role when the config omits them', () => {
@@ -51,15 +58,20 @@ test('invalid size weights fall back to equal shares', () => {
 });
 
 test('adding a pane is a config edit, not a code edit', () => {
-  const specs = createPaneSpecs({
-    panes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
-  });
+  const specs = createPaneSpecs({ panes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] });
   assert.equal(specs.length, 3);
   assert.ok(arePanesEqual(specs), 'a third pane must also be equal by default');
 });
 
-test('empty or missing config does not throw', () => {
-  assert.deepEqual(createPaneSpecs({}), []);
-  assert.deepEqual(createPaneSpecs(null), []);
+test('no explicit panes array means "use the default shell"', () => {
+  const ids = (cfg) => createPaneSpecs(cfg).map((s) => s.id);
+  assert.deepEqual(ids({}), ['pane-a', 'pane-b']);
+  assert.deepEqual(ids(null), ['pane-a', 'pane-b']);
+  assert.deepEqual(ids(undefined), ['pane-a', 'pane-b']);
+});
+
+test('an explicit empty panes array means "no panes", and never throws', () => {
+  assert.deepEqual(createPaneSpecs({ panes: [] }), []);
   assert.equal(arePanesEqual([]), true);
+  assert.equal(arePanesEqual(null), true);
 });
