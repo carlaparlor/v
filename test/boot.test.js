@@ -83,6 +83,11 @@ test('booting the real scripts renders both panes from one world state', () => {
   assert.ok(grid, 'map pane has a grid');
   assert.match(grid.textContent, /@/, 'the map marks where you are');
   assert.match(grid.textContent, /\u2500|\u2502/, 'the map draws lines between places');
+  // Regression: rows must be joined with real newlines, not a literal "\n" string.
+  // The <pre> only renders as a grid if the text contains actual line breaks.
+  assert.ok(grid.textContent.includes('\n'), 'map grid contains real newlines');
+  assert.ok(!grid.textContent.includes('\\n'), 'map grid must not contain a literal backslash-n');
+  assert.ok(grid.textContent.split('\n').length > 1, 'map grid spans multiple lines');
 });
 
 test('a missing #shell fails soft and says so', () => {

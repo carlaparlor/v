@@ -62,7 +62,7 @@ Vinland.define('app/game', function (require) {
     }
 
     function getFadeMs() {
-      // Read from CSS token if available; fallback to 220
+      // Read from CSS token if available; fallback matches --fade-duration in tokens.css
       try {
         var val = getComputedStyle(document.documentElement).getPropertyValue('--fade-duration');
         if (val) {
@@ -70,7 +70,7 @@ Vinland.define('app/game', function (require) {
           if (!isNaN(n)) return n;
         }
       } catch (_) {}
-      return 220;
+      return 650;
     }
 
     function fadeSwap(swapFn) {

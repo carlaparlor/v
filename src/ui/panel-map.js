@@ -30,7 +30,7 @@ Vinland.define('ui/panel-map', function (require) {
       const center = el('div', 'map__center');
 
       center.appendChild(el('p', 'map__region', model.region));
-      center.appendChild(el('pre', 'map__grid', model.rows.join('\\n')));
+      center.appendChild(el('pre', 'map__grid', model.rows.join('\n')));
       center.appendChild(el('p', 'map__legend', model.legend));
 
       body.appendChild(center);
