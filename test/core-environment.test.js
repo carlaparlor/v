@@ -132,10 +132,10 @@ test('actions price conditions at departure, then arrivals reflect the new slot'
 test('both view models use the calendar and weather and distinguish indoor shelter', () => {
   const w = withWeather('snow', 90);
   const model = V.require('core/render-map').renderMap(w);
-  assert.equal(model.environment.label, 'Winter · Day 1 · snow');
+  assert.equal(model.environment.label, 'Winter · snow');
   assert.match(V.require('core/render-text').renderText(w).paragraphs.join(' '), /snow collecting/);
   const indoor = { ...w, current: 'longhall-hall' };
-  assert.equal(V.require('core/render-map').renderMap(indoor).environment.label, 'Winter · Day 1 · snow');
+  assert.equal(V.require('core/render-map').renderMap(indoor).environment.label, 'Winter · snow');
   assert.equal(env.conditions(indoor).sheltered, true);
   assert.match(V.require('core/render-text').renderText(indoor).paragraphs.join(' '), /sheltered/);
   assert.doesNotMatch(env.atmosphere(indoor), /each outdoor crossing/);

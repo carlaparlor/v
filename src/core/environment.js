@@ -69,8 +69,7 @@ Vinland.define('core/environment', function () {
     const sheltered = indoors(world);
     return { ...date, weather: currentWeather, sheltered,
       nextWeatherAt: (Math.floor(seconds(world) / WEATHER_INTERVAL) + 1) * WEATHER_INTERVAL,
-      label: date.season[0].toUpperCase() + date.season.slice(1) + ' · ' +
-        'Day ' + date.seasonDay + ' · ' + currentWeather };
+      label: date.season[0].toUpperCase() + date.season.slice(1) + ' · ' + currentWeather };
   }
 
   function duration(world, action, base, destination) {

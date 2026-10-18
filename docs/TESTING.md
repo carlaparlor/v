@@ -469,7 +469,7 @@ Automated coverage: core-time.test.js plus app-game clock integration tests.
 ## Seasons and weather
 
 1. Refresh the preview or open index.html directly. Under the place name and
-   clock, confirm **Spring · Day 1 · clear**. Waiting, examining, and Back
+   clock, confirm **Spring · clear**. Waiting, examining, and Back
    must not reroll the weather or advance the calendar.
 2. Use the console to explore conditions without playing through thirty days:
    ```js
@@ -488,7 +488,7 @@ Automated coverage: core-time.test.js plus app-game clock integration tests.
    elapsed. With `'storm'` at that same time, travel takes ten minutes.
    `conditions(91, 6, 'snow')`: winter snow also costs ten minutes per outdoor step.
 4. `conditions(91, 12, 'snow', 'hall')`: enter the Longhall. Entering takes ten
-   minutes; the label still says **Winter · Day 1 · snow**. Indoor steps and
+   minutes; the label still says **Winter · snow**. Indoor steps and
    stairs cost five minutes. Leaving the building costs ten. Prose describes
    shelter, not being soaked by outdoor weather.
 5. `conditions(1, 6, 'fog', 'cairn')`: approach the raven; ten minutes pass.
