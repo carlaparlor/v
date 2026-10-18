@@ -77,17 +77,34 @@ test('an open container stays open when you leave and come back', () => {
   assert.deepEqual(segFor(renderText(world), 'barrel').actions, ['examine', 'close']);
 });
 
-test('contents are hidden while closed and revealed while open', () => {
-  const closedModel = renderText(closed());
-  assert.equal(segFor(closedModel, 'herring'), null);
+test('contents never appear in the main prose, closed or open', () => {
+  for (const world of [closed(), opened()]) {
+    const model = renderText(world);
+    assert.equal(segFor(model, 'herring'), null);
+    assert.ok(!model.paragraphs.join(' ').includes('Inside the barrel'));
+    assert.ok(!model.interactables.some((i) => i.id === 'herring'));
+  }
   assert.deepEqual(contentsOf(closed(), 'barrel'), []);
-  assert.ok(!closedModel.paragraphs.join(' ').includes('Inside the barrel'));
-
-  const openModel = renderText(opened());
-  assert.ok(segFor(openModel, 'herring'), 'herring is clickable once revealed');
   assert.deepEqual(contentsOf(opened(), 'barrel').map((i) => i.id), ['herring']);
-  assert.ok(openModel.paragraphs.join(' ').includes('Inside the barrel, you see herring.'));
-  assert.ok(openModel.interactables.some((i) => i.id === 'herring'));
+});
+
+test('contents appear in the open view, and in examine-while-open — nowhere else', () => {
+  const segText = (segs) => (segs || []).map((s) => (s.type === 'text' ? s.text : s.display)).join('');
+
+  // Opening shows what is inside, as a clickable herring (examine + take).
+  const openResult = perform(closed(), 'barrel', 'open').result;
+  assert.ok(segText(openResult.contentsSegments).includes('Inside the barrel, you see herring.'));
+  const herring = openResult.contentsSegments.find((s) => s.type === 'interactable' && s.id === 'herring');
+  assert.ok(herring, 'herring is clickable in the open view');
+  assert.deepEqual(herring.actions, ['examine', 'take']);
+
+  // Examining it while it stands open shows the same inside view.
+  const examineOpen = perform(opened(), 'barrel', 'examine').result;
+  assert.ok(segText(examineOpen.contentsSegments).includes('herring'));
+
+  // Examining it shut, and closing it, show nothing inside.
+  assert.equal(perform(closed(), 'barrel', 'examine').result.contentsSegments, undefined);
+  assert.equal(perform(opened(), 'barrel', 'close').result.contentsSegments, undefined);
 });
 
 test('contents cannot be examined or taken while the container is closed', () => {
@@ -98,11 +115,16 @@ test('contents cannot be examined or taken while the container is closed', () =>
   }
 });
 
-test('taking from an open container moves it to inventory and empties the reveal', () => {
+test('taking from an open container moves it to inventory and empties the inside view', () => {
   const world = perform(opened(), 'herring', 'take').nextWorld;
   assert.deepEqual(contentsOf(world, 'barrel'), []);
   assert.ok(world.inventory.some((i) => i.id === 'herring'));
-  assert.ok(renderText(world).paragraphs.join(' ').includes('Inside the barrel, you see nothing left.'));
+  // Looking in again (examine while open) is what reports it empty —
+  // the main prose never mentions it either way.
+  const inside = perform(world, 'barrel', 'examine').result.contentsSegments
+    .map((s) => (s.type === 'text' ? s.text : s.display)).join('');
+  assert.ok(inside.includes('Inside the barrel, you see nothing left.'));
+  assert.ok(!renderText(world).paragraphs.join(' ').includes('nothing left'));
   // The container itself is untouched and still open.
   assert.equal(containerState(world, 'barrel'), 'open');
 });
@@ -142,9 +164,12 @@ test('validatePack rejects contents on non-containers, nested containers, and du
 });
 
 test('a non-takeable content can still be examined once revealed', () => {
-  const world = perform(createWorld(pack), 'cargo', 'open').nextWorld;
-  // Walk yard -> harbour, where the cargo sits open, and see its reveal there.
-  assert.ok(renderText(travel(world, 'west')).paragraphs.join(' ').includes('salt-fish'));
+  const outcome = perform(createWorld(pack), 'cargo', 'open');
+  const world = outcome.nextWorld;
+  // Both contents are offered, in the cargo's open view only.
+  const ids = outcome.result.contentsSegments.filter((s) => s.type === 'interactable').map((s) => s.id);
+  assert.deepEqual(ids, ['salt-fish', 'linen-bundle']);
+  assert.ok(!renderText(travel(world, 'west')).paragraphs.join(' ').includes('salt-fish'));
   const out = perform(world, 'linen-bundle', 'examine');
   assert.equal(out.error, undefined);
   assert.match(out.result.text, /linen-bundle/);

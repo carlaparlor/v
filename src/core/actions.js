@@ -82,6 +82,39 @@ Vinland.define('core/actions', function (require) {
   }
 
   /**
+   * The "look inside" paragraph for a container view: its contents as
+   * interactable segments (same shape core/render-text produces), so the
+   * open/examine view can offer them as clickable words. Contents live here,
+   * in the container's own view — never in the location prose.
+   * @param {object} world world AFTER the action (an `open` has taken effect)
+   * @param {object} container
+   * @returns {Array<object>} segments
+   */
+  function contentsSegmentsFor(world, container) {
+    var name = container.name || container.id;
+    var held = worldMod.contentsOf(world, container.id);
+    if (held.length === 0) {
+      return [{ type: 'text', text: 'Inside the ' + name + ', you see nothing left.' }];
+    }
+    var segs = [{ type: 'text', text: 'Inside the ' + name + ', you see ' }];
+    for (var i = 0; i < held.length; i++) {
+      if (i > 0) segs.push({ type: 'text', text: i === held.length - 1 ? ' and ' : ', ' });
+      segs.push({
+        type: 'interactable',
+        id: held[i].id,
+        name: held[i].name,
+        display: held[i].name,
+        interactable: held[i],
+        color: interactablesMod.colorFor(held[i]),
+        actions: interactablesMod.actionsFor(held[i]),
+        typeName: held[i].type,
+      });
+    }
+    segs.push({ type: 'text', text: '.' });
+    return segs;
+  }
+
+  /**
    * Perform an action: returns { nextWorld, result, performed }
    * @param {object} world frozen world state
    * @param {string} interactableId
@@ -155,11 +188,20 @@ Vinland.define('core/actions', function (require) {
       nextWorld = world;
     }
 
+    var result = { title: title, text: text, action: action, interactableId: interactableId, type: interactable.type };
+    // Opening a container — or examining one that stands open — is when you
+    // see inside it. The result view carries the contents; closing it, or
+    // examining it shut, carries nothing.
+    if (interactable.type === 'container' && (action === 'open' || action === 'examine') &&
+        worldMod.containerState(nextWorld, interactableId) === 'open') {
+      result.contentsSegments = contentsSegmentsFor(nextWorld, interactable);
+    }
+
     return {
       nextWorld: nextWorld,
-      result: { title: title, text: text, action: action, interactableId: interactableId, type: interactable.type },
+      result: result,
     };
   }
 
-  return { perform, locateInteractable, resultTextFor, fallbackText };
+  return { perform, locateInteractable, resultTextFor, fallbackText, contentsSegmentsFor };
 });

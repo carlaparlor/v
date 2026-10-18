@@ -255,6 +255,26 @@ test('rendering twice does not stack content', () => {
   assert.equal(findAllByClass(right, 'map__node').length, pack.locations.length);
 });
 
+test('container contents live in the open view, not the place prose', () => {
+  const g = start();
+  const [left] = doc.shell.children;
+
+  // The barrel sits in the yard prose; its herring does not.
+  assert.ok(findByDataset(left, 'interactableId', 'barrel'));
+  assert.equal(findByDataset(left, 'interactableId', 'herring'), null);
+
+  // Opening the barrel takes you to its view, where the herring is clickable.
+  g.performAction('barrel', 'open');
+  assert.equal(left.dataset.view, 'result');
+  const herring = findByDataset(left, 'interactableId', 'herring');
+  assert.ok(herring, 'the herring is offered inside the open view');
+
+  // Back at the place, an open barrel still keeps its contents to itself.
+  g.returnToPlace();
+  assert.equal(left.dataset.view, 'place');
+  assert.equal(findByDataset(left, 'interactableId', 'herring'), null);
+});
+
 test('the running game is reachable for testing and the console', () => {
   const g = start();
   assert.equal(game.getGame(), g);

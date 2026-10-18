@@ -22,10 +22,11 @@ state, opening reveals contents.
 npm test
 ```
 
-Expected: **124 tests, 0 failures.** New: `test/core-containers.test.js` (11) — state-filtered
-menus, refused redundant Open/Close, persistence across travel, contents hidden/revealed,
-contents gated while closed, take-from-container, open vs closed examine prose, content
-validation for `contains`.
+Expected: **126 tests, 0 failures.** New: `test/core-containers.test.js` — state-filtered
+menus, refused redundant Open/Close, persistence across travel, contents gated while
+closed, take-from-container, open vs closed examine prose, content validation for
+`contains`; plus the rule that contents appear in the open/examine view and never in the
+main prose.
 
 ### Manual
 
@@ -33,15 +34,15 @@ validation for `contains`.
 
 | # | Check | Expected |
 | --- | --- | --- |
-| 1 | Closed menu | Click **barrel** → label reads `barrel · closed`; actions are **examine, open** — no close. |
+| 1 | Closed menu | Click **barrel** → label reads `barrel · closed`; actions are **examine, open** — no close. Examining it now shows no contents. |
 | 2 | Close is impossible | There is no way to close it: the verb is not offered. (Console: `Vinland.require('core/actions').perform(Vinland.require('app/game').getGame().getState(), 'barrel', 'close')` → error `"close" not available`.) |
-| 3 | Open it | Choose **open** → result prose leaves the barrel open ("…set it aside, leaving the barrel open."). **Return**. |
-| 4 | Contents revealed | The yard now has an extra paragraph: "Inside the barrel, you see **herring**." — herring is a clickable, coloured word. |
-| 5 | Open menu | Click **barrel** again → label reads `barrel · open`; actions are **examine, close** — no open. **Examine** describes the open barrel, not the rapped knuckles. |
-| 6 | Take the contents | Click **herring** → **take**. Return → "Inside the barrel, you see nothing left." The barrel is still open. |
+| 3 | Open it | Choose **open** → the barrel's view leaves it open ("…set it aside, leaving the barrel open.") and, below that: "Inside the barrel, you see **herring**." — herring is a clickable, coloured word, here in this view. |
+| 4 | Prose stays clean | **Return**. The yard prose is exactly as it was — no "Inside the barrel…" paragraph, open or not. |
+| 5 | Open menu / look in again | Click **barrel** again → label reads `barrel · open`; actions are **examine, close** — no open. **Examine** describes the open barrel *and* shows the herring again. |
+| 6 | Take the contents | In that view, click **herring** → **take**. Then examine the barrel once more → "Inside the barrel, you see nothing left." The barrel is still open. |
 | 7 | Leave it open | Walk to The Longhall (click it on the map) and back. The barrel is still open, its menu still Examine + Close. |
-| 8 | Close it | Choose **close**. Return → the "Inside the barrel…" paragraph is gone, the menu is Examine + Open again. |
-| 9 | Other containers | **cargo** (The Harbour) reveals salt-fish (takeable) and a linen-bundle (Examine only — no take offered). **quench-barrel** (The Smithy) reveals cold-slag. Its closed Examine speaks of the fast lid, not the water inside. |
+| 8 | Close it | Choose **close**. Return → menu is Examine + Open again, and examining it shows no contents. |
+| 9 | Other containers | **cargo** (The Harbour) reveals salt-fish (takeable) and a linen-bundle (Examine only — no take offered) in its open view. **quench-barrel** (The Smithy) reveals cold-slag. Its closed Examine speaks of the fast lid, not the water inside. |
 
 ### Regression checks
 
@@ -53,7 +54,7 @@ validation for `contains`.
 
 ### Definition of pass
 
-Checks 1-9 pass, both regression checks behave, `npm test` green (124).
+Checks 1-9 pass, both regression checks behave, `npm test` green (126).
 
 ---
 
