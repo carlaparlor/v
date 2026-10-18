@@ -4,6 +4,30 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 (correction 6) — no teleporting: the map moves you one step
+
+**Asked:** "why am i able to teleport all throughout the map, fix that"
+
+Because every place with any route was a clickable control, and one click silently
+walked the whole shortest path — the Cairn in one click from the Yard. The docs even
+called that "never teleporting", which was generous: the ground was crossed honestly
+in the model and instantly in the experience, which is a teleport wearing a walk's coat.
+
+**Fixed, at both doors:** `core/render-map` nodes now carry `adjacent` (their route is
+a single step), and `ui/panel-map` makes only neighbours focusable/clickable controls —
+farther places render dimmed (`map__node--far`) with no role, no tabindex, no handler.
+`app/game.travelTo` refuses a non-neighbour outright, so the console is not a back door.
+Reaching anywhere is a sequence of single steps, each re-rendering both panes. The map
+legend now says so: "click a neighbouring place to step there". `core/world.pathTo` /
+`travelTo` remain as route-finding utilities; player travel no longer rides them.
+
+**Tests: 136, all passing** — the two tests that codified one-click cross-map travel
+were rewritten: a farther place is no control and clicking/API-refusing it changes
+nothing, and the Cairn is reached yard → hall → cairn, becoming clickable only from
+the hall.
+
+---
+
 ## Iteration 5 (correction 5) — the map dims while you are engaged in a view
 
 **Asked:** "the map should dim when the player does smth like talking, examining, cause

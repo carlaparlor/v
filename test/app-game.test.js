@@ -138,21 +138,34 @@ test('clicking a neighbouring place on the map walks you there', () => {
   assert.equal(left.dataset.place, right.dataset.place, 'both panes still agree');
 });
 
-test('clicking a farther place walks the whole route, no teleporting', () => {
+test('a farther place is not a travel control: no teleporting', () => {
   const g = start();
   const [, right] = doc.shell.children;
 
+  // The cairn is two steps from the yard: drawn on the map, not offered.
   const cairn = findByDataset(right, 'location', 'cairn');
-  assert.equal(cairn.dataset.distance, '2', 'the cairn is two steps from the yard');
+  assert.equal(cairn.dataset.reachable, undefined, 'a farther place is no control');
+  assert.equal(cairn.getAttribute('tabindex'), null, 'and cannot be focused as one');
+  assert.equal(cairn.getAttribute('role'), null);
+  assert.equal(cairn.classList.contains('map__node--far'), true);
   cairn.click();
+  assert.equal(g.getState().current, 'yard', 'clicking it goes nowhere');
 
-  assert.equal(g.getState().current, 'cairn');
-  // …and from the cairn, the world is exactly one honest walk away everywhere:
-  assert.equal(g.travelTo('beach'), true);
-  assert.equal(g.getState().current, 'beach');
-  assert.equal(g.travelTo('beach'), false, 'clicking where you stand goes nowhere');
+  // The game API refuses it too — the map is not the only door.
+  assert.equal(g.travelTo('cairn'), false);
+  assert.equal(g.getState().current, 'yard', 'a refused travelTo changes nothing');
   assert.equal(g.travelTo('nowhere'), false, 'unknown places go nowhere');
-  assert.equal(g.getState().current, 'beach', 'a failed travelTo changes nothing');
+
+  // You get there the honest way, a step at a time: yard -> hall -> cairn.
+  assert.equal(g.travelTo('hall'), true);
+  assert.equal(g.getState().current, 'hall');
+  const [, rightNow] = doc.shell.children;
+  const cairnNow = findByDataset(rightNow, 'location', 'cairn');
+  assert.equal(cairnNow.dataset.reachable, 'true', 'from the hall, the cairn is a neighbour');
+  cairnNow.click();
+  assert.equal(g.getState().current, 'cairn');
+  // Where you stand is no step either.
+  assert.equal(g.travelTo('cairn'), false);
 });
 
 test('map places can be travelled to from the keyboard', () => {
