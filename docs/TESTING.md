@@ -10,6 +10,37 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 6 (correction 3) — clicking through the map glides, not cuts
+
+**Asked:** clicking through the map was abrupt. Clarified: the @ marker glides along
+the connector in about half a second, and every kind of movement is softened.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **159 tests, 0 failures.** New: `test/step-motion.test.js` — the
+`--duration-step` band (300–700ms) and the badge's glide vector on the real map.
+
+### Manual
+
+**Double-click `index.html`.**
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | Click **The Smithy** on the map | The **@** badge glides along the line to the Smithy over about half a second; as it lands, the prose settles into the Smithy. No instant cut. |
+| 2 | Click back to **The Yard**, then **The Harbour** | Each step glides at the same pace. Clicking another place mid-glide does nothing — you cannot queue a teleport. |
+| 3 | Enter the longhall, climb the stairs, come back down and out | No connector exists between layers, so these take a soft whole-shell fade instead of a cut. |
+| 4 | Reduced motion | With your OS/browser set to reduce motion, steps and crossings are immediate again — no glide, no fade. |
+
+### Definition of pass
+
+Checks 1-4 pass, `npm test` green (159).
+
+---
+
 ## Iteration 6 (correction 2) — the map frame never resizes
 
 **Asked:** the map changed size on each layer — entering the longhall, and again up

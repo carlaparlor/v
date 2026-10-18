@@ -67,6 +67,57 @@ Vinland.define('app/game', function (require) {
 
     const TOAST_HOLD_MS = 3400; // plus the ~0.5s ease on each side
     const TAKE_SETTLE_MS = 520; // mirrors --duration-take in tokens.css
+    const STEP_MS = 520; // mirrors --duration-step in tokens.css
+
+    // A step in flight: the @ marker is gliding to the next place and the
+    // world has not been committed yet. Further steps wait for it to land.
+    let stepping = false;
+    let stepTimer = null;
+
+    function cancelPendingStep() {
+      if (stepTimer) {
+        clearTimeout(stepTimer);
+        stepTimer = null;
+      }
+      stepping = false;
+    }
+
+    /**
+     * Commit a one-step move within this map. In the browser the marker
+     * glides along the connector first (over STEP_MS) and the panes settle
+     * into the new place as it lands — clicking through the map is a walk,
+     * not a cut. Where there is nothing to animate (tests, reduced motion)
+     * the step is immediate.
+     * @returns {boolean} false when a step is already in flight
+     */
+    function beginStep(next) {
+      cancelPendingTake();
+      if (stepping) return false;
+      if (!isInertMotion()) {
+        const mapBinding = findBinding('map');
+        const panel = mapBinding && mapBinding.panel;
+        if (panel && typeof panel.animateMarker === 'function') {
+          let started = false;
+          try {
+            started = panel.animateMarker(mapBinding.pane, state.current, next.current, panel.model(state), STEP_MS);
+          } catch (_) { started = false; }
+          if (started) {
+            stepping = true;
+            stepTimer = setTimeout(function () {
+              stepTimer = null;
+              stepping = false;
+              state = next;
+              renderPlace();
+            }, STEP_MS);
+            if (stepTimer && typeof stepTimer.unref === 'function') stepTimer.unref();
+            return true;
+          }
+        }
+      }
+      state = next;
+      renderPlace();
+      return true;
+    }
 
     function isInertMotion() {
       // No CSS transitions to wait for in Node tests: settle immediately.
@@ -300,9 +351,7 @@ Vinland.define('app/game', function (require) {
         if (mode.kind === 'action') returnToPlace();
         const next = travel(state, direction);
         if (!next) return false;
-        state = next;
-        renderPlace();
-        return true;
+        return beginStep(next);
       },
 
       /**
@@ -324,14 +373,13 @@ Vinland.define('app/game', function (require) {
         if (!isNeighbour) return false;
         const next = travelToWorld(state, locationId);
         if (!next) return false;
-        state = next;
-        renderPlace();
-        return true;
+        return beginStep(next);
       },
 
       /** Replace the state wholesale (future: systems, loading saves) and re-render. */
       setState(next) {
         cancelPendingTake();
+        cancelPendingStep();
         state = next;
         mode = { kind: 'place' };
         pendingResult = null;
@@ -365,13 +413,16 @@ Vinland.define('app/game', function (require) {
         }
         // Crossing a doorway — or a floor, by the stairs — is travel, not a
         // view: you arrive on the new layer, both panes render it, and
-        // there is nothing to go Back to.
+        // there is nothing to go Back to. There is no connector to glide
+        // along between layers, so the crossing takes the game's soft fade
+        // instead of cutting (state is already the destination; the fade
+        // swaps the panes while the shell is faded, then fades back in).
         if (action === 'enter' || action === 'exit' || action === 'climb' || action === 'descend') {
           cancelPendingTake();
           mode = { kind: 'place' };
           pendingResult = null;
           resultStack = [];
-          renderPlace();
+          fadeSwap(function () { renderPlace(); });
           return outcome;
         }
         cancelPendingTake();
@@ -397,6 +448,11 @@ Vinland.define('app/game', function (require) {
       /** Which mode we are in — for tests. */
       getMode() {
         return mode.kind;
+      },
+
+      /** Whether a step's marker glide is still in flight — for tests. */
+      isStepping() {
+        return stepping;
       },
 
       getResult() {

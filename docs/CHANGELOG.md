@@ -4,6 +4,45 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 3) — clicking through the map glides, not cuts
+
+**Asked:** "i hate the abruptness of clicking through the map"
+
+**Clarified before building:** the @ marker glides along the connector (~half a
+second — the "just right" band), and *all* movement is softened: map steps,
+directional steps, doorways, and stairs.
+
+### What was wrong
+
+Prose actions have had a 400ms whole-shell fade since ADR-0007, but map travel never
+got one: `travel`/`travelTo` swapped state and repainted both panes in the same
+frame. Every click was a cut.
+
+### The fix
+
+- **Steps glide (`app/game`, `ui/panel-map`).** A one-step move now asks the map
+  panel to glide the @ badge along the connector to the clicked place over
+  `--duration-step: 520ms` (new token), and only when it lands does the world
+  commit and both panes settle into the new place. A second step clicked mid-glide
+  is refused rather than queued into a teleport, and the glide honours
+  `prefers-reduced-motion` (no glide, immediate step). In Node tests — where there
+  is no motion to wait for — steps remain immediate and deterministic.
+- **Crossings fade (`app/game`).** Entering, leaving, and climbing have no
+  connector to glide along (the destination is on another map), so they now take
+  the game's existing whole-shell fade instead of cutting.
+
+### Tests: 157 → 159
+
+New `test/step-motion.test.js`: the step token stays in the 300–700ms band, and the
+badge's glide vector is asserted against the real rendered map (yard → smithy is
+exactly one cell east; no glide to the same place or a place on another map). Every
+existing movement test still lands where it should.
+
+**Test it:** double-click `index.html`, then run the correction-3 script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
 ## Iteration 6 (correction 2) — the map frame never resizes
 
 **Asked:** "i absolutely detest how the map changes size on each layer / it changes

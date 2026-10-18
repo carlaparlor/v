@@ -59,10 +59,80 @@ Vinland.define('ui/panel-map', function (require) {
     document.dispatchEvent(event);
   }
 
+  /** First descendant (or self) whose class list includes `cls`. */
+  function findByClass(node, cls) {
+    if (!node) return null;
+    const classes = String(node.className || '').split(/\s+/);
+    if (classes.indexOf(cls) !== -1) return node;
+    const kids = node.children || [];
+    for (let i = 0; i < kids.length; i++) {
+      const hit = findByClass(kids[i], cls);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  /** Every descendant (or self) whose class list includes `cls`. */
+  function findAllByClass(node, cls, out) {
+    const acc = out || [];
+    if (!node) return acc;
+    const classes = String(node.className || '').split(/\s+/);
+    if (classes.indexOf(cls) !== -1) acc.push(node);
+    const kids = node.children || [];
+    for (let i = 0; i < kids.length; i++) findAllByClass(kids[i], cls, acc);
+    return acc;
+  }
+
+  /**
+   * Glide the @ badge from one node to another along their connector, over
+   * `durationMs`. Purely presentational: the caller commits the step when
+   * the glide lands and re-renders, so the badge never disagrees with the
+   * world — it is simply seen arriving. Returns false when there is nothing
+   * to animate (missing nodes, or the player prefers reduced motion), and
+   * the caller should then step immediately.
+   */
+  function animateMarker(pane, fromId, toId, model, durationMs) {
+    const nodes = (model && model.nodes) || [];
+    const from = nodes.find((n) => n.id === fromId);
+    const to = nodes.find((n) => n.id === toId);
+    if (!from || !to || from === to) return false;
+    if (
+      typeof window !== 'undefined' && window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) return false;
+    const groups = findAllByClass(pane, 'map__node');
+    const fromGroup = groups.find((g) => g.dataset && g.dataset.location === fromId);
+    if (!fromGroup) return false;
+    const badge = findByClass(fromGroup, 'map__node-badge');
+    if (!badge) return false;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const top = -from.height / 2;
+    if (typeof badge.animate === 'function') {
+      badge.animate(
+        [
+          { transform: `translate(0px, ${top}px)` },
+          { transform: `translate(${dx}px, ${top + dy}px)` },
+        ],
+        { duration: durationMs, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' },
+      );
+    } else if (badge.style) {
+      badge.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      badge.style.transform = `translate(${dx}px, ${top + dy}px)`;
+    } else if (badge.setAttribute) {
+      badge.setAttribute('transform', `translate(${dx} ${top + dy})`);
+    } else {
+      return false;
+    }
+    return true;
+  }
+
   const panel = {
     role: 'map',
 
     model: renderMap,
+
+    animateMarker,
 
     render(pane, model) {
       const body = el('div', 'map');

@@ -75,6 +75,11 @@
   --duration-dim: 480ms;
   --map-dim-opacity: 0.38;
 
+  /* Step motion — clicking through the map: the @ marker glides along the
+     connector to the place you clicked, over this long, before the panes
+     settle into the new place. Same "just right" band as the take. */
+  --duration-step: 520ms;
+
   /* Police tape over the dimmed map: one diagonal striped strip. */
   --color-tape: #e6c832;
   --color-tape-dark: #181410;
