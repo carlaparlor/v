@@ -531,7 +531,8 @@ test('season and weather sit below the clock and stay synced through sheltered c
   const center = findByClass(doc.shell, 'map__center');
   const label = () => findByClass(doc.shell, 'map__environment');
   assert.equal(center.children[2], label());
-  assert.equal(label().textContent, 'Spring · Day 1 · clear');
+  assert.equal(label().textContent, 'Spring · clear');
+  assert.equal(findByClass(doc.shell, 'map__clock').textContent, 'Day 1 · 06:00 · dawn');
   const env = Vinland.require('core/environment');
   let snowy;
   for (let seed = 0; seed < 1000; seed++) {
@@ -540,13 +541,13 @@ test('season and weather sit below the clock and stay synced through sheltered c
   }
   assert.ok(snowy);
   g.setState(Object.freeze(snowy));
-  assert.equal(label().textContent, 'Winter · Day 1 · snow');
+  assert.equal(label().textContent, 'Winter · snow');
   g.performAction('longhall-building', 'enter');
   assert.equal(g.getState().timeSeconds - snowy.timeSeconds, 600);
-  assert.equal(label().textContent, 'Winter · Day 1 · snow');
+  assert.equal(label().textContent, 'Winter · snow');
   assert.equal(findByClass(doc.shell, 'map').dataset.weather, 'snow');
   const indoorStart = g.getState().timeSeconds;
   g.performAction('longhall-stairs', 'climb');
   assert.equal(g.getState().timeSeconds - indoorStart, 300);
-  assert.equal(label().textContent, 'Winter · Day 1 · snow');
+  assert.equal(label().textContent, 'Winter · snow');
 });

@@ -4,6 +4,12 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 8 (correction 2) — show the day only once
+
+Removed the day from the bottom environment line: it now reads **Spring · clear**.
+The clock retains **Day 1 · 06:00 · dawn**. Calendar tracking and gameplay rules
+are unchanged. Exact-label tests cover both lines to prevent duplicate days.
+
 ## Iteration 8 (correction 1) — simpler environment label
 
 The environment label now reads **Spring · Day 1 · clear**. Removed the `/30`
