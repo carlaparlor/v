@@ -322,3 +322,11 @@ the frame itself part of the transition; a navigation aid must hold still while 
 world moves. Consequence: a layer larger than the shore sets the frame for the whole
 world (never clipped, never changing mid-game); empty frame space is simply indoors
 being smaller than outdoors.
+
+**Amendment (Iteration 6, correction 3) — movement is motion, not a cut.** A one-step
+move glides the map's @ badge along the connector (`ui/panel-map.animateMarker`,
+--duration-step) and commits the world only as the glide lands, so state and marker
+can never disagree mid-step; a step requested mid-glide is refused. Crossings between
+layers/floors have no connector to glide, so they take the ADR-0007 whole-shell fade.
+Both honour prefers-reduced-motion by stepping immediately. In tests, where motion is
+inert, movement remains synchronous.
