@@ -80,3 +80,20 @@ test('the status block is readable on the dark tone it lives on (WCAG AA)', () =
     assert.ok(ratio >= 4.5, `${name} ${colour} on ${dark} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
   }
 });
+
+test('the ribbons and sheets are readable on the surfaces they sit on (WCAG AA)', () => {
+  // The ribbon icon sits on the ribbon leather, half over the light tone.
+  const icon = token('--color-ribbon-icon');
+  for (const name of ['--color-ribbon', '--color-ribbon-hover']) {
+    const ratio = contrast(icon, token(name));
+    assert.ok(ratio >= 4.5, `${icon} on ${name} ${token(name)} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
+  }
+  // The sheets are drawn on the dark dropdown surface (a dark sheet over the
+  // light tone): body, bright and dim text must all clear AA on it.
+  const sheetBg = token('--color-dropdown-bg');
+  const bright = token('--color-text-bright');
+  const dim = token('--color-text-dim');
+  assert.ok(contrast(text, sheetBg) >= 4.5, `sheet body ${text} on ${sheetBg} needs >= 4.5:1`);
+  assert.ok(contrast(bright, sheetBg) >= 4.5, `sheet bright ${bright} on ${sheetBg} needs >= 4.5:1`);
+  assert.ok(contrast(dim, sheetBg) >= 4.5, `sheet dim ${dim} on ${sheetBg} needs >= 4.5:1`);
+});

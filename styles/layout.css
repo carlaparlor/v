@@ -31,11 +31,12 @@ body {
 }
 
 .shell {
+  position: relative; /* anchor for the map pane's ribbon bar */
   display: grid;
   /* CSS default in case JS has not run yet. JS replaces this with one track per pane. */
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--shell-gap);
-  padding: var(--shell-padding);
+  padding: var(--shell-padding-top) var(--shell-padding) var(--shell-padding) var(--shell-padding);
   inline-size: 100%;
   block-size: 100dvh;
 

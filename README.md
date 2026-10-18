@@ -25,6 +25,15 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 10 — ribbons on the map pane, vitals in the left.** The left pane
+carries condition and prose only: the five vitals (health, hunger, thirst,
+energy, warmth) with a second-person note for anything that is not ok, above
+the words. The character moved to the map pane: two ribbons stick out of its
+top-right corner (lucide icons, inlined), and the profile ribbon drops a
+character sheet with your attributes and skills — rebuilt with the live world
+on every pass, so it never shows a stale body. The settings ribbon is a
+placeholder for now. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 9 — the player.** You have a body now, and it has opinions. Three tiers, one frozen
 piece of world state: **attributes** (strength, charisma, intelligence, dexterity, constitution)
 are fixed for the run and modify the rules; **skills** (travel, talk, approach, craft, gather)

@@ -24,6 +24,7 @@ const Vinland = loadScripts([
   'src/ui/panels.js',
   'src/ui/panel-text.js',
   'src/ui/panel-map.js',
+  'src/ui/ribbons.js',
   'src/app/game.js',
 ]);
 
@@ -72,8 +73,10 @@ test('start() fills every pane with its role-matched panel', () => {
     g.bindings.map((b) => `${b.id}=${b.role}`),
     ['pane-a=text', 'pane-b=map'],
   );
+  // The shell also carries the ribbon bar; the PANES are the sections.
+  const panes = doc.shell.children.filter((el) => el.className === 'pane');
   assert.deepEqual(
-    doc.shell.children.map((el) => el.dataset.panel),
+    panes.map((el) => el.dataset.panel),
     ['text', 'map'],
   );
 });

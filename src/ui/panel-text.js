@@ -27,24 +27,17 @@ Vinland.define('ui/panel-text', function (require) {
   }
 
   /**
-   * The always-on status block: who you are (attributes), what you have learned
-   * (skills), how you are (stats), and a second-person note for anything that is
-   * not ok. The values come from the view model — nothing is computed here.
+   * The always-on condition block: how you are (stats) and a second-person note
+   * for anything that is not ok. Who you are and what you have learned
+   * (attributes, skills) live in the profile sheet on the map pane — the left
+   * pane carries only condition and prose. The values come from the view model
+   * — nothing is computed here.
    */
   function renderStatus(playerModel) {
     if (!playerModel) return null;
     const box = el('div', 'status');
     box.setAttribute('role', 'status');
     box.setAttribute('aria-label', 'Your condition');
-    box.appendChild(el('div', 'status__head', 'You'));
-
-    const attrs = el('div', 'status__row status__row--attributes');
-    for (const a of playerModel.attributes) attrs.appendChild(el('span', 'status__item', a.short + ' ' + a.value));
-    box.appendChild(attrs);
-
-    const skills = el('div', 'status__row status__row--skills');
-    for (const s of playerModel.skills) skills.appendChild(el('span', 'status__item', s.key + ' ' + s.value));
-    box.appendChild(skills);
 
     const stats = el('div', 'status__row status__row--stats');
     for (const st of playerModel.stats) {

@@ -41,14 +41,6 @@
   border-block-end: 1px solid var(--color-status-border);
 }
 
-.status__head {
-  color: var(--color-status-bright);
-  font-size: var(--font-size-small);
-  font-weight: 600;
-  letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
-}
-
 .status__row {
   display: flex;
   flex-wrap: wrap;
@@ -436,5 +428,183 @@
 
 .map__environment {
   font-size: var(--font-size-small);
+  color: var(--color-text);
+}
+
+/* ------------------------------------------------- ribbons and sheets (map pane) */
+
+/*
+ * The ribbons are bookmarks on the map pane's top-right corner: they hang from
+ * the shell's top band and dip over the pane's top edge, a V-notch at the
+ * bottom like a real ribbon tail. They live on the SHELL, not in the pane —
+ * the pane's overflow is hidden (it clips the police tape), and nothing
+ * clipped by a pane may get to stick out of it.
+ */
+.ribbon-bar {
+  position: absolute;
+  top: var(--ribbon-top);
+  right: calc(var(--pane-padding) + 4px);
+  z-index: 70; /* above the sheets and the pane's tape */
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ribbon {
+  appearance: none;
+  width: var(--ribbon-width);
+  height: var(--ribbon-height);
+  padding: 6px 0 calc(var(--ribbon-notch) + 5px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 0;
+  border: 0;
+  border-radius: 0 0 2px 2px;
+  background: var(--color-ribbon);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--ribbon-notch)),
+    50% 100%,
+    0 calc(100% - var(--ribbon-notch))
+  );
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    background 120ms ease;
+}
+
+.ribbon:hover {
+  background: var(--color-ribbon-hover);
+  transform: translateY(-2px);
+}
+
+/* clip-path swallows outlines, so the open/hover state IS the focus hint. */
+.ribbon--open,
+.ribbon:focus-visible {
+  background: var(--color-ribbon-hover);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.ribbon__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-ribbon-icon);
+  pointer-events: none;
+}
+
+/*
+ * The sheet drops from the top-right of the map pane, just under the ribbons.
+ * It is chrome on the shell too (so it can overhang the pane edge), drawn on
+ * the dark dropdown surface: a dark sheet over the light tone, like a card laid
+ * on the map. One sheet at a time; it is rebuilt with fresh world data on every
+ * render pass, so it can never show a stale body.
+ */
+.sheet {
+  position: absolute;
+  top: calc(var(--shell-padding-top) + var(--space-3));
+  right: calc(var(--pane-padding) + 4px);
+  z-index: 60;
+  width: min(340px, calc(50vw - 40px));
+  max-height: calc(100dvh - var(--shell-padding-top) - var(--space-6));
+  overflow: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-dropdown-bg);
+  border: 1px solid var(--color-dropdown-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--color-shadow-strong), 0 1px 2px var(--color-shadow-soft);
+  text-align: left;
+}
+
+.sheet__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sheet__title {
+  margin: 0;
+  color: var(--color-text-bright);
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sheet__close {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  margin: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.sheet__close:hover,
+.sheet__close:focus-visible {
+  color: var(--color-text-bright);
+  background: var(--color-interactable-hover);
+  outline: none;
+}
+
+.sheet__icon {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.sheet__section {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.sheet__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: var(--space-3);
+  align-items: baseline;
+  padding-block: var(--space-1);
+}
+
+.sheet__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheet__name {
+  color: var(--color-text);
+}
+
+.sheet__desc {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+}
+
+.sheet__value {
+  color: var(--color-text-bright);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet__empty {
+  margin: 0;
   color: var(--color-text);
 }

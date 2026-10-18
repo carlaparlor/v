@@ -4,6 +4,46 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 10 — ribbons on the map pane, vitals in the left
+
+**Asked:** remove everything except the stats from the left pane (the prose
+stays, under the vitals), and put ribbons sticking out of the top-right of the
+right pane with lucide icons for profile and settings — for now.
+
+- **The left pane carries condition and prose only.** The status block lost
+  its "You" head, attributes row and skills row; it is now the five vitals
+  (health, hunger, thirst, energy, warmth) with their ok/low/critical banding
+  and a second-person note per stat that is not ok — still pinned above the
+  prose in every view. Attributes and skills did not die: they moved to the
+  profile sheet.
+- **Ribbons.** Two bookmark ribbons stick out of the map pane's top edge into
+  the shell's new top band (the shell gained `--shell-padding-top`, and the
+  ribbons live on the shell, not in the pane — the pane's `overflow: hidden`
+  clips the police tape, and nothing clipped may stick out). Each is a button
+  with a V-notched tail (`clip-path`) and a lucide icon, inlined as path data
+  (no CDN: the game must run from `file://`). Profile is `user-round`,
+  settings is the gear.
+- **Sheets.** Clicking a ribbon drops a sheet from the corner: **Profile** is
+  a character sheet — both tiers, five rows each, name, one line of what it
+  does, value; **Settings** is a placeholder ("There is nothing to configure
+  yet.") for now. One sheet at a time; close by the X, by the ribbon again, or
+  by Escape; focus goes to the close button on open and back to the ribbon on
+  close. The sheet is chrome, not world state: app/game renders it on every
+  pass with the current world, so an open sheet is rebuilt with fresh data and
+  can never show a stale body (walk once with the profile open and the travel
+  skill ticks over in front of you).
+- **Cost:** one module (`src/ui/ribbons.js`, wired from app/game like the
+  result view), two stylesheet sections, and the left pane's render function
+  got shorter. No core changes; no new state.
+
+What to test: `npm test` — **215 tests, 0 failures** (new `ui-ribbons.test.js`:
+the bar on the shell, icons, sheet content, one sheet at a time, all three ways
+of closing, the sheet following the world; the status suite now pins that the
+left pane carries no head/attributes/skills; the contrast suite covers the
+ribbon and sheet tokens). Then run "Ribbons and sheets" in `docs/TESTING.md`.
+
+---
+
 ## Iteration 9 — the player: attributes, skills, stats
 
 **Asked:** A carefully designed stats system. The design: three distinct tiers —
