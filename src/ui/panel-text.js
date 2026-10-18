@@ -46,7 +46,8 @@ Vinland.define('ui/panel-text', function (require) {
     menu.style.display = 'none';
     menu.setAttribute('role', 'menu');
 
-    const label = el('div', 'interactable__label', seg.display);
+    if (seg.state) btn.dataset.containerState = seg.state;
+    const label = el('div', 'interactable__label', seg.state ? seg.display + ' · ' + seg.state : seg.display);
     menu.appendChild(label);
 
     const actions = seg.actions || ['examine'];

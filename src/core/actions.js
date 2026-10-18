@@ -8,31 +8,38 @@ Vinland.define('core/actions', function (require) {
   'use strict';
 
   var interactablesMod = require('core/interactables');
+  var worldMod = require('core/world');
 
   /**
    * Find the location that contains an interactable id, searching all locations
    * plus inventory (so you can examine what you carry).
    * @param {object} world
    * @param {string} id
-   * @returns {{ locationId: string|null, interactable: object|null, fromInventory: boolean }}
+   * @returns {{ locationId: string|null, interactable: object|null, fromInventory: boolean,
+   *             containerId: string|null, container: object|null }}
    */
   function locateInteractable(world, id) {
-    if (!world || !id) return { locationId: null, interactable: null, fromInventory: false };
+    var none = { locationId: null, interactable: null, fromInventory: false, containerId: null, container: null };
+    if (!world || !id) return none;
     // Check inventory first
     var inv = world.inventory || [];
     for (var i = 0; i < inv.length; i++) {
-      if (inv[i].id === id) return { locationId: null, interactable: inv[i], fromInventory: true };
+      if (inv[i].id === id) return { locationId: null, interactable: inv[i], fromInventory: true, containerId: null, container: null };
     }
-    // Check each location
+    // Check each location, then inside each container there
     var locIds = Object.keys(world.locations || {});
     for (var li = 0; li < locIds.length; li++) {
       var locId = locIds[li];
       var list = world.locations[locId].interactables || [];
       for (var j = 0; j < list.length; j++) {
-        if (list[j].id === id) return { locationId: locId, interactable: list[j], fromInventory: false };
+        if (list[j].id === id) return { locationId: locId, interactable: list[j], fromInventory: false, containerId: null, container: null };
+        var held = list[j].contains || [];
+        for (var k = 0; k < held.length; k++) {
+          if (held[k].id === id) return { locationId: locId, interactable: held[k], fromInventory: false, containerId: list[j].id, container: list[j] };
+        }
       }
     }
-    return { locationId: null, interactable: null, fromInventory: false };
+    return none;
   }
 
   /**
@@ -59,7 +66,12 @@ Vinland.define('core/actions', function (require) {
    * @param {string} action
    * @returns {string}
    */
-  function resultTextFor(interactable, action) {
+  function resultTextFor(interactable, action, containerState) {
+    // Examining an open container describes it open, if the author wrote that.
+    if (interactable && action === 'examine' && containerState === 'open' &&
+        typeof interactable.examineOpen === 'string' && interactable.examineOpen.length > 0) {
+      return interactable.examineOpen;
+    }
     if (interactable && typeof interactable[action] === 'string' && interactable[action].length > 0) {
       return interactable[action];
     }
@@ -83,31 +95,47 @@ Vinland.define('core/actions', function (require) {
       return { nextWorld: world, result: null, error: 'no such interactable \"' + interactableId + '\"' };
     }
 
-    var validActions = interactablesMod.actionsFor(interactable);
+    // Contents are only reachable while their container is open.
+    if (found.containerId && worldMod.containerState(world, found.containerId) !== 'open') {
+      var holderName = (found.container && (found.container.name || found.container.id)) || found.containerId;
+      return { nextWorld: world, result: null, error: 'you cannot reach "' + interactableId + '" — the ' + holderName + ' is closed' };
+    }
+
+    var state = interactable.type === 'container' ? worldMod.containerState(world, interactableId) : undefined;
+    var validActions = interactablesMod.actionsFor(interactable, state);
     if (validActions.indexOf(action) === -1) {
       // Still allow if action is defined on interactable explicitly? actionsFor already includes examine guarantee.
       // So this is an invalid action for this type.
       return { nextWorld: world, result: null, error: 'action \"' + action + '\" not available for ' + interactableId };
     }
 
-    var text = resultTextFor(interactable, action);
+    var text = resultTextFor(interactable, action, state);
     var title = interactable.name || interactable.id;
 
     // State mutations — only these mutate; examine/talk/approach/use are view-only for now
     var nextWorld = world;
 
     if (action === 'take' && interactable.type === 'item' && !found.fromInventory && found.locationId) {
-      // Remove from its location, add to inventory
+      // Remove from its location (or from inside its container), add to inventory
       var newLocations = {};
       var ids = Object.keys(world.locations);
       for (var i = 0; i < ids.length; i++) {
         var locId = ids[i];
         var loc = world.locations[locId];
         if (locId === found.locationId) {
-          var filtered = [];
           var list = loc.interactables || [];
-          for (var k = 0; k < list.length; k++) if (list[k].id !== interactableId) filtered.push(list[k]);
-          newLocations[locId] = Object.assign({}, loc, { interactables: filtered });
+          if (found.containerId) {
+            var rebuilt = list.map(function (holder) {
+              if (holder.id !== found.containerId) return holder;
+              var remaining = (holder.contains || []).filter(function (held) { return held.id !== interactableId; });
+              return Object.assign({}, holder, { contains: Object.freeze(remaining) });
+            });
+            newLocations[locId] = Object.assign({}, loc, { interactables: rebuilt });
+          } else {
+            var filtered = [];
+            for (var k = 0; k < list.length; k++) if (list[k].id !== interactableId) filtered.push(list[k]);
+            newLocations[locId] = Object.assign({}, loc, { interactables: filtered });
+          }
         } else {
           newLocations[locId] = loc;
         }

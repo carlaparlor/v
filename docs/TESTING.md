@@ -10,6 +10,53 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 5 — containers open once, stay open, and reveal what they hold
+
+**Asked:** a container should offer only Open; once opened it can be left open or closed.
+Clarified: open menu = Examine + Close, state persists across travel, prose reflects the
+state, opening reveals contents.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **124 tests, 0 failures.** New: `test/core-containers.test.js` (11) — state-filtered
+menus, refused redundant Open/Close, persistence across travel, contents hidden/revealed,
+contents gated while closed, take-from-container, open vs closed examine prose, content
+validation for `contains`.
+
+### Manual
+
+**Double-click `index.html`.** You start in The Yard, facing the **barrel**.
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | Closed menu | Click **barrel** → label reads `barrel · closed`; actions are **examine, open** — no close. |
+| 2 | Close is impossible | There is no way to close it: the verb is not offered. (Console: `Vinland.require('core/actions').perform(Vinland.require('app/game').getGame().getState(), 'barrel', 'close')` → error `"close" not available`.) |
+| 3 | Open it | Choose **open** → result prose leaves the barrel open ("…set it aside, leaving the barrel open."). **Return**. |
+| 4 | Contents revealed | The yard now has an extra paragraph: "Inside the barrel, you see **herring**." — herring is a clickable, coloured word. |
+| 5 | Open menu | Click **barrel** again → label reads `barrel · open`; actions are **examine, close** — no open. **Examine** describes the open barrel, not the rapped knuckles. |
+| 6 | Take the contents | Click **herring** → **take**. Return → "Inside the barrel, you see nothing left." The barrel is still open. |
+| 7 | Leave it open | Walk to The Longhall (click it on the map) and back. The barrel is still open, its menu still Examine + Close. |
+| 8 | Close it | Choose **close**. Return → the "Inside the barrel…" paragraph is gone, the menu is Examine + Open again. |
+| 9 | Other containers | **cargo** (The Harbour) reveals salt-fish (takeable) and a linen-bundle (Examine only — no take offered). **quench-barrel** (The Smithy) reveals cold-slag. Its closed Examine speaks of the fast lid, not the water inside. |
+
+### Regression checks
+
+- **Contents are sealed, not just hidden:** with the barrel closed, in the console run
+  `Vinland.require('core/actions').perform(Vinland.require('app/game').getGame().getState(), 'herring', 'take')`
+  → error ending `the barrel is closed`, and nothing enters inventory.
+- **Iteration 1-4 invariants:** equal borderless panes, held tones, second-person prose,
+  both panes agreeing on `data-place` after every move.
+
+### Definition of pass
+
+Checks 1-9 pass, both regression checks behave, `npm test` green (124).
+
+---
+
 ## Iteration 4 — a word-and-line map, and a text pane synced to it
 
 **Asked:** the game is second person; one pane is a map made of words and lines; the other is the
