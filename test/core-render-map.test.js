@@ -37,6 +37,53 @@ test('the model is plain geometry: one node per location on this layer, one edge
   assert.equal(m.viewHeight, m.gridRows * CELL_H);
 });
 
+test('the map frame is one fixed size on every layer and floor', () => {
+  // Straumfjord's shore (3x3) is the largest layer, so it sets the frame —
+  // and entering the longhall or climbing its stairs must not resize it.
+  for (const start of ['yard', 'longhall-hall', 'longhall-landing']) {
+    const m = renderMap(createWorld({ ...pack, start }));
+    assert.equal(m.gridCols, 3, `${start}: frame cols`);
+    assert.equal(m.gridRows, 3, `${start}: frame rows`);
+    assert.equal(m.viewWidth, 528, `${start}: viewWidth is the shore's`);
+    assert.equal(m.viewHeight, 312, `${start}: viewHeight is the shore's`);
+  }
+});
+
+test('a smaller layer is centred in the fixed frame, at the same scale', () => {
+  // Ground floor: 2 cells wide, 1 tall, centred in the 3x3 frame.
+  const ground = renderMap(createWorld({ ...pack, start: 'longhall-hall' }));
+  assert.equal(ground.layerCols, 2);
+  assert.equal(ground.layerRows, 1);
+  assert.equal(node(ground, 'longhall-store').x, 176);
+  assert.equal(node(ground, 'longhall-hall').x, 352);
+  assert.equal(node(ground, 'longhall-hall').y, 156, 'vertically centred');
+
+  // Upper floor: 1 wide, 2 tall, likewise centred, pills the same size.
+  const upper = renderMap(createWorld({ ...pack, start: 'longhall-landing' }));
+  assert.equal(node(upper, 'longhall-landing').x, 264, 'horizontally centred');
+  assert.equal(node(upper, 'longhall-loft').y, 104);
+  assert.equal(node(upper, 'longhall-landing').y, 208);
+  assert.equal(node(upper, 'longhall-loft').width, node(map(), 'yard').width, 'same scale, no zoom');
+});
+
+test('a layer larger than the shore sets the frame, so nothing is clipped', () => {
+  const wide = createWorld({
+    region: 'Wide', start: 'out',
+    locations: [
+      { id: 'out', name: 'Out', at: [0, 0], entry: 'in-a', passage: 'You are out.' },
+      { id: 'in-a', name: 'In A', at: [0, 0], within: 'out', passage: 'You are in a.' },
+      { id: 'in-b', name: 'In B', at: [3, 0], within: 'out', passage: 'You are in b.' },
+    ],
+    exits: [],
+  });
+  const outside = renderMap(wide);
+  assert.equal(outside.viewWidth, 4 * CELL_W);
+  assert.equal(outside.viewHeight, CELL_H);
+  const inside = renderMap({ ...wide, current: 'in-a' });
+  assert.equal(inside.viewWidth, outside.viewWidth, 'same frame inside and out');
+  assert.equal(node(inside, 'in-b').x, 3.5 * CELL_W, 'the far room fits in the frame');
+});
+
 test('every location on this layer appears on the map as a named node', () => {
   const m = map();
   for (const loc of pack.locations.filter((l) => !l.within)) {

@@ -314,3 +314,11 @@ routes, and map travel never cross a floor. Rejected: `up`/`down` as directional
 make route-finding ride between maps, breaking the rule that crossings are explicit
 actions. Because the arrival room may itself declare `stairsUp`, storeys chain to any
 height with no new mechanism.
+
+**Amendment (Iteration 6, correction 2) — one fixed map frame.** The viewBox is sized
+once per world, from its largest layer/floor (`viewportBounds`), and every layer is
+centred in that frame at the same cell scale. Resizing the map at a doorway would make
+the frame itself part of the transition; a navigation aid must hold still while the
+world moves. Consequence: a layer larger than the shore sets the frame for the whole
+world (never clipped, never changing mid-game); empty frame space is simply indoors
+being smaller than outdoors.
