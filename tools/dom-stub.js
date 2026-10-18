@@ -116,8 +116,10 @@ export function makeDocument() {
     },
   };
   const documentElement = makeElement('HTML');
+  const body = makeElement('BODY');
   const doc = {
     shell,
+    body,
     documentElement,
     readyState: 'complete',
     _listeners: {},

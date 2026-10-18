@@ -4,6 +4,33 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 (correction 4) — taking does not fade the game; a popup says so
+
+**Asked:** "taking an item shouldnt fade the game, instead, a popup should appear in the
+top right saying 'you have taken (item)', while the word becomes unbolded and uncolored"
+
+**Changed:** `take` short-circuits the result-view path in `app/game.performAction` — no
+whole-shell fade, no result screen, nothing pushed onto the view stack. You stay in the
+view you are in; it re-renders in place, which is what makes the taken word go plain:
+taken from a room it is no longer among the room's interactables, and taken from inside
+a container the returned view is refreshed with it un-highlighted. A `.toast` popup,
+fixed to the top right and dismissed after ~2.6s, reads "You have taken (item)".
+Everything else — examine, open, close, talk — still goes to its result view as before.
+Tests: 128 → **130, all passing.**
+
+**Smoothed (same ask, one hour of feelings later):** "i hate how abrupt that is though,
+smooth it out, a fair amount, not too much, just right". The word no longer snaps: the
+on-screen word is first marked taken and its colour drains to body text while its weight
+drops over `--duration-take` (520ms, `--ease-smooth`), and only then does the view
+re-render onto an already-plain word, so the swap itself is never seen. The popup now
+eases in over `--duration-toast` (480ms, inserted a frame early so the transition can
+actually run), holds ~3.4s, and eases back out; a second take while it is up just
+relabels it. `prefers-reduced-motion` turns both off. Tuned to the middle of the road
+and pinned there by `test/take-motion.test.js` (300–700ms or the build says no).
+Tests: 130 → **132, all passing.**
+
+---
+
 ## Iteration 5 (correction 3) — Back from inside a container returns to the container
 
 **Asked:** "pressing back while examining herring in the barrel took me back to the main

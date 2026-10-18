@@ -22,7 +22,7 @@ state, opening reveals contents.
 npm test
 ```
 
-Expected: **128 tests, 0 failures.** New: `test/core-containers.test.js` — state-filtered
+Expected: **132 tests, 0 failures.** New: `test/core-containers.test.js` — state-filtered
 menus, refused redundant Open/Close, persistence across travel, contents gated while
 closed, take-from-container, open vs closed examine prose, content validation for
 `contains`; plus the rule that contents are highlighted in the flow of the open/examine
@@ -40,7 +40,8 @@ prose — never listed after it, and never in the main prose.
 | 4 | Prose stays clean | **Back**. The yard prose is exactly as it was — its contents are never listed there, open or not. |
 | 5 | Open menu / look in again | Click **barrel** again → label reads `barrel · open`; actions are **examine, close** — no open. **Examine** gives the open-barrel prose with **herring** highlighted in its flow. |
 | 6 | Back means one step | In that view, click **herring** → **examine**. Press **Back** → you are back in the barrel view (not the yard), herring still highlighted. **Back** again → the yard. |
-| 7 | Take the contents | Open the barrel, click **herring** → **take**. Press **Back** → the barrel view, with the word herring now plain, not clickable. The barrel is still open. |
+| 7 | Take the contents | Open the barrel, click **herring** → **take**. No fade, no new view: you are still in the barrel view. The word herring visibly settles — colour draining, weight dropping over about half a second — ending plain, unbolded, uncoloured, unclickable, while a popup eases in top-right ("You have taken herring"), lingers a few seconds, and eases out. **Back** reaches the yard (the take stacked nothing). The barrel is still open. |
+| 7b | Take from the room | In the yard, click **ropes** → **take**. Same deal: the yard never flickers, "You have taken ropes" eases in top-right, and ropes settles into an ordinary word in the sentence. |
 | 8 | Leave it open | Walk to The Longhall (click it on the map) and back. The barrel is still open, its menu still Examine + Close. |
 | 9 | Close it | Choose **close**. Back → menu is Examine + Open again, and examining it shows no contents. |
 | 10 | Other containers | **cargo** (The Harbour) highlights salt-fish (takeable) and linen-bundle (Examine only — no take offered) inside its open prose. **quench-barrel** (The Smithy) highlights cold-slag the same way. Its closed Examine speaks of the fast lid, not the water inside. |
@@ -55,7 +56,7 @@ prose — never listed after it, and never in the main prose.
 
 ### Definition of pass
 
-Checks 1-10 pass, both regression checks behave, `npm test` green (128).
+Checks 1-10 pass, both regression checks behave, `npm test` green (132).
 
 ---
 
