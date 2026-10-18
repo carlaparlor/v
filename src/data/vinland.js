@@ -26,9 +26,6 @@ Vinland.define('data/vinland', function () {
     /** Where the player starts. */
     start: 'yard',
 
-    /** Characters per map cell. Names longer than this are truncated. */
-    cellWidth: 18,
-
     /**
      * `at` is the map grid position: [x, y], x grows east, y grows south.
      * Rows and columns need not be filled — empty cells are just empty ground.

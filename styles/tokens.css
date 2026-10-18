@@ -38,10 +38,14 @@
   --font-size-small: 12px;
   --letter-spacing-label: 0.14em;
 
-  /* Map: column-aligned text, so line-height must stay tight or the vertical
-     `│` connectors develop gaps and the map stops looking joined up. */
-  --map-font-size: 14px;
-  --map-line-height: 1.15;
+  /* Map (custom SVG rendering): node pills, connector lines, player marker. */
+  --map-font-size: 13px;
+  --color-map-node: #3a3128;
+  --color-map-node-border: #8a7a63;
+  --color-map-node-here: #453723;
+  --color-map-edge: #b8a888;
+  --color-map-marker: #c8873c;
+  --color-map-marker-text: #1c1710;
 
   /* Space */
   --space-1: 4px;

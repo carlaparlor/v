@@ -9,7 +9,7 @@ v/
 ├─ styles/
 │  ├─ tokens.css              design tokens — the single source of theme truth
 │  ├─ layout.css              the pane grid + the dark-to-light fade
-│  └─ panels.css              what lives INSIDE a pane (prose typography, the map grid)
+│  └─ panels.css              what lives INSIDE a pane (prose typography, the SVG map)
 ├─ src/
 │  ├─ kernel.js               module registry: Vinland.define / Vinland.require
 │  ├─ main.js                 entry point: find shell, load pack, start the game (loaded last)
@@ -19,7 +19,7 @@ v/
 │  │  ├─ layout.js            pane specs (count, ids, roles, size weights) — pure
 │  │  ├─ world.js             world state: locations, exits, travel — pure, immutable
 │  │  ├─ render-text.js       world state -> second-person view model — pure
-│  │  └─ render-map.js        world state -> character grid of words and lines — pure
+│  │  └─ render-map.js        world state -> map geometry (nodes + edges) — pure
 │  ├─ data/
 │  │  └─ vinland.js           content pack: Straumfjord (7 locations, 8 edges, passages)
 │  └─ ui/
@@ -28,7 +28,7 @@ v/
 │     ├─ panel-text.js        paints a text view model into the left pane
 │     └─ panel-map.js         paints a map view model into the right pane
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (108)
+├─ test/                      node:test unit tests (104)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
@@ -199,11 +199,12 @@ must be incapable of disagreeing.
   the return leg, so a two-way passage cannot be half-declared. `validatePack` also requires each
   declared direction to match the grid delta between the two `at:` positions — the map and the
   exit list cannot contradict each other.
-- **The map is words and lines.** Each location is its NAME centred on a fixed-width cell's centre
-  column; each exit is a line drawn between names (`─` east/west on the label row, `│` north/south
-  on the connector row). You are `@`, painted beside the current location's name. Centreing on the
-  CELL (not on the name) is what stops `││` artifacts where two joined places have names of
-  different lengths.
+- **The map is custom-rendered SVG.** `core/render-map` returns geometry, not characters: each
+  location is a node whose centre sits on its world-grid cell centre, and each exit is an edge
+  between two node centres. `ui/panel-map` draws the edges as vector lines under pill-shaped
+  name nodes, so connectors meet each place exactly and stay true at any size (the character
+  grid this replaced could not: glyph widths and the player marker kept nudging its columns
+  out of line). You are `@`, badged on the current location's pill.
 - **Voice: second person, present tense**, asserted over every passage in
   `test/data-pack.test.js`. It is a design requirement, not a stylistic preference.
 **Rejected:** each pane reading state and re-rendering independently (they can drift); storing the
@@ -211,7 +212,7 @@ current location in both the map and the text module (two facts about one thing)
 layout from the exit graph alone (that is a graph-drawing problem — authoring `at:` positions is
 cheaper, deterministic and moddable).
 **Consequences:** Sync is structural rather than coordinated, and both panes are testable without a
-browser (108 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
+browser (104 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
 will need dirty-checking once the text pane becomes a scrolling log; the map draws orthogonal edges
 only (diagonals need a taller cell); there is no fog of war yet, so every location is always
 visible; and `--color-text-dim` clears AA on the dark pane only, so it must not be used on the

@@ -84,11 +84,13 @@ test('the left pane holds prose, the right pane holds the map', () => {
   assert.equal(findByClass(left, 'text__region').textContent, pack.region);
   assert.ok(findByClass(left, 'text__body').textContent.startsWith('You cross the yard'));
 
-  const grid = findByClass(right, 'map__grid');
-  assert.equal(grid.tagName, 'PRE', 'a character grid must not reflow');
-  assert.match(grid.textContent, /@ The Yard/);
-  assert.match(grid.textContent, /\u2500/);
-  assert.match(grid.textContent, /\u2502/);
+  const svg = findByClass(right, 'map__svg');
+  assert.ok(svg, 'the map is custom-rendered SVG, not a character grid');
+  assert.equal(findAllByClass(right, 'map__node').length, pack.locations.length);
+  assert.equal(findAllByClass(right, 'map__edge').length, pack.exits.length);
+  const here = findByClass(right, 'map__node--here');
+  assert.equal(here.dataset.location, 'yard');
+  assert.match(here.textContent, /The Yard/);
 });
 
 test('both panes are rendered from the SAME state — that is the sync', () => {
@@ -97,11 +99,14 @@ test('both panes are rendered from the SAME state — that is the sync', () => {
   assert.equal(left.dataset.place, right.dataset.place);
   assert.equal(left.dataset.place, g.getState().current);
 
-  // The map's marked name and the prose title must be the same place, every time.
+  // The map's marked node and the prose title must be the same place, every time.
   const agree = () => {
     const title = findByClass(left, 'text__title').textContent;
+    const here = findByClass(right, 'map__node--here');
+    assert.ok(here, 'map marks a current place');
+    assert.equal(here.dataset.location, g.getState().current);
     assert.ok(
-      findByClass(right, 'map__grid').textContent.includes(`@ ${title}`),
+      here.textContent.includes(title),
       `map does not mark "${title}" as the current place`,
     );
     assert.equal(left.dataset.place, right.dataset.place);
@@ -121,13 +126,13 @@ test('a failed move changes nothing anywhere', () => {
   const before = {
     state: g.getState(),
     title: findByClass(left, 'text__title').textContent,
-    grid: findByClass(right, 'map__grid').textContent,
+    map: findByClass(right, 'map__svg').textContent,
   };
 
   assert.equal(g.travel('nowhere'), false);
   assert.equal(g.getState(), before.state, 'state must be the same object');
   assert.equal(findByClass(left, 'text__title').textContent, before.title);
-  assert.equal(findByClass(right, 'map__grid').textContent, before.grid);
+  assert.equal(findByClass(right, 'map__svg').textContent, before.map);
 });
 
 test('state is replaced, never mutated, so a stale pane cannot lie', () => {
@@ -148,7 +153,7 @@ test('setState re-renders every pane (the seam for future systems)', () => {
   g.setState(teleported);
 
   assert.equal(findByClass(left, 'text__title').textContent, 'The Beach');
-  assert.match(findByClass(right, 'map__grid').textContent, /@ The Beach/);
+  assert.equal(findByClass(right, 'map__node--here').dataset.location, 'beach');
   assert.equal(left.dataset.place, 'beach');
   assert.equal(right.dataset.place, 'beach');
 });
@@ -185,7 +190,8 @@ test('rendering twice does not stack content', () => {
   g.render();
   const [left, right] = doc.shell.children;
   assert.equal(findAllByClass(left, 'text__title').length, 1);
-  assert.equal(findAllByClass(right, 'map__grid').length, 1);
+  assert.equal(findAllByClass(right, 'map__svg').length, 1);
+  assert.equal(findAllByClass(right, 'map__node').length, pack.locations.length);
 });
 
 test('the running game is reachable for testing and the console', () => {

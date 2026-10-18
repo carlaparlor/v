@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from '../tools/load-scripts.js';
 import { read, scriptOrder, sourceFiles, stripComments } from '../tools/scan-source.js';
-import { installDocument, makeDocument, findByClass } from '../tools/dom-stub.js';
+import { installDocument, makeDocument, findByClass, findAllByClass } from '../tools/dom-stub.js';
 
 /** The script order index.html declares — read from the file, not duplicated here. */
 const SCRIPTS = scriptOrder();
@@ -75,19 +75,23 @@ test('booting the real scripts renders both panes from one world state', () => {
   assert.doesNotMatch(doc.shell.textContent, /Vinland failed to start/, 'no error message rendered into the shell');
   assert.ok(doc.shell.textContent.includes('Straumfjord'), 'shell aggregates pane content now');
 
-  // Left pane: prose. Right pane: a map made of words and lines.
+  // Left pane: prose. Right pane: a custom-rendered (SVG) map.
   const [textPane, mapPane] = doc.shell.children;
   assert.ok(findByClass(textPane, 'text__title'), 'text pane has a title');
   assert.ok(findByClass(textPane, 'text__body'), 'text pane has a passage');
-  const grid = findByClass(mapPane, 'map__grid');
-  assert.ok(grid, 'map pane has a grid');
-  assert.match(grid.textContent, /@/, 'the map marks where you are');
-  assert.match(grid.textContent, /\u2500|\u2502/, 'the map draws lines between places');
-  // Regression: rows must be joined with real newlines, not a literal "\n" string.
-  // The <pre> only renders as a grid if the text contains actual line breaks.
-  assert.ok(grid.textContent.includes('\n'), 'map grid contains real newlines');
-  assert.ok(!grid.textContent.includes('\\n'), 'map grid must not contain a literal backslash-n');
-  assert.ok(grid.textContent.split('\n').length > 1, 'map grid spans multiple lines');
+  const svg = findByClass(mapPane, 'map__svg');
+  assert.ok(svg, 'map pane has a custom-rendered SVG map');
+  assert.equal(findByClass(mapPane, 'map__grid'), null, 'the old character grid is gone');
+  assert.equal(svg.getAttribute('viewBox'), '0 0 528 312', 'SVG uses the model geometry');
+  const nodes = findAllByClass(mapPane, 'map__node');
+  const edges = findAllByClass(mapPane, 'map__edge');
+  assert.equal(nodes.length, 7, 'one node per place');
+  assert.equal(edges.length, 8, 'one connector per exit');
+  assert.ok(nodes.every((n) => n.dataset.location), 'every node names its place');
+  const here = findByClass(mapPane, 'map__node--here');
+  assert.ok(here, 'the map marks where you are');
+  assert.equal(here.dataset.location, 'yard');
+  assert.match(here.textContent, /The Yard/);
 });
 
 test('a missing #shell fails soft and says so', () => {

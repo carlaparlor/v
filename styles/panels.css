@@ -203,18 +203,61 @@
 }
 
 /*
- * The map is a character grid: monospace, tight leading, and absolutely no wrapping or
- * smart punctuation. Any of those three would bend the lines.
+ * The map is custom-rendered SVG: vector connectors between pill-shaped place
+ * nodes. Lines are drawn centre-to-centre UNDER the pills, so they meet each
+ * pill cleanly and can never drift the way character columns did.
  */
-.map__grid {
-  margin: 0;
-  color: var(--color-text);
+.map__canvas {
+  inline-size: 100%;
+}
+
+.map__svg {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+  /* Visible overflow so the player badge on the top row's pill is not clipped. */
+  overflow: visible;
+}
+
+.map__edge {
+  stroke: var(--color-map-edge);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.map__node-box {
+  fill: var(--color-map-node);
+  stroke: var(--color-map-node-border);
+  stroke-width: 1.5;
+}
+
+.map__node--here .map__node-box {
+  fill: var(--color-map-node-here);
+  stroke: var(--color-map-marker);
+  stroke-width: 2.5;
+}
+
+.map__node-label {
+  fill: var(--color-text-bright);
   font-family: var(--font-ui);
   font-size: var(--map-font-size);
-  line-height: var(--map-line-height);
-  font-variant-ligatures: none;
-  white-space: pre;
-  tab-size: 4;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.map__node-marker {
+  fill: var(--color-map-marker);
+}
+
+.map__node-marker-text {
+  fill: var(--color-map-marker-text);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 
 .map__center {
@@ -223,14 +266,13 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  /* Shrink to the map grid's width (the widest child), so the region header's
-     left edge lines up with the grid below it. The block itself is still
+  /* The map block's width: capped so the SVG stays a comfortable size, and the
+     region header's left edge lines up with it. The block itself is still
      centred in the right pane by .map's align-items. */
-  inline-size: fit-content;
-  max-inline-size: 100%;
+  inline-size: min(100%, 580px);
 }
 
-/* Straumfjord header: left-aligned with the map grid, not centred above it. */
+/* Straumfjord header: left-aligned with the map, not centred above it. */
 .map__region {
   align-self: flex-start;
   text-align: left;

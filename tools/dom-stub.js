@@ -53,9 +53,9 @@ export function makeElement(tagName = 'DIV') {
     },
     setAttribute(name, value) {
       this.attributes[name] = String(value);
-      if (name.startsWith('aria-')) {
-        // also store for querying
-      }
+      // The SVG panel sets classes via setAttribute('class', …); mirror it onto
+      // className so findByClass/findAllByClass can see SVG nodes too.
+      if (name === 'class') this.className = String(value);
     },
     getAttribute(name) {
       return this.attributes[name] ?? null;
@@ -123,6 +123,7 @@ export function makeDocument() {
     _listeners: {},
     getElementById: (id) => (id === 'shell' ? shell : null),
     createElement: makeElement,
+    createElementNS: (_namespace, tagName) => makeElement(tagName),
     addEventListener(type, fn) {
       if (!doc._listeners[type]) doc._listeners[type] = [];
       doc._listeners[type].push(fn);

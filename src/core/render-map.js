@@ -1,20 +1,23 @@
 /**
- * Map view model — pure. World state in, a grid of characters out.
+ * Map view model — pure. World state in, geometry out.
  *
- * "A map made of words and lines": every location is its NAME, painted into a fixed-width
- * cell at its grid position, and every exit is a LINE drawn between two names. Nothing here
- * touches the DOM (that is `ui/panel-map.js`).
+ * The map is CUSTOM-RENDERED (SVG in `ui/panel-map.js`), not a character grid.
+ * A <pre> map can never keep its lines true: glyph widths, the `@` marker, and
+ * names of different lengths all shift columns by a character here and there,
+ * which is exactly why the old lines looked "off". Vector geometry has no such
+ * drift — a connector's endpoints are the exact centres of the two nodes it
+ * joins, by construction.
  *
- * Layout rules
- *   - one text row per grid row, plus one connector row between them (cell height = 2 rows)
- *   - names are centred on their CELL's centre column, not on their own length, so every
- *     vertical line in a grid column lands in the same column. Centreing on the name is what
- *     makes `││` artifacts when two joined places have names of different parity.
- *   - the player is `@`, painted immediately left of the current location's name; that
- *     location's name is truncated two characters earlier to guarantee room for the marker
- *   - east/west edges fill the gap between two names with `─`, leaving a space beside each
- *     word when there is room for one
- *   - north/south edges put a `│` on the connector row at the shared cell centre
+ * Geometry (in viewBox units, consumed by the SVG panel):
+ *   - the world grid is normalised so its top-left cell is (0, 0)
+ *   - each cell is CELL_W x CELL_H; a node's centre is its cell's centre
+ *   - a node is a pill (NODE_H tall) whose width fits its label, capped so
+ *     neighbouring pills can never touch
+ *   - each exit becomes one edge between the two node centres; the panel draws
+ *     edges UNDER the pills, so a line appears to run cleanly into each pill
+ *     and stop at its edge — no overshoot, no gap, at any display size
+ *
+ * This module still knows nothing about the DOM.
  */
 Vinland.define('core/render-map', function (require) {
   'use strict';
@@ -22,28 +25,36 @@ Vinland.define('core/render-map', function (require) {
   const { DIRECTIONS, locationIds, location } = require('core/world');
 
   const MARKER = '@';
-  const LINE_H = '\u2500'; // ─
-  const LINE_V = '\u2502'; // │
   const ELLIPSIS = '\u2026'; // …
 
-  function blankGrid(rows, cols) {
-    const grid = [];
-    for (let r = 0; r < rows; r += 1) grid.push(new Array(Math.max(cols, 1)).fill(' '));
-    return grid;
-  }
-
-  function paint(row, start, text) {
-    for (let i = 0; i < text.length; i += 1) {
-      const col = start + i;
-      if (col >= 0 && col < row.length) row[col] = text[i];
-    }
-  }
+  /** ViewBox units per world-grid cell. */
+  const CELL_W = 176;
+  const CELL_H = 104;
+  /** Pill height, and the room a pill must leave to its cell edges. */
+  const NODE_H = 36;
+  const NODE_PAD_X = 10;
+  /** Widest a pill may grow, so adjacent pills keep a gap for the connector. */
+  const NODE_MAX_W = CELL_W - NODE_PAD_X * 2;
+  /** Approximate glyph advance of the map font, for fitting labels to pills. */
+  const CHAR_W = 7.6;
+  const LABEL_PAD_X = 14;
 
   /** Fit a label into `width` characters, truncating with an ellipsis. */
   function fit(text, width) {
     if (text.length <= width) return text;
     if (width <= 1) return ELLIPSIS;
     return text.slice(0, width - 1) + ELLIPSIS;
+  }
+
+  /** How many characters fit on a pill of `width` units. */
+  function labelChars(width) {
+    return Math.max(1, Math.floor((width - LABEL_PAD_X * 2) / CHAR_W));
+  }
+
+  /** Pill width for a label: snug to the text, clamped to the cell. */
+  function nodeWidth(label) {
+    const wanted = Math.ceil(label.length * CHAR_W) + LABEL_PAD_X * 2;
+    return Math.min(NODE_MAX_W, Math.max(64, wanted));
   }
 
   /** Grid bounds of the world's locations. */
@@ -69,92 +80,82 @@ Vinland.define('core/render-map', function (require) {
 
   /**
    * @param {object} world
-   * @returns {{ region: string, place: string, rows: string[], width: number, height: number,
-   *             legend: string, marker: string, cellWidth: number }}
+   * @returns {{ region: string, place: string, nodes: object[], edges: object[],
+   *             gridCols: number, gridRows: number, viewWidth: number, viewHeight: number,
+   *             legend: string, marker: string }}
+   *   nodes: { id, name, label, gx, gy, x, y, width, height, isHere }
+   *   edges: { from, to, direction, orientation: 'horizontal'|'vertical', x1, y1, x2, y2 }
+   *   (x, y) are node centres in viewBox units; edges join centres exactly.
    */
   function renderMap(world) {
     const ids = locationIds(world);
-    const cellWidth = world.cellWidth;
-    const { minX, minY, cols, rows } = bounds(world);
+    const b = bounds(world);
 
-    const width = cols * cellWidth;
-    const height = rows * 2 - 1; // label rows + connector rows between them
-    const grid = blankGrid(height, width);
-
-    /** Where each label ended up, so edges can be drawn against real character positions. */
-    const placed = new Map();
-
+    const nodes = [];
+    const byId = new Map();
     for (const id of ids) {
       const loc = location(world, id);
-      const isHere = id === world.current;
-
-      // Reserve room for the marker on the current location so it can never push the name
-      // out of its cell.
-      const label = isHere
-        ? `${MARKER} ${fit(loc.name, cellWidth - MARKER.length - 1)}`
-        : fit(loc.name, cellWidth);
-
-      const row = (loc.at[1] - minY) * 2;
-      const cellStart = (loc.at[0] - minX) * cellWidth;
-      const centre = cellStart + Math.floor(cellWidth / 2);
-      const start = centre - Math.floor(label.length / 2);
-
-      paint(grid[row], start, label);
-      placed.set(id, { row, start, end: start + label.length - 1, centre });
+      const gx = loc.at[0] - b.minX;
+      const gy = loc.at[1] - b.minY;
+      // Fit the label to the widest pill first, then size the pill to the label.
+      const label = fit(loc.name, labelChars(NODE_MAX_W));
+      const node = {
+        id,
+        name: loc.name,
+        label,
+        gx,
+        gy,
+        x: (gx + 0.5) * CELL_W,
+        y: (gy + 0.5) * CELL_H,
+        width: nodeWidth(label),
+        height: NODE_H,
+        isHere: id === world.current,
+      };
+      nodes.push(node);
+      byId.set(id, node);
     }
 
-    /** Draw each edge once: only from the lexicographically smaller endpoint. */
+    /** Each undirected exit once, as an edge between the two node centres. */
+    const edges = [];
+    const seen = new Set();
     for (const id of ids) {
       for (const direction of DIRECTIONS) {
         const to = world.exits[id] && world.exits[id][direction];
-        if (!to || id > to) continue;
-
-        const a = placed.get(id);
-        const b = placed.get(to);
-        if (!a || !b) continue;
-
-        if (a.row === b.row) {
-          // East/west: fill the open space between the two names.
-          const [left, right] = a.start < b.start ? [a, b] : [b, a];
-          const from = left.end + 1;
-          const to2 = right.start - 1;
-          const pad = to2 - from + 1 >= 5 ? 1 : 0; // keep a space beside each word if it fits
-          for (let col = from + pad; col <= to2 - pad; col += 1) {
-            if (grid[a.row][col] === ' ') grid[a.row][col] = LINE_H;
-          }
-        } else {
-          // North/south: one `│` on the connector row, at the shared cell centre.
-          const connector = Math.min(a.row, b.row) + 1;
-          if (!grid[connector]) continue;
-          grid[connector][a.centre] = LINE_V;
-          if (b.centre !== a.centre) {
-            // Should not happen with cell-centred labels, but never leave a line unjoined.
-            grid[connector][b.centre] = LINE_V;
-            for (
-              let col = Math.min(a.centre, b.centre) + 1;
-              col < Math.max(a.centre, b.centre);
-              col += 1
-            ) {
-              if (grid[connector][col] === ' ') grid[connector][col] = LINE_H;
-            }
-          }
-        }
+        if (!to) continue;
+        const key = [id, to].sort().join('|');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const a = byId.get(id);
+        const c = byId.get(to);
+        if (!a || !c) continue;
+        edges.push({
+          from: id,
+          to,
+          direction,
+          orientation: a.gy === c.gy ? 'horizontal' : 'vertical',
+          x1: a.x,
+          y1: a.y,
+          x2: c.x,
+          y2: c.y,
+        });
       }
     }
 
     return {
       region: world.region,
       place: world.current,
-      rows: grid.map(function (row) {
-        return row.join('').replace(/\s+$/, '');
-      }),
-      width,
-      height,
-      cellWidth,
+      nodes,
+      edges,
+      gridCols: b.cols,
+      gridRows: b.rows,
+      viewWidth: b.cols * CELL_W,
+      viewHeight: b.rows * CELL_H,
+      cellWidth: CELL_W,
+      cellHeight: CELL_H,
       marker: MARKER,
-      legend: `${MARKER} you    ${LINE_H} a way through`,
+      legend: `${MARKER} you \u2014 a way through`,
     };
   }
 
-  return { renderMap, bounds, fit, MARKER, LINE_H, LINE_V, ELLIPSIS };
+  return { renderMap, bounds, fit, MARKER, ELLIPSIS, CELL_W, CELL_H, NODE_H, NODE_MAX_W };
 });
