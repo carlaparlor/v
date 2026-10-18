@@ -4,6 +4,31 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 5 (correction 5) — the map dims while you are engaged in a view
+
+**Asked:** "the map should dim when the player does smth like talking, examining, cause
+tf, it wouldn't make sense"
+
+Right — the map pane kept redrawing at full attention while its player was head-down in
+a conversation or an inspection, as if it were still expecting to be driven.
+
+**Changed:** attention is now a function of the mode the game already tracks. Rendering
+a result view (examine, talk, approach, use, open…) dims the map pane
+(`pane--dimmed`, `--map-dim-opacity: 0.38`, eased over `--duration-dim`), and rendering
+the place restores it. The map stays fully synced while dimmed — it is the same render,
+receded, and it stops taking pointer input until it comes back. Taking is deliberately
+excluded: a take never engages a view, so nothing dims. Tests: 132 → **135, all
+passing**, including that a take leaves the map at full brightness.
+
+**Taped (same ask, immediately after):** "i would like a diagonal strip with stripes
+over the map when it dims, like police tape yk?" The dimmed pane now wears exactly
+that: one diagonal striped strip (`--tape-angle: -12deg`, yellow/dark repeating stripes
+from `--color-tape`/`--color-tape-dark`, `--tape-height: 54px`) laid across its middle,
+easing in with the dim and out with the return, clipped by the pane. All tape values are
+tokens, pinned by a stylesheet test. Tests: 135 → **136, all passing.**
+
+---
+
 ## Iteration 5 (correction 4) — taking does not fade the game; a popup says so
 
 **Asked:** "taking an item shouldnt fade the game, instead, a popup should appear in the

@@ -196,17 +196,33 @@ Vinland.define('app/game', function (require) {
       }, ms);
     }
 
+    /**
+     * The map's attention follows yours: while you are engaged in a view
+     * (examining, talking, looking inside a container) you are not with the
+     * map, so it recedes; at the place, it has your full eye again.
+     */
+    function setMapDimmed(dimmed) {
+      var mapBinding = findBinding('map');
+      if (!mapBinding || !mapBinding.pane.classList) return;
+      if (dimmed) mapBinding.pane.classList.add('pane--dimmed');
+      else mapBinding.pane.classList.remove('pane--dimmed');
+      mapBinding.pane.dataset.dimmed = dimmed ? 'true' : 'false';
+    }
+
     function renderPlace() {
       for (const binding of bindings) {
         binding.panel.render(binding.pane, binding.panel.model(state));
       }
+      setMapDimmed(false);
       return state;
     }
 
     function renderResult(result) {
-      // Map pane still synced to world
+      // Map pane still synced to world — but receded: you are in a view,
+      // not with the map, so it waits dimmed rather than asking for travel.
       var mapBinding = findBinding('map');
       if (mapBinding) mapBinding.panel.render(mapBinding.pane, mapBinding.panel.model(state));
+      setMapDimmed(true);
       // Text pane shows result
       var textBinding = findBinding('text');
       if (textBinding && typeof textBinding.panel.renderResult === 'function') {

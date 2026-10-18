@@ -352,6 +352,41 @@ test('taking from inside a container stays in that container view', () => {
   assert.equal(findByClass(left, 'text__title').textContent, 'The Yard');
 });
 
+test('the map dims while you are engaged in a view, and returns with you', () => {
+  const g = start();
+  const [, right] = doc.shell.children;
+  const isDimmed = () => right.classList.contains('pane--dimmed') && right.dataset.dimmed === 'true';
+
+  assert.equal(isDimmed(), false, 'at the place, the map has your full eye');
+
+  g.performAction('barrel', 'examine'); // head-down in a view
+  assert.equal(isDimmed(), true, 'examining recedes the map');
+
+  g.back();
+  assert.equal(g.getMode(), 'place');
+  assert.equal(isDimmed(), false, 'back at the place, the map is back too');
+
+  g.performAction('barrel', 'open'); // looking inside: same recede
+  assert.equal(isDimmed(), true);
+  g.back();
+  assert.equal(isDimmed(), false);
+
+  // Talking does it too: walk north and hold a conversation.
+  g.travel('north');
+  g.performAction('elder', 'talk');
+  assert.equal(isDimmed(), true, 'talking recedes the map');
+  g.back();
+  assert.equal(isDimmed(), false);
+});
+
+test('taking never dims the map: you never left the place', () => {
+  const g = start();
+  const [, right] = doc.shell.children;
+  g.performAction('ropes', 'take');
+  assert.equal(right.classList.contains('pane--dimmed'), false);
+  assert.notEqual(right.dataset.dimmed, 'true');
+});
+
 test('the running game is reachable for testing and the console', () => {
   const g = start();
   assert.equal(game.getGame(), g);

@@ -220,7 +220,9 @@ a view pushes the view it leaves; the view's button (labelled **Back**) pops one
 and only reaches the place (clearing the stack, as travel and `setState` do) when the
 stack is empty. A view returned to is passed through `core/actions.refreshResult`, which
 re-derives its highlighted words against the current world — a thing taken while deeper
-reads as plain text again in the prose it left.
+reads as plain text again in the prose it left. While any view is engaged the map pane is
+dimmed (`pane--dimmed`): you are with the thing in front of you, not with the map, and it
+comes back at the place. Taking is not a view and never dims it.
 **Rejected:** Back always returning to the place (the bug reported); re-performing the
 parent action to rebuild its view (open/close/take mutate, so replay is not safe, and an
 opened container would have to be re-described as an examine).
