@@ -70,6 +70,19 @@
   --duration-toast: 480ms;
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* Map attention — while you are engaged in a view (examining, talking,
+     looking inside something) the map recedes to this, then comes back. */
+  --duration-dim: 480ms;
+  --map-dim-opacity: 0.38;
+
+  /* Police tape over the dimmed map: one diagonal striped strip. */
+  --color-tape: #e6c832;
+  --color-tape-dark: #181410;
+  --tape-height: 54px;
+  --tape-stripe: 18px;
+  --tape-angle: -12deg;
+  --tape-opacity: 0.92;
+
   /* Interactables — each type has its own color (plus per-instance color override).
      Chosen for visibility on the dark pane (#0b0a08): all clear WCAG AA there. */
   --color-interactable-object: #8ecae6;

@@ -71,6 +71,7 @@ body {
 }
 
 .pane {
+  position: relative;
   /* Content may not influence the pane's box in either axis. */
   min-inline-size: 0;
   min-block-size: 0;
@@ -85,6 +86,50 @@ body {
   background: transparent;
   border: 0;
   border-radius: 0;
+
+  /* Attention lives on the pane the player is with; see .pane--dimmed. */
+  transition: opacity var(--duration-dim) var(--ease-smooth);
+}
+
+/* Receded while the player is engaged elsewhere (an examine/talk/open view):
+   still legible, plainly not asking for clicks right now. */
+.pane--dimmed {
+  opacity: var(--map-dim-opacity);
+  pointer-events: none;
+}
+
+/* Police tape: a single diagonal striped strip laid over the dimmed map.
+   The strip lives on every pane but stays invisible until the pane recedes;
+   it eases in with the dim and is clipped by the pane's own overflow. */
+.pane::after {
+  content: '';
+  position: absolute;
+  z-index: 50;
+  left: -12%;
+  right: -12%;
+  top: 50%;
+  height: var(--tape-height);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-tape) 0 var(--tape-stripe),
+    var(--color-tape-dark) var(--tape-stripe) calc(var(--tape-stripe) * 2)
+  );
+  box-shadow: 0 6px 18px var(--color-shadow-strong);
+  opacity: 0;
+  transform: translateY(-50%) rotate(var(--tape-angle)) scaleX(1.04);
+  pointer-events: none;
+  transition: opacity var(--duration-dim) var(--ease-smooth);
+}
+
+.pane--dimmed::after {
+  opacity: var(--tape-opacity);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pane,
+  .pane::after {
+    transition: none;
+  }
 }
 
 .pane--fallback {

@@ -40,3 +40,23 @@ test('the stylesheets actually spend those tokens on the take', () => {
   // ...and the popup eases in and out over the toast duration.
   assert.match(panels, /\.toast \{[^}]*opacity var\(--duration-toast\) var\(--ease-smooth\)/);
 });
+
+test('the map dim is a recede, not a disappearance', () => {
+  const layout = readFileSync(join(ROOT, 'styles/layout.css'), 'utf8');
+  const opacity = tokens.match(/--map-dim-opacity:\s*([\d.]+)/);
+  assert.ok(opacity, 'tokens.css must define --map-dim-opacity');
+  const value = Number(opacity[1]);
+  assert.ok(value >= 0.25 && value <= 0.55, `map dimmed to ${value} would be gone or barely dimmed`);
+  assert.match(layout, /\.pane--dimmed \{[^}]*opacity: var\(--map-dim-opacity\)/);
+  assert.match(layout, /transition: opacity var\(--duration-dim\) var\(--ease-smooth\)/);
+});
+
+test('the dimmed map wears one diagonal striped strip, like police tape', () => {
+  const layout = readFileSync(join(ROOT, 'styles/layout.css'), 'utf8');
+  assert.ok(tokens.includes('--color-tape:'), 'tape colour is a token');
+  assert.ok(tokens.includes('--color-tape-dark:'), 'tape stripe colour is a token');
+  assert.match(layout, /\.pane::after \{[^}]*repeating-linear-gradient\(/);
+  assert.match(layout, /\.pane::after \{[^}]*var\(--color-tape\)/);
+  assert.match(layout, /\.pane::after \{[^}]*rotate\(var\(--tape-angle\)\)/);
+  assert.match(layout, /\.pane--dimmed::after \{[^}]*opacity: var\(--tape-opacity\)/);
+});
