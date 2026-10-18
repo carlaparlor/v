@@ -35,12 +35,47 @@ Vinland.define('data/vinland', function () {
         id: 'hall',
         name: 'The Longhall',
         at: [1, 0],
+        entry: 'longhall-hall',
         passage:
-          'You stand under the ridge-beam of the longhall, where the smoke finds its way out and the light does not. Half the settlement\u2019s business happens in here without anyone deciding that it should. A {bench} near the door is empty. It has been empty all winter, and nobody sits on it. Near the centre a {firepit} smoulders, and against the far wall {elder} keeps watch over the room.',
+          'You stand before the {longhall-building|longhall}, turf-roofed and long as its name, smoke worrying out of it into the wind. Half the settlement\u2019s business happens in there without anyone deciding that it should.',
         interactables: [
+          { id: 'longhall-building', name: 'longhall', type: 'fixture', actions: ['examine', 'enter'], examine: 'You look at the longhall. Turf over timber, a door that has been shouldered by every back on this shore. It is less built than agreed upon, winter after winter.', enter: 'You shoulder the longhall door and step inside.' },
+        ],
+      },
+      {
+        id: 'longhall-hall',
+        name: 'The Hall',
+        at: [1, 1],
+        within: 'hall',
+        passage:
+          'You stand under the ridge-beam of the longhall, where the smoke finds its way out and the light does not. A {bench} near the {longhall-door|door} is empty. It has been empty all winter, and nobody sits on it. Near the centre a {firepit} smoulders, and against the far wall {elder} keeps watch over the room.',
+        interactables: [
+          { id: 'longhall-door', name: 'door', type: 'fixture', actions: ['examine', 'exit'], examine: 'You look at the door. Shoulder-worn, draughty, and the only way back to the yard that does not involve a window.', exit: 'You shoulder the door and step back out onto the shore.' },
           { id: 'bench', name: 'bench', type: 'fixture', examine: 'You run your hand along the bench. It is worn smooth by countless winters, and cold to the touch. You suspect it will stay empty until someone decides otherwise.', use: 'You sit on the bench. The wood creaks but holds. You feel no warmer, but you are at least sitting.' },
           { id: 'firepit', name: 'firepit', type: 'fixture', examine: 'You lean toward the firepit. Ash and half-burnt birch, still breathing heat. You see your own boots reflected in the dark of it.', use: 'You stir the firepit with a nearby stick. Sparks climb and vanish into the smoke-hole.' },
           { id: 'elder', name: 'elder', type: 'npc', color: '#90be6d', examine: 'You study the elder — weathered face, hands that have stacked every stone on the cairn. They watch you without speaking.', talk: 'You speak to the elder. They nod slowly. \u201CThe sea has been empty nine days,\u201D they say. \u201CWhen it returns, it will have made a decision for us.\u201D' },
+        ],
+      },
+      {
+        id: 'longhall-store',
+        name: 'The Store Room',
+        at: [0, 1],
+        within: 'hall',
+        passage:
+          'You duck into the store room, where the air goes cool and close. {store-sacks|Sacks} slump against the wall in a tired row, and everything here is kept at the temperature of a decision not yet made.',
+        interactables: [
+          { id: 'store-sacks', name: 'sacks', type: 'object', examine: 'You heft a sack without lifting it. Meal, by the give of it, and meal by the smell — the kind of wealth nobody brags about and everybody counts.' },
+        ],
+      },
+      {
+        id: 'longhall-loft',
+        name: 'The Loft',
+        at: [1, 0],
+        within: 'hall',
+        passage:
+          'You climb into the loft, where the smoke arrives before you do and the roof is close enough to duck for. {wool-blankets|Blankets} lie folded along the beams, holding the day\u2019s last warmth like a rumour.',
+        interactables: [
+          { id: 'wool-blankets', name: 'blankets', type: 'object', examine: 'You run a hand over the blankets. Wool, lanolin, and other people\u2019s sleep. Folded with a care that says somebody\u2019s mother still inspects them.' },
         ],
       },
       {
@@ -126,6 +161,8 @@ Vinland.define('data/vinland', function () {
     exits: [
       { from: 'hall', to: 'cairn', direction: 'east' },
       { from: 'hall', to: 'yard', direction: 'south' },
+      { from: 'longhall-hall', to: 'longhall-store', direction: 'west' },
+      { from: 'longhall-hall', to: 'longhall-loft', direction: 'north' },
       { from: 'cairn', to: 'smithy', direction: 'south' },
       { from: 'yard', to: 'harbour', direction: 'west' },
       { from: 'yard', to: 'smithy', direction: 'east' },

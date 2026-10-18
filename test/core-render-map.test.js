@@ -23,24 +23,30 @@ const pack = Vinland.require('data/vinland');
 const map = (world = createWorld(pack)) => renderMap(world);
 const node = (m, id) => m.nodes.find((n) => n.id === id);
 
-test('the model is plain geometry: one node per location, one edge per exit', () => {
+test('the model is plain geometry: one node per location on this layer, one edge per exit', () => {
   const m = map();
-  assert.equal(m.nodes.length, pack.locations.length);
-  assert.equal(m.edges.length, pack.exits.length, 'each declared exit is drawn exactly once');
+  // The map draws the layer you are on (here, the top layer): nested places
+  // have maps of their own and are not drawn on this one.
+  const topLayer = pack.locations.filter((l) => !l.within);
+  const topExits = pack.exits.filter((e) => topLayer.some((l) => l.id === e.from));
+  assert.equal(m.nodes.length, topLayer.length);
+  assert.equal(m.edges.length, topExits.length, 'each declared exit on this layer is drawn exactly once');
   assert.equal(m.gridCols, 3);
   assert.equal(m.gridRows, 3);
   assert.equal(m.viewWidth, m.gridCols * CELL_W);
   assert.equal(m.viewHeight, m.gridRows * CELL_H);
 });
 
-test('every location appears on the map as a named node', () => {
+test('every location on this layer appears on the map as a named node', () => {
   const m = map();
-  for (const loc of pack.locations) {
+  for (const loc of pack.locations.filter((l) => !l.within)) {
     const n = node(m, loc.id);
     assert.ok(n, `${loc.id} is missing from the map`);
     assert.equal(n.name, loc.name);
     assert.ok(n.label.length > 0);
   }
+  // Nested places belong to their own layer's map, not this one.
+  assert.equal(node(m, 'longhall-hall'), undefined);
 });
 
 test('node centres sit on the world grid, one cell apart', () => {

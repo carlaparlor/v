@@ -25,12 +25,13 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
-**Iteration 5 — Straumfjord.** The left pane narrates where you are, in the second person. The
+**Iteration 6 — Straumfjord, layered.** The left pane narrates where you are, in the second person. The
 right pane is a map of the same shore made of words and lines, with `@` marking you. Both are views
 of one immutable world state rendered in one pass, so they cannot disagree. Moving updates both.
 Coloured words in the prose are interactables with dropdown actions; containers offer Open while
 closed and Close while open, stay as you leave them, and show what they hold in their own
-open/examine view — never in the room's prose.
+open/examine view — never in the room's prose. Places nest: the Longhall on the shore is a
+building you can enter, and inside it has a map of its own — as deep as content nests.
 See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ```
