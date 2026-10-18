@@ -10,10 +10,12 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
-## Iteration 6 (correction 3) — clicking through the map glides, not cuts
+## Iteration 6 (correction 3, refined by corrections 4-5) — clicking through the map glides, not cuts
 
 **Asked:** clicking through the map was abrupt. Clarified: the @ marker glides along
-the connector in about half a second, and every kind of movement is softened.
+the connector, and every kind of movement is softened. Correction 5 then tuned the
+feel: slower and eased, with the left pane fading in sync — one motion, not
+glide-stop-bam.
 
 ### Automated
 
@@ -21,11 +23,11 @@ the connector in about half a second, and every kind of movement is softened.
 npm test
 ```
 
-Expected: **159 tests, 0 failures.** `test/step-motion.test.js` pins the
-`--duration-step` band (300–700ms) and the badge's glide vector on the real map —
-including a simulation of how browsers expose SVG class names (an object, not a
-string), after correction 4 found the glide silently dead in real browsers while
-every stub test passed.
+Expected: **160 tests, 0 failures.** `test/step-motion.test.js` pins the
+`--duration-step` band (650–900ms), the ease-in-out timing, the badge's glide vector
+on the real map, and the left pane's synced crossfade — including a simulation of how
+browsers expose SVG class names (an object, not a string), after correction 4 found
+the glide silently dead in real browsers while every stub test passed.
 
 ### Manual
 
@@ -33,14 +35,14 @@ every stub test passed.
 
 | # | Check | Expected |
 | --- | --- | --- |
-| 1 | Click **The Smithy** on the map | The **@** badge glides along the line to the Smithy over about half a second; as it lands, the prose settles into the Smithy. No instant cut. |
-| 2 | Click back to **The Yard**, then **The Harbour** | Each step glides at the same pace. Clicking another place mid-glide does nothing — you cannot queue a teleport. |
+| 1 | Click **The Smithy** on the map | One continuous motion: the **@** badge eases along the line to the Smithy over ~0.7s while the left pane fades out, swaps, and fades back in — the new prose finishes arriving as the marker lands. No stop, no bam. |
+| 2 | Click back to **The Yard**, then **The Harbour** | Each step moves at the same pace. Clicking another place mid-glide does nothing — you cannot queue a teleport. |
 | 3 | Enter the longhall, climb the stairs, come back down and out | No connector exists between layers, so these take a soft whole-shell fade instead of a cut. |
 | 4 | Reduced motion | With your OS/browser set to reduce motion, steps and crossings are immediate again — no glide, no fade. |
 
 ### Definition of pass
 
-Checks 1-4 pass, `npm test` green (159).
+Checks 1-4 pass, `npm test` green (160).
 
 ---
 

@@ -98,6 +98,18 @@ body {
   pointer-events: none;
 }
 
+/* Stepping (map travel): the left pane crossfades in sync with the marker's
+   glide — out over the first half of the step, back in over the second, so
+   the new prose arrives as the @ does instead of cutting in after it.
+   --step-fade sets the timing for the whole step; --stepping is the out half. */
+.pane.pane--step-fade {
+  transition: opacity calc(var(--duration-step) / 2) var(--ease-step);
+}
+
+.pane--stepping {
+  opacity: 0;
+}
+
 /* Police tape: a single diagonal striped strip laid over the dimmed map.
    The strip lives on every pane but stays invisible until the pane recedes;
    it eases in with the dim and is clipped by the pane's own overflow. */
@@ -127,7 +139,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .pane,
-  .pane::after {
+  .pane::after,
+  .pane.pane--step-fade {
     transition: none;
   }
 }

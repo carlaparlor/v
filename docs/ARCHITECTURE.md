@@ -330,3 +330,11 @@ can never disagree mid-step; a step requested mid-glide is refused. Crossings be
 layers/floors have no connector to glide, so they take the ADR-0007 whole-shell fade.
 Both honour prefers-reduced-motion by stepping immediately. In tests, where motion is
 inert, movement remains synchronous.
+
+**Amendment (Iteration 6, correction 5) — a step is one choreographed motion.** The
+world commits only when the marker lands, but the destination prose is rendered from
+the uncommitted next state at the glide's midpoint, while the left pane is faded out;
+it fades back in over the glide's second half. Re-rendering everything at landing
+read as glide-stop-bam; syncing the crossfade to the glide makes the transition a
+single gesture, and the landing re-render touches only the map, whose badge is
+already where the glide left it.
