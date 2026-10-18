@@ -52,6 +52,8 @@ Vinland.define('core/actions', function (require) {
       case 'take': return 'You take the ' + name + '. It is yours now.';
       case 'open': return 'You open the ' + name + '.';
       case 'close': return 'You close the ' + name + '.';
+      case 'enter': return 'You enter the ' + name + '.';
+      case 'exit': return 'You step out through the ' + name + '.';
       case 'use': return 'You put the ' + name + ' to use.';
       case 'talk': return 'You speak to ' + name + '. They do not answer yet.';
       case 'approach': return 'You approach the ' + name + ' cautiously.';
@@ -187,6 +189,18 @@ Vinland.define('core/actions', function (require) {
       return { nextWorld: world, result: null, error: 'action \"' + action + '\" not available for ' + interactableId };
     }
 
+    if ((action === 'enter' || action === 'exit') && !found.fromInventory && found.locationId) {
+      var earlyTarget = worldMod.portalTarget(world, found.locationId);
+      var earlyHolder = worldMod.location(world, found.locationId);
+      var earlyTargetLoc = earlyTarget ? worldMod.location(world, earlyTarget) : null;
+      var earlyThrough = action === 'enter'
+        ? Boolean(earlyTargetLoc && earlyHolder && (earlyTargetLoc.within ?? null) === earlyHolder.id)
+        : Boolean(earlyTargetLoc && earlyHolder && (earlyHolder.within ?? null) === earlyTargetLoc.id);
+      if (!earlyThrough) {
+        return { nextWorld: world, result: null, error: 'there is no doorway to ' + action + ' through "' + interactableId + '"' };
+      }
+    }
+
     var text = resultTextFor(interactable, action, state);
     var title = interactable.name || interactable.id;
 
@@ -228,6 +242,19 @@ Vinland.define('core/actions', function (require) {
       var states = Object.assign({}, world.containerStates || {});
       states[interactableId] = action === 'open' ? 'open' : 'closed';
       nextWorld = Object.freeze(Object.assign({}, world, { containerStates: states }));
+    } else if (action === 'enter' || action === 'exit') {
+      // Crossing a layer through a doorway: `enter` only into a place inside
+      // the interactable's location; `exit` only out of one. Anything else
+      // claiming these verbs has no doorway to cross.
+      var doorTarget = worldMod.portalTarget(world, found.locationId);
+      var holderLoc = found.locationId ? worldMod.location(world, found.locationId) : null;
+      var targetLoc = doorTarget ? worldMod.location(world, doorTarget) : null;
+      var through = action === 'enter'
+        ? Boolean(targetLoc && holderLoc && (targetLoc.within ?? null) === holderLoc.id)
+        : Boolean(targetLoc && holderLoc && (holderLoc.within ?? null) === targetLoc.id);
+      nextWorld = through
+        ? Object.freeze(Object.assign({}, world, { current: doorTarget }))
+        : world;
     } else if (action === 'use' || action === 'talk' || action === 'approach' || action === 'examine') {
       // No structural mutation yet — could later tick systems
       nextWorld = world;

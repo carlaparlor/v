@@ -86,8 +86,10 @@ test('the left pane holds prose, the right pane holds the map', () => {
 
   const svg = findByClass(right, 'map__svg');
   assert.ok(svg, 'the map is custom-rendered SVG, not a character grid');
-  assert.equal(findAllByClass(right, 'map__node').length, pack.locations.length);
-  assert.equal(findAllByClass(right, 'map__edge').length, pack.exits.length);
+  // The map shows the layer you are on: the shore's seven places, not the
+  // rooms nested inside the longhall.
+  assert.equal(findAllByClass(right, 'map__node').length, pack.locations.filter((l) => !l.within).length);
+  assert.equal(findAllByClass(right, 'map__edge').length, 8);
   const here = findByClass(right, 'map__node--here');
   assert.equal(here.dataset.location, 'yard');
   assert.match(here.textContent, /The Yard/);
@@ -265,7 +267,7 @@ test('rendering twice does not stack content', () => {
   const [left, right] = doc.shell.children;
   assert.equal(findAllByClass(left, 'text__title').length, 1);
   assert.equal(findAllByClass(right, 'map__svg').length, 1);
-  assert.equal(findAllByClass(right, 'map__node').length, pack.locations.length);
+  assert.equal(findAllByClass(right, 'map__node').length, pack.locations.filter((l) => !l.within).length);
 });
 
 test('container contents live in the open view, not the place prose', () => {
@@ -398,6 +400,40 @@ test('taking never dims the map: you never left the place', () => {
   g.performAction('ropes', 'take');
   assert.equal(right.classList.contains('pane--dimmed'), false);
   assert.notEqual(right.dataset.dimmed, 'true');
+});
+
+test('entering the longhall swaps both panes to its interior, and leaving swaps back', () => {
+  const g = start();
+  const [left, right] = doc.shell.children;
+  const mapIds = () => findAllByClass(right, 'map__node').map((n) => n.dataset.location).sort();
+
+  // Yard -> The Longhall (outside). The shore map, the building word.
+  g.travel('north');
+  assert.equal(g.getState().current, 'hall');
+  assert.ok(mapIds().includes('cairn'), 'the shore map includes the cairn');
+
+  // Enter: not a view — you arrive inside, and the map is the interior's own.
+  g.performAction('longhall-building', 'enter');
+  assert.equal(g.getMode(), 'place');
+  assert.equal(g.getState().current, 'longhall-hall');
+  assert.equal(findByClass(left, 'text__title').textContent, 'The Hall');
+  assert.deepEqual(mapIds(), ['longhall-hall', 'longhall-loft', 'longhall-store']);
+  assert.match(findByClass(right, 'map__region').textContent, /Straumfjord › The Longhall/);
+  assert.equal(right.classList.contains('pane--dimmed'), false, 'arriving is not engaging a view');
+  assert.equal(left.dataset.place, right.dataset.place, 'both panes still agree, one layer down');
+
+  // Step around the inside like anywhere else.
+  assert.equal(g.travel('west'), true);
+  assert.equal(g.getState().current, 'longhall-store');
+  assert.equal(g.travel('east'), true);
+  assert.equal(g.travel('north'), true);
+  assert.equal(g.getState().current, 'longhall-loft');
+  assert.equal(g.travel('south'), true);
+
+  // Out through the door, back onto the shore map.
+  g.performAction('longhall-door', 'exit');
+  assert.equal(g.getState().current, 'hall');
+  assert.ok(mapIds().includes('cairn'), 'the shore map is back');
 });
 
 test('the running game is reachable for testing and the console', () => {

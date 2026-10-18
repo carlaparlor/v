@@ -10,6 +10,47 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 6 — layered maps: the Longhall, inside and out
+
+**Asked:** extend the map — layers, buildings that can be entered, buildings with maps
+of their own. Clarified: arbitrary nesting; one building done properly; Enter swaps the
+map; rooms are full places.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **145 tests, 0 failures.** New: `test/core-layers.test.js` (8) plus an app test —
+layer-scoped maps and breadcrumbs, doorway derivation, enter/exit gating, same-layer
+movement, a three-deep synthetic nesting, and layer validation.
+
+### Manual
+
+**Double-click `index.html`.**
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | The shore is as it was | Seven places, the Longhall among them. Its rooms are nowhere on this map. |
+| 2 | The building outside | Click **The Longhall** from the yard. Prose: "You stand before the **longhall**…" — its word offers **examine, enter**. |
+| 3 | Enter | Choose **enter**. No result view: you arrive in **The Hall**; the map is now three rooms under the header `Straumfjord › The Longhall`, `@` on The Hall. The bench, firepit and elder are here. |
+| 4 | Rooms step like places | From the map (one step at a time): west to **The Store Room**, back east, north to **The Loft**, south back. No room teleports; the Cairn is not clickable from inside — it is not on this map at all. |
+| 5 | Talk inside | Examine **elder** → talk: the map dims with its police tape, exactly as outside. Back restores it. |
+| 6 | Leave | In The Hall, click **door** → **exit**. You are before the longhall again, shore map restored, `@` on The Longhall. |
+| 7 | Depth is not special | (Console) `Vinland.require('core/world')` exposes `crossPortal`, `breadcrumb`, `locationsInLayer` — a second building, or a cellar under a room, is a data edit (`within`/`entry`), not a code path. |
+
+### Regression checks
+
+- **No layer leaks:** inside, console `Vinland.require('app/game').getGame().travelTo('cairn')` → `false`; the map cannot be ridden across a doorway either.
+- **Iteration 1-5 invariants:** one-step travel only, dim + tape while engaged, take settles with its popup, containers stay as you leave them.
+
+### Definition of pass
+
+Checks 1-7 pass, both regression checks behave, `npm test` green (145).
+
+---
+
 ## Iteration 5 — containers open once, stay open, and reveal what they hold
 
 **Asked:** a container should offer only Open; once opened it can be left open or closed.

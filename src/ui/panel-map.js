@@ -68,7 +68,11 @@ Vinland.define('ui/panel-map', function (require) {
       const body = el('div', 'map');
       const center = el('div', 'map__center');
 
-      center.appendChild(el('p', 'map__region', model.region));
+      // Which map this is: Straumfjord, or Straumfjord › The Longhall, …
+      const heading = Array.isArray(model.breadcrumb) && model.breadcrumb.length > 0
+        ? model.breadcrumb.join(' › ')
+        : model.region;
+      center.appendChild(el('p', 'map__region', heading));
 
       const hereNode = (model.nodes || []).find((n) => n.isHere);
       const svg = svgEl('svg', 'map__svg', {

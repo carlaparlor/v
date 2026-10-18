@@ -31,8 +31,8 @@ test('every location has a name, a passage and an integer grid position', () => 
   }
 });
 
-test('no two locations share a grid cell', () => {
-  const cells = pack.locations.map((l) => l.at.join(','));
+test('no two locations share a grid cell on the same layer', () => {
+  const cells = pack.locations.map((l) => (l.within ?? '') + '@' + l.at.join(','));
   assert.equal(new Set(cells).size, cells.length);
 });
 
@@ -65,6 +65,13 @@ test('the world is connected: every location is reachable from the start', () =>
   for (const exit of pack.exits) {
     adjacency.get(exit.from).add(exit.to);
     adjacency.get(exit.to).add(exit.from);
+  }
+  // Doorways connect layers: a building and its door room reach each other.
+  for (const loc of pack.locations) {
+    if (loc.entry) {
+      adjacency.get(loc.id).add(loc.entry);
+      adjacency.get(loc.entry).add(loc.id);
+    }
   }
   const seen = new Set([pack.start]);
   const queue = [pack.start];

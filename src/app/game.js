@@ -363,6 +363,16 @@ Vinland.define('app/game', function (require) {
           showToast('You have taken ' + outcome.result.title);
           return outcome;
         }
+        // Crossing a doorway is travel, not a view: you arrive in the new
+        // layer, both panes render it, and there is nothing to go Back to.
+        if (action === 'enter' || action === 'exit') {
+          cancelPendingTake();
+          mode = { kind: 'place' };
+          pendingResult = null;
+          resultStack = [];
+          renderPlace();
+          return outcome;
+        }
         cancelPendingTake();
         // Diving from one view into another (barrel -> the herring inside it)
         // stacks the view you left, so Back lands there, not at the place.

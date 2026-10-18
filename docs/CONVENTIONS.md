@@ -28,6 +28,10 @@
 - A declared direction must match the grid delta. `validatePack` rejects content that lies about
   its own geography, with a message naming the two locations.
 - Adding a location is a data edit. If it needs a code edit, that is a design bug — say so.
+- **Layers are data too:** `within: '<id>'` puts a location on the map inside another
+  (nesting is arbitrary), and `entry: '<doorId>'` on the container names the doorway
+  location inside it. Grid positions and exits never cross a layer; the only way between
+  layers is a doorway word offering `enter` (outside) or `exit` (at the door inside).
 - **Containers hold contents as data:** a `container` may declare `contains: [...]` (one level
   deep — contents cannot be containers). Never offer both `open` and `close` in an `actions`
   list: the offered verb is derived from the container's state. Write `open:` prose that

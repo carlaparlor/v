@@ -4,6 +4,56 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 — layered maps: buildings you can enter, with maps of their own
+
+**Asked:** "you will extend the map / there are levels/layers to it / some places have
+buildings that can be entered / those buildings have their own maps as well"
+
+**Clarified before building:** layers nest arbitrarily; one building done properly (the
+Longhall); you enter by an Enter action and the map swaps to the interior; rooms are
+full places, same as outdoors.
+
+### The model (`core/world`)
+
+- **Layers are `within`.** A location may be inside another location — a room inside a
+  building, a cellar inside a room. Nesting is arbitrary; `validatePack` rejects unknown
+  containers, self-containment, and circular chains. Grid positions and directional
+  exits are scoped per layer (a room may share coordinates with the shore; an exit that
+  crosses layers is rejected with a message telling you to use a doorway).
+- **Doorways are `entry`.** A containing location names the doorway location inside it
+  (`hall: entry: 'longhall-hall'`). The reverse is derived, so a doorway cannot be
+  half-declared: `portals` maps each side to the other. `crossPortal` crosses at the
+  current location; routes (`pathTo`, map travel) never cross a doorway.
+- **Entering/leaving are actions.** A building/door word offers `enter`/`exit`
+  (`core/actions` enforces direction: you enter only into a place within, and leave
+  only out of one; a verb with no doorway behind it is refused). In `app/game`,
+  crossing is travel, not a view: both panes render the new layer, nothing is stacked.
+- **The map shows the layer you are on.** `core/render-map` renders only places sharing
+  your parent, with a `breadcrumb` (`Straumfjord › The Longhall › …`) the panel prints
+  as the map header. Inside, one-step travel works exactly as outside.
+
+### The building (`data/vinland`)
+
+The Longhall is now two things honestly: an exterior on the shore map ("You stand
+before the longhall…", its word offering Examine/Enter) and an interior map of three
+full places — **The Hall** (the old interior content moved in: bench, firepit, elder,
+and the door out), **The Store Room** (west), **The Loft** (north), each with its own
+second-person passage and interactables. The Smithy and every other place are untouched.
+
+### Tests: 136 → 145
+
+New `test/core-layers.test.js` (8) and an app-level enter/leave test: layer maps and
+breadcrumbs, the derived doorway, crossing only at doorways, same-layer movement rules,
+a synthetic three-deep cellar proving nesting is not hardcoded, and `validatePack`
+rejecting every layer abuse. Flat-map assumptions in older tests were scoped to the
+layer they render.
+
+**Test it:** double-click `index.html`, then run the Iteration 6 script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
+
 ## Iteration 5 (correction 6) — no teleporting: the map moves you one step
 
 **Asked:** "why am i able to teleport all throughout the map, fix that"

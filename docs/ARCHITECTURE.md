@@ -268,3 +268,37 @@ will need dirty-checking once the text pane becomes a scrolling log; the map dra
 only (diagonals need a taller cell); there is no fog of war yet, so every location is always
 visible; and `--color-text-dim` clears AA on the dark pane only, so it must not be used on the
 light (map) pane.
+
+### ADR-0010 — Layers are `within`; doorways are `entry`, and crossing is an action
+**Context:** Iteration 6 extends the map: places contain buildings that can be entered,
+and those buildings have maps of their own. Layers must nest (a cellar inside a room
+inside a building) without special cases per depth.
+**Decision:**
+- **Containment is data on the location: `within: '<id>'`, scoped per layer.** A location
+  lives on exactly one map — its siblings are the locations sharing its `within`. Grid
+  positions and directional exits are validated per layer, so interior coordinates can
+  reuse the shore's. `validatePack` rejects unknown/circular containment and any exit
+  crossing a layer boundary.
+- **A doorway is `entry: '<doorLocationId>'` on the container; the reverse is derived.**
+  `portals` maps each side to the other, so a doorway can no more be half-declared than
+  a two-way exit can. Crossing is restricted to the doorway location (`crossPortal`);
+  route-finding (`pathTo`) and one-step map travel operate strictly within a layer and
+  never ride a doorway.
+- **Entering/leaving are interactable verbs, rendered as travel.** A building or door
+  word offers `enter`/`exit`; `core/actions` refuses them when no doorway of the right
+  direction stands behind the interactable. `app/game` handles the crossing as travel:
+  mode returns to `place`, the view stack clears, and both panes render the new layer in
+  one pass (ADR-0006 holds per layer — the panes are synced to a layer at a time).
+- **The map renders one layer and labels it.** `core/render-map` draws only the current
+  layer's places/edges and returns a `breadcrumb` (`region › …containers`) that the
+  panel shows as the header.
+**Rejected:** nested pack documents (a map literal inside each location) — flattening
+with `within` keeps one global id space, one location list for every lookup (including
+container contents and inventory), and no recursive state shape; swapping the whole world
+pack on entry — layers must be one world state or the panes/sync and container states
+cannot span them (open the barrel outside, step in, step out: one state throughout).
+**Consequences:** Adding a building is a data edit (exterior + `entry`, rooms with
+`within`), at any depth. Costs: global id lookups remain valid across layers, so an
+interactable can in principle be performed from another layer via the API; the UI only
+ever offers the current place's words, and one-step travel cannot exploit it. The map
+gives no hint of other layers beyond the breadcrumb and the building word itself.

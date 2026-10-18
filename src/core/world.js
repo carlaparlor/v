@@ -97,11 +97,41 @@ Vinland.define('core/world', function () {
       }
     }
 
+    // Layers: `within` places a location on the map inside another location
+    // (a room inside a building, a cellar inside a room — nesting is arbitrary).
+    // `entry` on a containing location names the doorway location inside it.
+    for (const loc of pack.locations) {
+      if (loc.within !== undefined && loc.within !== null) {
+        if (typeof loc.within !== 'string' || !byId.has(loc.within)) {
+          throw new Error(`location "${loc.id}" is within unknown location "${loc.within}"`);
+        }
+        if (loc.within === loc.id) throw new Error(`location "${loc.id}" cannot be within itself`);
+        // Walk the chain: it must terminate at a root, never loop.
+        const seen = new Set([loc.id]);
+        let cursor = loc.within;
+        while (cursor) {
+          if (seen.has(cursor)) throw new Error(`location "${loc.id}" has a circular "within" chain`);
+          seen.add(cursor);
+          cursor = byId.get(cursor).within ?? null;
+        }
+      }
+      if (loc.entry !== undefined && loc.entry !== null) {
+        if (typeof loc.entry !== 'string' || !byId.has(loc.entry)) {
+          throw new Error(`location "${loc.id}" enters unknown location "${loc.entry}"`);
+        }
+        if ((byId.get(loc.entry).within ?? null) !== loc.id) {
+          throw new Error(`location "${loc.id}" enters "${loc.entry}", but "${loc.entry}" is not within "${loc.id}"`);
+        }
+      }
+    }
+
+    // Grid positions are per layer: a room may share coordinates with the
+    // shore outside — they are on different maps and never collide there.
     const positions = new Set();
     for (const loc of pack.locations) {
-      const key = loc.at.join(',');
+      const key = (loc.within ?? '') + '@' + loc.at.join(',');
       if (positions.has(key)) {
-        throw new Error(`two locations share the map grid position [${key}]`);
+        throw new Error(`two locations share the map grid position [${loc.at}] on the same layer`);
       }
       positions.add(key);
     }
@@ -115,6 +145,11 @@ Vinland.define('core/world', function () {
         if (!byId.has(exit[end])) {
           throw new Error(`exit references unknown location "${exit[end]}"`);
         }
+      }
+      if ((byId.get(exit.from).within ?? null) !== (byId.get(exit.to).within ?? null)) {
+        throw new Error(
+          `exit ${exit.from}->${exit.to} crosses layers; cross a layer through an "entry" doorway, not an exit`,
+        );
       }
       if (!DIRECTIONS.includes(exit.direction)) {
         throw new Error(
@@ -162,8 +197,20 @@ Vinland.define('core/world', function () {
         name: loc.name,
         at: [loc.at[0], loc.at[1]],
         passage: loc.passage,
+        within: loc.within ?? null,
+        entry: loc.entry ?? null,
         interactables: Object.freeze(inters),
       };
+    }
+
+    // Doorways between layers, derived both ways from `entry`: the building
+    // knows its door room, and the door room knows its building.
+    const portals = {};
+    for (const loc of pack.locations) {
+      if (loc.entry) {
+        portals[loc.id] = loc.entry;
+        portals[loc.entry] = loc.id;
+      }
     }
 
     // Both directions of every edge, derived once. Undeclarable inconsistency.
@@ -182,6 +229,7 @@ Vinland.define('core/world', function () {
       current: pack.start ?? pack.locations[0].id,
       inventory: Object.freeze([]),
       containerStates: Object.freeze({}),
+      portals: Object.freeze(portals),
     });
   }
 
@@ -324,6 +372,52 @@ Vinland.define('core/world', function () {
     return (world.containerStates && world.containerStates[id]) || 'closed';
   }
 
+  /** The location this one is inside (`within`), or null at the top layer. */
+  function parentOf(world, id) {
+    const loc = location(world, id);
+    return loc ? loc.within ?? null : null;
+  }
+
+  /** Every location on the same map as `parentId` (null = the top layer). */
+  function locationsInLayer(world, parentId) {
+    const want = parentId ?? null;
+    return locationIds(world)
+      .map(function (id) { return location(world, id); })
+      .filter(function (loc) { return (loc.within ?? null) === want; });
+  }
+
+  /** Where a doorway leads from `id`, in either direction, or null. */
+  function portalTarget(world, id) {
+    return (world && world.portals && world.portals[id]) || null;
+  }
+
+  /**
+   * Cross the doorway at the current location (enter a building, or leave
+   * through its door room). Returns NEW frozen state, or null when here has
+   * no doorway — crossing layers is this, never an exit and never travel.
+   */
+  function crossPortal(world) {
+    const to = portalTarget(world, world && world.current);
+    if (!to) return null;
+    return Object.freeze({ ...world, current: to });
+  }
+
+  /**
+   * Names from the world down to where you are, for the map header:
+   * [region, …containers outermost-first]. The current place itself is
+   * marked on the map and titled in the prose, so it is not repeated here.
+   */
+  function breadcrumb(world) {
+    const names = [world.region];
+    const chain = [];
+    let cursor = parentOf(world, world && world.current);
+    while (cursor) {
+      chain.unshift(location(world, cursor).name);
+      cursor = parentOf(world, cursor);
+    }
+    return names.concat(chain);
+  }
+
   return {
     DIRECTIONS,
     OPPOSITE,
@@ -344,5 +438,10 @@ Vinland.define('core/world', function () {
     inventory,
     containerState,
     contentsOf,
+    parentOf,
+    locationsInLayer,
+    portalTarget,
+    crossPortal,
+    breadcrumb,
   };
 });

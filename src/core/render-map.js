@@ -27,7 +27,7 @@
 Vinland.define('core/render-map', function (require) {
   'use strict';
 
-  const { DIRECTIONS, locationIds, location, pathTo } = require('core/world');
+  const { DIRECTIONS, locationIds, location, pathTo, parentOf, locationsInLayer, breadcrumb } = require('core/world');
 
   const MARKER = '@';
   const ELLIPSIS = '\u2026'; // …
@@ -63,8 +63,8 @@ Vinland.define('core/render-map', function (require) {
   }
 
   /** Grid bounds of the world's locations. */
-  function bounds(world) {
-    const positions = locationIds(world).map(function (id) {
+  function bounds(world, ids) {
+    const positions = (ids || locationIds(world)).map(function (id) {
       return location(world, id).at;
     });
     const xs = positions.map(function (p) {
@@ -98,8 +98,12 @@ Vinland.define('core/render-map', function (require) {
    *   (x, y) are node centres in viewBox units; edges join centres exactly.
    */
   function renderMap(world) {
-    const ids = locationIds(world);
-    const b = bounds(world);
+    // One map shows one layer: the places that share your parent. Step
+    // through a doorway and the map you get is the inside's own.
+    const layerParent = parentOf(world, world.current);
+    const layerLocs = locationsInLayer(world, layerParent);
+    const ids = layerLocs.map(function (loc) { return loc.id; });
+    const b = bounds(world, ids);
 
     const nodes = [];
     const byId = new Map();
@@ -160,6 +164,8 @@ Vinland.define('core/render-map', function (require) {
 
     return {
       region: world.region,
+      breadcrumb: breadcrumb(world),
+      layer: layerParent,
       place: world.current,
       nodes,
       edges,
