@@ -2,72 +2,84 @@
  * End-to-end boot test: run the exact script order from index.html against a stub DOM.
  *
  * This is the closest we get to "a browser opened the page" without a browser. It catches
- * load-order mistakes, syntax errors in any shipped file, boot-time crashes, and it verifies
- * the fail-soft path never leaves a blank screen.
+ * load-order mistakes, syntax errors in any shipped file, a forgotten <script> tag, boot-time
+ * crashes — and it verifies the fail-soft path never leaves a blank screen.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 import { ROOT, loadScripts } from '../tools/load-scripts.js';
+import { installDocument, makeDocument, findByClass } from '../tools/dom-stub.js';
+
+const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
 
 /** The script order index.html declares — read from the file, not duplicated here. */
-const SCRIPTS = [
-  ...readFileSync(join(ROOT, 'index.html'), 'utf8').matchAll(/<script src="\.\/([^"]+)"/g),
-].map((m) => m[1]);
+const SCRIPTS = [...indexHtml.matchAll(/<script src="\.\/([^"]+)"/g)].map((m) => m[1]);
 
-function makeElement(tagName) {
-  return {
-    tagName: String(tagName).toUpperCase(),
-    className: '',
-    id: '',
-    textContent: '',
-    dataset: {},
-    style: {},
-    children: [],
-    replaceChildren(...nodes) {
-      this.children = nodes;
-    },
-    addEventListener() {},
-  };
+/** Every .js file under src/, recursively. */
+function sourceFiles(dir = join(ROOT, 'src')) {
+  const out = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
+    else if (entry.endsWith('.js')) out.push(relative(ROOT, full).split('\\').join('/'));
+  }
+  return out.sort();
 }
 
-function stubDocument() {
-  const shell = makeElement('MAIN');
-  shell.id = 'shell';
-  const documentElement = makeElement('HTML');
-  return {
-    shell,
-    documentElement,
-    readyState: 'complete',
-    getElementById: (id) => (id === 'shell' ? shell : null),
-    createElement: makeElement,
-    addEventListener() {},
-  };
-}
-
-/** Silence the intentional error logging in the fail-soft tests. */
-function quietConsole() {
-  const info = [];
-  globalThis.console.info = (...args) => info.push(args.join(' '));
-  globalThis.console.error = () => {};
-  return info;
-}
-
-test('index.html declares the expected boot order', () => {
-  assert.deepEqual(SCRIPTS, [
-    'src/kernel.js',
-    'src/core/layout.js',
-    'src/ui/shell.js',
-    'src/main.js',
-  ]);
+test('the kernel loads first and the entry point loads last', () => {
+  assert.equal(SCRIPTS[0], 'src/kernel.js');
+  assert.equal(SCRIPTS.at(-1), 'src/main.js');
 });
 
-test('booting the real scripts produces the real shell', () => {
-  const doc = stubDocument();
-  globalThis.document = doc;
-  const info = quietConsole();
+test('every source file is actually loaded by index.html', () => {
+  // With classic scripts, forgetting a <script> tag is a silent blank pane. Catch it here.
+  const missing = sourceFiles().filter((file) => !SCRIPTS.includes(file));
+  assert.deepEqual(missing, [], 'these files exist but index.html never loads them');
+});
+
+/**
+ * Strip comments before scanning, so documented examples (`require('core/other')` in the
+ * kernel's docblock) are not mistaken for real dependencies.
+ */
+const stripComments = (code) =>
+  code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+test('dependencies load before the modules that require them', () => {
+  const definedBy = new Map(); // module id -> script that defines it
+  const requiredBy = new Map(); // module id -> scripts that require it
+
+  for (const script of SCRIPTS) {
+    const code = stripComments(readFileSync(join(ROOT, script), 'utf8'));
+    for (const m of code.matchAll(/Vinland\.define\(\s*['"]([^'"]+)['"]/g)) definedBy.set(m[1], script);
+    for (const m of code.matchAll(/require\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      if (!requiredBy.has(m[1])) requiredBy.set(m[1], []);
+      requiredBy.get(m[1]).push(script);
+    }
+  }
+
+  // Every require must resolve to a real module somewhere in src/.
+  for (const [id, scripts] of requiredBy) {
+    assert.ok(definedBy.has(id), `${scripts.join(', ')} requires "${id}" but nothing defines it`);
+  }
+
+  // And that module must be loaded first, so nothing depends on lazy-resolution luck.
+  for (const [id, scripts] of requiredBy) {
+    const defining = SCRIPTS.indexOf(definedBy.get(id));
+    for (const script of scripts) {
+      if (script === definedBy.get(id)) continue;
+      assert.ok(
+        defining < SCRIPTS.indexOf(script),
+        `"${id}" is required by ${script} but loaded after it`,
+      );
+    }
+  }
+});
+
+test('booting the real scripts renders both panes from one world state', () => {
+  const { doc } = installDocument();
 
   loadScripts(SCRIPTS);
 
@@ -78,31 +90,37 @@ test('booting the real scripts produces the real shell', () => {
     ['pane-a', 'pane-b'],
   );
   assert.deepEqual(
-    doc.shell.children.map((el) => el.dataset.role),
-    ['primary', 'secondary'],
+    doc.shell.children.map((el) => el.dataset.panel),
+    ['text', 'map'],
   );
   assert.equal(doc.shell.style.gap, '0px', 'no seam between the panes');
   assert.equal(doc.shell.textContent, '', 'no error message rendered into the shell');
-  assert.match(info[0], /2 panes mounted/);
+
+  // Left pane: prose. Right pane: a map made of words and lines.
+  const [textPane, mapPane] = doc.shell.children;
+  assert.ok(findByClass(textPane, 'text__title'), 'text pane has a title');
+  assert.ok(findByClass(textPane, 'text__body'), 'text pane has a passage');
+  const grid = findByClass(mapPane, 'map__grid');
+  assert.ok(grid, 'map pane has a grid');
+  assert.match(grid.textContent, /@/, 'the map marks where you are');
+  assert.match(grid.textContent, /\u2500|\u2502/, 'the map draws lines between places');
 });
 
 test('a missing #shell fails soft and says so', () => {
-  const doc = stubDocument();
+  const doc = makeDocument();
   doc.getElementById = () => null;
-  globalThis.document = doc;
-  quietConsole();
+  installDocument(doc);
 
   assert.doesNotThrow(() => loadScripts(['src/main.js']));
   assert.equal(doc.documentElement.dataset.booted, 'error');
 });
 
 test('a crash while mounting renders the reason instead of a blank screen', () => {
-  const doc = stubDocument();
+  const doc = makeDocument();
   doc.createElement = () => {
     throw new Error('boom');
   };
-  globalThis.document = doc;
-  quietConsole();
+  installDocument(doc);
 
   assert.doesNotThrow(() => loadScripts(['src/main.js']));
   assert.equal(doc.documentElement.dataset.booted, 'error');

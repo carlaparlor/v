@@ -6,12 +6,23 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 import { ROOT } from '../tools/load-scripts.js';
 
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
+
+/** Every shipped .js file under src/, recursively. */
+function sourceFiles(dir = join(ROOT, 'src')) {
+  const out = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
+    else if (entry.endsWith('.js')) out.push(relative(ROOT, full).split('\\').join('/'));
+  }
+  return out.sort();
+}
 
 const indexHtml = read('index.html');
 
@@ -36,8 +47,7 @@ test('the kernel is loaded before any module that uses it', () => {
 });
 
 test('no shipped source file uses import/export syntax', () => {
-  const files = ['src/kernel.js', 'src/core/layout.js', 'src/ui/shell.js', 'src/main.js'];
-  for (const file of files) {
+  for (const file of sourceFiles()) {
     const code = read(file);
     assert.equal(/^\s*import\s/m.test(code), false, `${file} must not use ESM import`);
     assert.equal(/^\s*export\s/m.test(code), false, `${file} must not use ESM export`);
@@ -60,9 +70,13 @@ test('there is no lockfile and no build step', () => {
 });
 
 test('stylesheets only use tokens for colour (retheme/mod point)', () => {
-  const layout = read('styles/layout.css');
-  const hardcoded = [...layout.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\(/g)];
-  assert.deepEqual(hardcoded.map((m) => m[0]), [], 'colours belong in styles/tokens.css');
+  const sheets = readdirSync(join(ROOT, 'styles')).filter((f) => f.endsWith('.css') && f !== 'tokens.css');
+  assert.ok(sheets.length >= 2, 'expected layout.css and panels.css');
+  for (const sheet of sheets) {
+    const css = read(`styles/${sheet}`);
+    const hardcoded = [...css.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g)];
+    assert.deepEqual(hardcoded.map((m) => m[0]), [], `colours belong in tokens.css, not ${sheet}`);
+  }
 });
 
 test('the fade is composed from tokens, not hardcoded colours', () => {

@@ -26,13 +26,22 @@
 
   /* Text */
   --color-text: #ded4c3;
-  --color-text-dim: #8d8377;
-  --color-accent: #c8873c;
+  --color-text-bright: #f2e9da;
+  --color-text-dim: #8d8377; /* AA on the DARK pane only — never use it on the light pane */
+  --color-accent: #c8873c; /* decorative only: ~3:1 on the light pane, not body-text safe */
 
   /* Type */
   --font-ui: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --font-size-base: 15px;
   --line-height-base: 1.55;
+  --font-size-title: 19px;
+  --font-size-small: 12px;
+  --letter-spacing-label: 0.14em;
+
+  /* Map: column-aligned text, so line-height must stay tight or the vertical
+     `│` connectors develop gaps and the map stops looking joined up. */
+  --map-font-size: 14px;
+  --map-line-height: 1.15;
 
   /* Space */
   --space-1: 4px;

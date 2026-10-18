@@ -79,11 +79,11 @@ test('the shell has no gap, so the gradient is continuous across the seam', () =
   assert.equal(shell.style.gap, '0px');
 });
 
-test('panes carry their role for later panel registration', () => {
+test('panes carry the role that selects their panel', () => {
   const { shell } = mount();
   assert.deepEqual(
     shell.children.map((el) => el.dataset.role),
-    ['primary', 'secondary'],
+    ['text', 'map'],
   );
 });
 

@@ -4,6 +4,100 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 4 — a map of words and lines, and a text pane synced to it
+
+**Asked:** "this game is second person / the right panel is for a map made of words and lines /
+the right panel is the text pane that is synced to the map" — both lines said *right*, so I asked.
+
+**Clarified before building:** left = text pane (the dark one), right = map pane (the light one);
+"synced" = one world state that both panes derive from; the map is data-driven over a small
+fixture world, not a hardcoded sketch; the text pane gets real second-person passages per
+location.
+
+### New layers
+
+- **`src/data/vinland.js`** — content pack *Straumfjord*: 7 locations on a 3x3 grid with 8 edges,
+  each with a second-person present-tense passage. Exits are an **undirected edge list**; the
+  return leg is derived, so a two-way passage cannot be half-declared. Adding a place is a data
+  edit.
+- **`src/core/world.js`** — the single source of truth. `createWorld(pack)` returns **frozen**,
+  JSON-serialisable state; `travel` returns NEW state or `null`; `exitsOf` lists directions in
+  canonical order (north, east, south, west). `validatePack` rejects duplicate ids, shared grid
+  cells, unknown endpoints, unknown directions, a missing start, a blank passage, and — the useful
+  one — a declared direction that contradicts the grid positions, naming both locations.
+- **`src/core/render-text.js`** — world state → `{ region, place, title, paragraphs, exits,
+  exitsLine }`. Pure. Emits structured `exits` alongside the prose so a future parser has
+  something to match against.
+- **`src/core/render-map.js`** — world state → a character grid. Names centred on their **cell's**
+  centre column (not their own, which is what caused `││` doubling), `─` filling the gap between
+  east/west neighbours with a space beside each word, `│` on the connector row for north/south,
+  `@` marking you. Long names truncate with `…`; sparse and negative coordinates normalise to the
+  top-left.
+- **`src/ui/panels.js`** — panel registry keyed by **pane role**. Panels self-register on require,
+  so load order is priority and a mod loaded last wins. `register` validates the contract
+  (`role`, `model`, `render`); `unregister` and `clear` added.
+- **`src/ui/panel-text.js` / `src/ui/panel-map.js`** — paint view models into DOM and nothing
+  else. The map goes into a `<pre>`: it is column-aligned text and anything that reflows it bends
+  the lines.
+- **`src/app/game.js`** — composition root. Binds panes→panels by role, holds the only state
+  reference, owns the only `render()`. API: `getState`, `here`, `canTravel`, `travel`, `setState`,
+  `render`, `bindings`, plus `getGame()` so the console and tests can reach the running instance.
+- **`src/core/layout.js`** — pane roles are now meaningful: `pane-a` = `text`, `pane-b` = `map`.
+- **`styles/panels.css`** + new tokens (`--color-text-bright`, `--map-font-size`,
+  `--map-line-height: 1.15`, `--font-size-title`, `--font-size-small`,
+  `--letter-spacing-label`). Map line-height is deliberately tight or the `│` connectors develop
+  gaps. Prose is capped at a 62ch measure; both panes scroll internally so they stay equal.
+- **`index.html`** — 12 classic scripts in dependency order, grouped and commented by layer.
+
+### The sync guarantee (ADR-0006)
+
+One immutable world state, one render pass, every pane derived from it in that pass. Nothing
+stores a copy, so the panes cannot disagree — sync is structural, not coordinated. `travel`
+returns a new frozen object, so a pane holding old state is visibly stale rather than silently
+wrong.
+
+### Tests: 46 → 106
+
+- `test/data-pack.test.js` — content integrity + second-person voice + connectivity from the start.
+- `test/core-world.test.js` — immutability, derived reciprocity, canonical order, blocked moves, a
+  full loop around the shore.
+- `test/core-render-map.test.js` — 18 tests including line alignment, no `││`, unconnected ground
+  staying empty, truncation, sparse/negative coordinates, and a snapshot of the fixture map.
+- `test/core-render-text.test.js` — second person for every location, exits line, dead ends.
+- `test/app-game.test.js` — the sync proof: both panes agree on `data-place` after every move of a
+  seven-step walk; a failed move changes nothing; `setState` re-renders everything; a missing
+  panel fails loudly; a replacement panel is used without editing a core file.
+- `test/boot.test.js` — now also asserts **every file under `src/` is actually loaded by
+  index.html** (a forgotten `<script>` tag is otherwise a silent blank pane) and that every
+  `require` resolves to a module loaded *earlier* (comments stripped first, so documented examples
+  do not count as dependencies).
+- `tools/dom-stub.js` — shared minimal DOM stub (`makeElement`, `installDocument`, `findByClass`),
+  replacing the per-file stubs.
+
+### Docs
+
+ADR-0006 added; architecture tree, layers (now `app/ ui/ core/ data/`) and extension points
+rewritten — panels and content packs are now marked **WIRED**. `CONVENTIONS.md` gains Voice,
+Content packs and Panels sections plus immutability/one-render-pass rules. `VINLAND.md` gains a
+Voice section. `TESTING.md` iteration 4: 11 manual checks, the exact expected map, 4 regression
+checks. `package.json` → 0.4.0.
+
+### Known limitations, flagged not fixed
+
+- No input yet: movement is via `game.travel(direction)` in the console. The parser/verbs
+  extension point is documented but unwired — that is a future instruction.
+- The map has no fog of war; every location is always visible.
+- Only orthogonal edges are drawn. Diagonals need a taller cell (3 rows) and a `╱ ╲` vocabulary.
+- Every render rebuilds both panes' DOM. Fine now; needs dirty-checking when the text pane becomes
+  a scrolling log.
+- `--color-text-dim` clears AA on the dark pane only, so it is used for prose chrome and never on
+  the map pane.
+
+**Test it:** double-click `index.html`, then run the Iteration 4 script in
+[docs/TESTING.md](TESTING.md) — check 7 is the sync check.
+
+---
+
 ## Iteration 3 — palpable tones, fade only at the tip
 
 **Asked:** "the tones should be palpable / only fade at the very tip/end."

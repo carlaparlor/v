@@ -5,20 +5,31 @@ scripts. **Double-clicking `index.html` runs the game.** Nothing else is require
 
 ```
 v/
-├─ index.html                 app shell; also the script load order
+├─ index.html                 app shell; also the script load order (a missing tag = blank pane)
 ├─ styles/
-│  ├─ tokens.css              design tokens (CSS custom properties) — the single source of theme truth
-│  └─ layout.css              the pane grid + the dark-to-light fade
+│  ├─ tokens.css              design tokens — the single source of theme truth
+│  ├─ layout.css              the pane grid + the dark-to-light fade
+│  └─ panels.css              what lives INSIDE a pane (prose typography, the map grid)
 ├─ src/
 │  ├─ kernel.js               module registry: Vinland.define / Vinland.require
-│  ├─ main.js                 entry point: boots the shell (loaded last)
+│  ├─ main.js                 entry point: find shell, load pack, start the game (loaded last)
+│  ├─ app/
+│  │  └─ game.js              composition root: panes -> panels -> world state; owns the render pass
 │  ├─ core/
-│  │  └─ layout.js            pure layout config helpers (no DOM)
+│  │  ├─ layout.js            pane specs (count, ids, roles, size weights) — pure
+│  │  ├─ world.js             world state: locations, exits, travel — pure, immutable
+│  │  ├─ render-text.js       world state -> second-person view model — pure
+│  │  └─ render-map.js        world state -> character grid of words and lines — pure
+│  ├─ data/
+│  │  └─ vinland.js           content pack: Straumfjord (7 locations, 8 edges, passages)
 │  └─ ui/
-│     └─ shell.js             builds the pane elements (DOM lives here)
+│     ├─ shell.js             builds the pane elements
+│     ├─ panels.js            panel registry, keyed by pane role
+│     ├─ panel-text.js        paints a text view model into the left pane
+│     └─ panel-map.js         paints a map view model into the right pane
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests
-├─ tools/                     dev-only helpers (never referenced by index.html)
+├─ test/                      node:test unit tests (106)
+├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
 
@@ -55,13 +66,20 @@ refers to modules by id, never by load order.
 ## Layers (dependency rule: arrows point down, never up)
 
 ```
-ui/        renders state to the panes, collects input. May use the DOM.
-core/      game systems + world state, pure-ish. NO DOM.
-data/      content packs (entities, verbs, world gen inputs) — data only
+app/       composition root. May require anything. Nothing requires it except main.js.
+ui/        paints view models into panes, collects input. The ONLY layer that touches the DOM.
+core/      game systems, world state, view models. Pure: no DOM, no globals, no I/O.
+data/      content packs (locations, exits, passages; later entities, verbs, world gen inputs)
 ```
 
 `core/` and `data/` must never require `ui/`. That is what keeps the game testable in Node
 without a browser, and what keeps mods from having to touch rendering.
+
+`core/` produces **view models** (plain data describing what should be on screen); `ui/` turns a
+view model into DOM and does nothing else. The split is why prose and map geometry are both unit
+testable and why a mod can rewrite the wording without seeing a single element.
+
+## Module rules
 
 ## Module rules
 
@@ -75,14 +93,25 @@ without a browser, and what keeps mods from having to touch rendering.
 ## Extension points
 
 Seams future iterations plug into. Recorded here so each iteration uses a known seam instead of
-inventing a new one:
+inventing a new one.
 
-1. **Panels** — a pane gets content from a registered panel module (`ui/panels/*`), selected by
-   the pane's `role`/id. Panes already carry `id` and `data-role` for this.
-2. **Systems** — `core/systems/*` register into a system list and are ticked in order.
-3. **Verbs/commands** — a parser resolves player text to a registered verb.
-4. **Content packs** — `data/*` plus a manifest; **mods are additional content packs** loaded as
-   extra `<script>` tags, and may override any module id.
+1. **Panels — WIRED (iteration 4).** A pane does not know what it shows; it shows whatever panel
+   is registered for its ROLE (`text`, `map`). `src/ui/panels.js` holds the registry, panel
+   modules self-register when required, and `SHELL_CONFIG` gives each pane its role.
+   Contract: `{ role, model(world) -> viewModel, render(pane, viewModel) }`.
+   Registering the same role again REPLACES the panel — that is the mod seam, and
+   `test/app-game.test.js` proves a replacement map panel is used without editing a core file.
+2. **Content packs — WIRED (iteration 4).** `src/data/vinland.js` is the world. `main.js` hands it
+   to `app/game.start({ shell, pack })`. A mod ships another pack (or redefines this id) as one
+   more `<script>` tag; `core/world.validatePack` rejects bad content with an actionable message.
+3. **Systems** — `core/systems/*` register into a system list and are ticked in order. The seam
+   already exists in miniature: `game.setState(next)` replaces the world and re-renders every pane,
+   which is exactly what a tick will do.
+4. **Verbs/commands** — a parser resolves player text to a registered verb. `renderText` already
+   emits structured `exits` (`{ direction, to, name }`) alongside the prose so a parser has
+   something to match against.
+
+## ADRs
 
 ## ADRs
 
@@ -154,3 +183,40 @@ cumulative seam positions from the pane specs (`core/layout.js`, pure) and emit 
 Costs: tones are flat, so any future depth (vignette, texture, glow) has to be a separate layer,
 and `--color-text-dim` on the light tone is only ~2.4:1 — de-emphasised text must either live on
 the dark pane or get its own darker token. Flagged, not fixed (no text exists yet).
+
+### ADR-0006 — Second person, one world state, panes bound to panels by role
+**Context:** Iteration 4 asks for a map of words and lines in one pane, a text pane synced to it,
+and a second-person voice. "Synced" is the load-bearing word: two panes showing the same world
+must be incapable of disagreeing.
+**Decision:**
+- **One source of truth.** `core/world.createWorld(pack)` returns immutable (frozen) state.
+  `app/game` holds the only reference and has the only `render()`, which hands the *same* state
+  object to every bound panel in one pass. No pane, panel or view model stores anything.
+  Transitions return NEW state (`travel` never mutates), so a pane holding the old state is
+  visibly stale rather than silently wrong.
+- **Panes bind to panels by role.** `SHELL_CONFIG` says pane-a is `text` and pane-b is `map`;
+  the registry resolves role -> panel at boot. Adding a third pane is a config entry plus a
+  panel registration — no existing file is edited.
+- **View models are pure and live in `core/`.** `render-text` and `render-map` take world state
+  and return plain data; `ui/panel-*` only paints it.
+- **Exits are an undirected edge list.** `{ from, to, direction }` plus an OPPOSITE table derives
+  the return leg, so a two-way passage cannot be half-declared. `validatePack` also requires each
+  declared direction to match the grid delta between the two `at:` positions — the map and the
+  exit list cannot contradict each other.
+- **The map is words and lines.** Each location is its NAME centred on a fixed-width cell's centre
+  column; each exit is a line drawn between names (`─` east/west on the label row, `│` north/south
+  on the connector row). You are `@`, painted beside the current location's name. Centreing on the
+  CELL (not on the name) is what stops `││` artifacts where two joined places have names of
+  different lengths.
+- **Voice: second person, present tense**, asserted over every passage in
+  `test/data-pack.test.js`. It is a design requirement, not a stylistic preference.
+**Rejected:** each pane reading state and re-rendering independently (they can drift); storing the
+current location in both the map and the text module (two facts about one thing); deriving the map
+layout from the exit graph alone (that is a graph-drawing problem — authoring `at:` positions is
+cheaper, deterministic and moddable).
+**Consequences:** Sync is structural rather than coordinated, and both panes are testable without a
+browser (106 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
+will need dirty-checking once the text pane becomes a scrolling log; the map draws orthogonal edges
+only (diagonals need a taller cell); there is no fog of war yet, so every location is always
+visible; and `--color-text-dim` clears AA on the dark pane only, so it must not be used on the
+light (map) pane.

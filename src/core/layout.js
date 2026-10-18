@@ -16,8 +16,10 @@ Vinland.define('core/layout', function () {
     /** Gap between panes. 0 keeps the shell gradient continuous (ADR-0004). */
     gap: 0,
     panes: [
-      { id: 'pane-a', role: 'primary' },
-      { id: 'pane-b', role: 'secondary' },
+      // A pane's role picks which panel fills it (see ui/panels.js).
+      // Left is darker, right is lighter (ADR-0005): prose on the dark pane reads best.
+      { id: 'pane-a', role: 'text' },
+      { id: 'pane-b', role: 'map' },
     ],
   };
 

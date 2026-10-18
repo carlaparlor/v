@@ -2,6 +2,13 @@
 
 **Vinland** is a text-based, systemic sandbox RPG played in a web browser.
 
+## Voice
+
+**Vinland is second person, present tense.** The game says "you": *you cross the yard, you feel
+the smithy before you reach it*. The world is narrated to the person in it, never about a
+character called "the player". This is enforced by tests, not by taste — see
+`docs/CONVENTIONS.md`.
+
 ## The three words that decide everything
 
 ### Text-based
@@ -33,6 +40,12 @@ never crash).
 | **Setup is trivial** | **Double-click `index.html`.** No install, no build step, no server, no Node, no dependencies, no environment variables, no database, no accounts. Enforced by `test/setup-is-trivial.test.js`. |
 
 ## Current state
+
+**Iteration 4** — Straumfjord: the left pane narrates where you are in the second person, the
+right pane is a map of that same shore made of words and lines, and both are views of one world
+state, so they cannot disagree. You can move (`travel`), the map's `@` moves with you, and the
+prose changes to the new place. Adding a location is a data edit. Runs by double-clicking
+`index.html`.
 
 **Iteration 3** — the shell: two equal panes, each holding a solid tone (dark left, light right),
 blending only at the very tip where they meet. No borders. Runs by double-clicking `index.html`.

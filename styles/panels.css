@@ -1,0 +1,94 @@
+/*
+ * Panel content — what lives INSIDE a pane.
+ *
+ * The pane itself stays transparent and borderless (ADR-0004, ADR-0005): the shell paints
+ * one surface and the panes are regions of it. Anything that needs to look contained has to
+ * draw its own surface, and so far nothing does.
+ *
+ * Left pane (text) sits on the dark tone, right pane (map) on the light tone. Colours are
+ * chosen per pane for contrast — see test/theme-contrast.test.js.
+ */
+
+/* Shared: a pane's content scrolls inside the pane, so the panes stay exactly equal. */
+.text,
+.map {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+/* ---------------------------------------------------------------- text pane (left) */
+
+.text {
+  gap: var(--space-4);
+  padding-block-end: var(--space-6);
+}
+
+.text__region {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.text__title {
+  margin: 0;
+  color: var(--color-text-bright);
+  font-size: var(--font-size-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.text__body {
+  margin: 0;
+  max-inline-size: 62ch; /* comfortable measure for prose */
+  color: var(--color-text);
+}
+
+.text__exits {
+  margin: 0;
+  max-inline-size: 62ch;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+  letter-spacing: 0.02em;
+}
+
+/* ----------------------------------------------------------------- map pane (right) */
+
+.map {
+  gap: var(--space-3);
+}
+
+.map__region,
+.map__legend {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-small);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+
+.map__legend {
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/*
+ * The map is a character grid: monospace, tight leading, and absolutely no wrapping or
+ * smart punctuation. Any of those three would bend the lines.
+ */
+.map__grid {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--map-font-size);
+  line-height: var(--map-line-height);
+  font-variant-ligatures: none;
+  white-space: pre;
+  tab-size: 4;
+}

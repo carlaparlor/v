@@ -10,6 +10,80 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 4 — a word-and-line map, and a text pane synced to it
+
+**Asked:** the game is second person; one pane is a map made of words and lines; the other is the
+text pane synced to that map. Clarified as: **left = text (dark pane), right = map (light pane)**,
+sync = one world state both panes derive from, map = data-driven small fixture world, text = real
+second-person passages per location.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **106 tests, 0 failures.** Coverage by layer:
+
+| Area | File | What it proves |
+| --- | --- | --- |
+| Content | `test/data-pack.test.js` | pack validates; ids unique; positions unique; every exit endpoint exists; declared direction matches the grid; the shore is fully connected from the start; every passage is second person; pack is plain JSON |
+| World | `test/core-world.test.js` | state is frozen JSON data; both legs of every edge are derived; exits list in canonical order; `travel` returns new state and never mutates; blocked moves return null; a full loop returns to the start |
+| Map | `test/core-render-map.test.js` | rectangular grid; every location appears as its name; exactly one `@`; the marker follows you; `─` joins east/west, `│` joins north/south; no `││` doubling; unconnected ground stays empty; long names truncate with `…`; sparse/negative coordinates normalise; deterministic; snapshot of the fixture map |
+| Text | `test/core-render-text.test.js` | view model is plain data; describes where you actually are; prose is second person for every location; exits are structured data; dead ends say so |
+| Sync | `test/app-game.test.js` | panels register and can be replaced by role; every pane gets its role-matched panel; left is prose, right is a `<pre>` map; both panes agree on `data-place` after every move; a failed move changes nothing; state is replaced not mutated; `setState` re-renders everything; a missing panel fails loudly at boot; rendering twice does not stack |
+| Boot | `test/boot.test.js` | kernel first, main last; every file in `src/` is actually loaded by index.html; dependencies load before the modules that require them; real scripts boot and render both panes; fail-soft paths |
+| Promises | `test/setup-is-trivial.test.js`, `test/theme-contrast.test.js` | still no build/server/deps/ESM; tones still palpable and text still readable |
+
+### Manual
+
+**Double-click `index.html`.**
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | Left pane is prose | `STRAUMFJORD` (small, dim, uppercase), then **The Yard** as a title, then a second-person paragraph beginning "You cross the yard...", then a dim line: "You can go north to The Longhall, east to The Smithy, south to The Grove, west to The Harbour." |
+| 2 | Right pane is a map of words and lines | Seven place names joined by `─` and `│`, exactly as in the snapshot below. `@` sits beside **The Yard**. Legend reads `@ you    ─ a way through`. |
+| 3 | Lines are unbroken | Vertical connectors are single `│` in one column — **no `││` doubling**, no gaps in a run of `─`. Requires the monospace font and tight `--map-line-height`. |
+| 4 | The map does not wrap | All five rows fit on one line each. If the window is narrow, the map scrolls inside its pane; it never wraps mid-row. |
+| 5 | Panes are still equal, still borderless, still fading | Unchanged from iteration 3: equal halves, one dark tone left, one light tone right, blend only at the seam. Content must not have changed the geometry. |
+| 6 | Content scrolls inside the pane | Shrink the window height: prose and map scroll within their panes; the panes stay equal and the page itself never scrolls. |
+| 7 | **Sync** — move and watch both panes | In the console: `Vinland.require('app/game').getGame().travel('north')` → returns `true`. The left pane now reads **The Longhall** with its own passage and only two exits (east, south); the map's `@` has moved to The Longhall. Both changed in the same instant, from one state. |
+| 8 | A blocked move changes nothing | From the longhall: `.travel('west')` → `false`, and neither pane changes at all. |
+| 9 | Walk the whole shore | `for (const d of ['north','east','south','west','south','west','north','east']) Vinland.require('app/game').getGame().travel(d)` → ends back at **The Yard**, and every intermediate step updated both panes. |
+| 10 | Console | `[vinland] 2 panes mounted: [ 'pane-a=text', 'pane-b=map' ]`, then a hint line about `travel`. No errors, no warnings. |
+| 11 | `data-place` agrees | DevTools: `#pane-a` and `#pane-b` both carry `data-panel` (`text` / `map`) and the same `data-place`. |
+
+Expected map at the start (exact characters — this is the snapshot the tests assert):
+
+```
+                     The Longhall ────── The Cairn
+                           │                 │
+    The Harbour ───── @ The Yard ────── The Smithy
+         │                 │
+     The Beach ─────── The Grove
+```
+
+### Regression checks
+
+- **Content cannot break the layout:** in the console run
+  `Vinland.require('app/game').getGame().setState({ ...Vinland.require('app/game').getGame().getState(), region: 'x'.repeat(400) })`.
+  Expected: the long region name is clipped or scrolled inside its pane; the two panes stay
+  exactly equal; the map's lines are unaffected.
+- **A missing panel fails loudly:** temporarily delete the `<script src="./src/ui/panel-map.js">`
+  tag from `index.html`. Expected: the shell shows `Vinland failed to start: no panel is
+  registered for role "map" (pane pane-b)` — not a blank pane. Restore the tag.
+- **Bad content is rejected:** temporarily set one exit's `direction` to `'up'` in
+  `src/data/vinland.js`. Expected: a boot error naming the two locations and the valid
+  directions. Revert.
+- **Iteration 1-3 invariants:** equal panes under 5000 characters of text, `file://` boot, no
+  borders, held tones with a tip-only fade.
+
+### Definition of pass
+
+Checks 1-11 pass, all four regression checks behave, `npm test` green (106).
+
+---
+
 ## Iteration 3 — palpable tones, fade only at the tip
 
 **Asked:** the two tones should be palpable; the fade should happen only at the very tip/end.

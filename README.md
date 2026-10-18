@@ -25,9 +25,24 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
-**Iteration 3:** two equal panes, each holding its own palpable tone — dark on the left, light on
-the right — blending only at the very tip where they meet. No borders. Nothing else.
+**Iteration 4 — Straumfjord.** The left pane narrates where you are, in the second person. The
+right pane is a map of the same shore made of words and lines, with `@` marking you. Both are views
+of one immutable world state rendered in one pass, so they cannot disagree. Moving updates both.
 See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
+```
+                     The Longhall ────── The Cairn
+                           │                 │
+    The Harbour ───── @ The Yard ────── The Smithy
+         │                 │
+     The Beach ─────── The Grove
+```
+
+There is no input handling yet. Move from the console:
+
+```js
+Vinland.require('app/game').getGame().travel('north')
+```
 
 ## Docs
 
@@ -43,13 +58,16 @@ See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 ## Project layout
 
 ```
-index.html          double-click this. app shell + script order
+index.html          double-click this. app shell + script load order
 styles/
   tokens.css        every colour, font and spacing value (the retheme/mod point)
   layout.css        the pane grid and the dark-to-light fade
+  panels.css        what lives inside a pane: prose typography, the map grid
 src/
   kernel.js         tiny module registry: Vinland.define / Vinland.require
-  core/             game logic — no DOM, runs in plain Node
+  app/              composition root — panes -> panels -> world state
+  core/             game logic and view models — no DOM, runs in plain Node
+  data/             content packs (locations, exits, passages) — data only
   ui/               DOM work lives here and only here
 server.mjs          optional static dev server
 test/               unit tests (node:test)
@@ -60,6 +78,13 @@ docs/               the docs above
 ## Modding
 
 Content is data and modules are registered by id, so a mod is a `<script>` tag added to
-`index.html` before `src/main.js`. `Vinland.define('core/layout', ...)` after the core script
-*replaces* that module — override anything without forking it. Details in
+`index.html` before `src/main.js`.
+
+- **Replace the world:** `Vinland.define('data/vinland', () => myPack)` — locations, exits and
+  passages, nothing else. `core/world.validatePack` tells you what you got wrong.
+- **Replace a pane's contents:** `Vinland.require('ui/panels').register({ role: 'map', model, render })`
+  — the last registration for a role wins.
+- **Replace any module:** defining an existing id swaps it and drops its cache.
+
+Details and the seams that are not wired yet (systems, verbs) are in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

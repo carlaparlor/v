@@ -1,30 +1,39 @@
 /**
  * Vinland entry point — the last script in index.html.
  *
- * Iteration 2: the shell has two equal panes that fade into each other.
- * That is all it does. Future iterations register panels into those panes
- * (see docs/ARCHITECTURE.md, "Extension points").
+ * It does three things: find the shell, load the content pack, hand both to the game.
+ * All wiring lives in `app/game.js`; all content lives in `src/data/`.
  */
 (function (require) {
   'use strict';
 
   function boot() {
+    const root = document.documentElement;
     const shell = document.getElementById('shell');
 
     if (!shell) {
-      document.documentElement.dataset.booted = 'error';
+      root.dataset.booted = 'error';
       console.error('[vinland] #shell container is missing from index.html');
       return;
     }
 
     try {
-      const panes = require('ui/shell').mountShell(shell);
-      document.documentElement.dataset.booted = 'true';
-      console.info(`[vinland] ${panes.size} panes mounted:`, [...panes.keys()]);
+      const pack = require('data/vinland');
+      const game = require('app/game').start({ shell, pack });
+
+      root.dataset.booted = 'true';
+      root.dataset.place = game.getState().current;
+      console.info(
+        `[vinland] ${game.bindings.length} panes mounted:`,
+        game.bindings.map(function (b) {
+          return `${b.id}=${b.role}`;
+        }),
+      );
+      console.info('[vinland] try: Vinland.require("app/game").getGame().travel("north")');
     } catch (err) {
       // Fail soft: never leave a blank screen without a reason.
-      document.documentElement.dataset.booted = 'error';
-      shell.textContent = `Vinland failed to start: ${err && err.message ? err.message : err}`;
+      root.dataset.booted = 'error';
+      shell.textContent = 'Vinland failed to start: ' + (err && err.message ? err.message : err);
       console.error('[vinland] boot failed', err);
     }
   }

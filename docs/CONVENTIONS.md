@@ -9,6 +9,33 @@
 - Config objects: `SOMETHING_CONFIG`.
 - Pane ids are stable strings (`pane-a`, `pane-b`). Never index panes by position in code.
 
+## Voice
+- **Second person, present tense.** The player is "you": "You cross the yard...". Never "the
+  player", never first person, never past tense for the world's own description.
+- Enforced by tests over the content pack (`test/data-pack.test.js`) — a passage without "you"
+  fails the build.
+- Prose describes what *is*, not what the player should do. Choices belong to exits and verbs.
+- Name places with a definite article ("The Yard", "The Cairn"): it reads well in a sentence and
+  it reads well as a word on a map.
+
+## Content packs (`src/data/`)
+- Data only. No functions, no DOM, no requires. A pack must survive `JSON.parse(JSON.stringify())`.
+- Exits are an **undirected edge list** — declare `hall -> cairn, east` and the return leg
+  (`cairn -> hall, west`) is derived. Never hand-write both directions.
+- Every location needs `id`, `name`, `at: [x, y]`, `passage`. `at` is the map grid: x grows east,
+  y grows south. Cells may be left empty; the renderer normalises to the top-left.
+- A declared direction must match the grid delta. `validatePack` rejects content that lies about
+  its own geography, with a message naming the two locations.
+- Adding a location is a data edit. If it needs a code edit, that is a design bug — say so.
+
+## Panels (`src/ui/`)
+- A panel is `{ role, model(world), render(pane, viewModel) }` and registers itself on require.
+- `model` must be pure and normally just delegates to a `core/render-*` module. `render` must not
+  compute anything: no arithmetic on world state, no prose, no string building beyond joining.
+- Panes are addressed by ROLE, never by id or index, outside `SHELL_CONFIG`.
+- `render` must be idempotent — rendering twice produces the same pane, not doubled content.
+  Use `replaceChildren`, not `appendChild`, at the top level.
+
 ## Modules
 - **No ES modules.** `import`/`export` break `file://`, which breaks double-click-to-run
   (ADR-0003). `test/setup-is-trivial.test.js` fails the build if they creep back in.
@@ -38,7 +65,12 @@
 ## JS
 - `'use strict';` at the top of every module factory.
 - No globals other than `Vinland`. Anything shared is exported from a module.
-- DOM access only in `src/ui/**`. Anything under `src/core/**` must run in plain Node.
+- DOM access only in `src/ui/**`. Anything under `src/core/**` or `src/data/**` must run in plain
+  Node with no `document` in scope.
+- **World state is immutable.** Transitions return a NEW frozen object (`core/world.travel`);
+  nothing mutates state in place. That is what makes "synced panes" a structural property.
+- **One render pass.** Only `app/game.render()` paints, and it paints every bound pane from the
+  same state object. A panel must never cache what it was given.
 - Fail soft: catch at the boundary, render the reason into the UI, never leave a blank screen.
 
 ## Docs
@@ -50,9 +82,13 @@
 ## Tests
 - `node:test` + `node:assert/strict`, files named `test/<area>.test.js`, run via `npm test`.
 - Load shipped code with `tools/load-scripts.js` — never re-implement logic in a test.
-- Cover three things every iteration: the pure logic (`core/`), the DOM shape it produces
-  (`test/ui-shell.test.js` style stubs), and the setup promises
-  (`test/setup-is-trivial.test.js`).
+- Cover four things every iteration: the pure logic (`core/`), the content (`data/`), the DOM
+  shape it produces (`tools/dom-stub.js`), and the promises the project makes
+  (`test/setup-is-trivial.test.js`, `test/theme-contrast.test.js`).
+- Load shipped code with `tools/load-scripts.js`; build DOM with `tools/dom-stub.js`. If the stub
+  needs a new method, the ui module is probably doing too much.
+- A deterministic renderer (like `core/render-map`) gets a **snapshot test** as well as property
+  tests: if the picture changes, it should be because someone meant to change it.
 - Purely visual properties (gradient smoothness, colour choice) are checked by the manual script
   in `docs/TESTING.md`, not by regexing CSS.
 
