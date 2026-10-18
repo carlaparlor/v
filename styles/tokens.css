@@ -56,7 +56,7 @@
   --pane-padding: var(--space-4);
 
   /* Fade transition (ADR-0007) — whole-shell fade for action results */
-  --fade-duration: 650ms;
+  --fade-duration: 400ms;
   --fade-easing: ease-in-out;
 
   /* Interactables — each type has its own color (plus per-instance color override).

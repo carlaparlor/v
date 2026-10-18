@@ -70,7 +70,7 @@ Vinland.define('app/game', function (require) {
           if (!isNaN(n)) return n;
         }
       } catch (_) {}
-      return 650;
+      return 400;
     }
 
     function fadeSwap(swapFn) {

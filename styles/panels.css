@@ -223,5 +223,15 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  inline-size: 100%;
+  /* Shrink to the map grid's width (the widest child), so the region header's
+     left edge lines up with the grid below it. The block itself is still
+     centred in the right pane by .map's align-items. */
+  inline-size: fit-content;
+  max-inline-size: 100%;
+}
+
+/* Straumfjord header: left-aligned with the map grid, not centred above it. */
+.map__region {
+  align-self: flex-start;
+  text-align: left;
 }
