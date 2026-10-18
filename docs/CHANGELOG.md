@@ -4,6 +4,13 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 8 (correction 1) — simpler environment label
+
+The environment label now reads **Spring · Day 1 · clear**. Removed the `/30`
+season-length suffix and the indoor `outside · sheltered` suffix. Indoor and
+outdoor labels use the same plain weather name; shelter rules and prose are
+unchanged. Tests assert the exact label before and after sheltered crossings.
+
 ## Iteration 8 — seasons, weather and shelter
 
 **Asked:** A season and weather system with real systemic gameplay effects.
