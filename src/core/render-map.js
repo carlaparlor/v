@@ -18,8 +18,9 @@
  *     and stop at its edge — no overshoot, no gap, at any display size
  *   - navigation: every node carries its shortest route from where you are
  *     (`pathTo` in core/world): `reachable`, `distance` and `nextDirection`.
- *     The panel makes reachable nodes clickable; you walk the route, you
- *     never teleport past ground the exits do not join.
+ *     Only a neighbouring place (distance 1) is travel offered from the map:
+ *     `adjacent` marks it, and the panel makes only those clickable. A farther
+ *     place is drawn, not offered — you get there by stepping, place by place.
  *
  * This module still knows nothing about the DOM.
  */
@@ -88,9 +89,11 @@ Vinland.define('core/render-map', function (require) {
    *             gridCols: number, gridRows: number, viewWidth: number, viewHeight: number,
    *             legend: string, marker: string }}
    *   nodes: { id, name, label, gx, gy, x, y, width, height, isHere,
-   *            reachable, distance, path, nextDirection }
-   *            (`path` is the shortest route from here as directions; `distance`
-   *            its length in steps; both null when the place cannot be reached)
+   *            reachable, adjacent, distance, path, nextDirection }
+   *            (`reachable` = a route exists at all; `adjacent` = that route is
+   *            a single step, so travel to it is offered; `path` is the shortest
+   *            route from here as directions and `distance` its length in steps;
+   *            both null when the place cannot be reached)
    *   edges: { from, to, direction, orientation: 'horizontal'|'vertical', x1, y1, x2, y2 }
    *   (x, y) are node centres in viewBox units; edges join centres exactly.
    */
@@ -120,6 +123,7 @@ Vinland.define('core/render-map', function (require) {
         height: NODE_H,
         isHere,
         reachable: Boolean(path) && !isHere,
+        adjacent: Boolean(path) && path.length === 1,
         distance: path ? path.length : null,
         path: path ? path.slice() : null,
         nextDirection: path && path.length > 0 ? path[0] : null,
@@ -166,7 +170,7 @@ Vinland.define('core/render-map', function (require) {
       cellWidth: CELL_W,
       cellHeight: CELL_H,
       marker: MARKER,
-      legend: `${MARKER} you \u2014 click a place to travel`,
+      legend: `${MARKER} you \u2014 click a neighbouring place to step there`,
     };
   }
 

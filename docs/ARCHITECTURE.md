@@ -255,7 +255,7 @@ must be incapable of disagreeing.
   between two node centres. `ui/panel-map` draws the edges as vector lines under pill-shaped
   name nodes, so connectors meet each place exactly and stay true at any size (the character
   grid this replaced could not: glyph widths and the player marker kept nudging its columns
-  out of line). You are `@`, badged on the current location's pill. The map is also how you travel: `core/world.pathTo` finds the shortest route over the exits, each node carries its route (`reachable`, `distance`), and clicking a place (or focusing it and pressing Enter/Space) walks that route — `app/game.travelTo` — so navigation can never teleport past ground the exits do not join.
+  out of line). You are `@`, badged on the current location's pill. The map is also how you travel — one step at a time: each node carries its shortest route (`reachable`, `distance`), but only a neighbouring place (`adjacent`, distance 1) is a control, and `app/game.travelTo` refuses anything farther. A multi-step route is information, never a ride: you cross ground the exits join, place by place, or you do not cross it.
 - **Voice: second person, present tense**, asserted over every passage in
   `test/data-pack.test.js`. It is a design requirement, not a stylistic preference.
 **Rejected:** each pane reading state and re-rendering independently (they can drift); storing the

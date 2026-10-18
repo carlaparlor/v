@@ -306,12 +306,22 @@ Vinland.define('app/game', function (require) {
       },
 
       /**
-       * Walk to a place along the shortest route (map navigation) and
-       * re-render every pane from the destination state.
-       * @returns {boolean} false when there is no route (state untouched)
+       * Step to a neighbouring place (map navigation) and re-render every
+       * pane from the destination state. Only a place one exit away may be
+       * stepped to: a farther destination is refused, because arriving there
+       * in one click is teleporting — you cross the map place by place.
+       * @returns {boolean} false when the place is not a neighbour (state untouched)
        */
       travelTo(locationId) {
         if (mode.kind === 'action') returnToPlace();
+        var exits = state.exits && state.exits[state.current];
+        var isNeighbour = false;
+        if (exits) {
+          for (var direction in exits) {
+            if (exits[direction] === locationId) { isNeighbour = true; break; }
+          }
+        }
+        if (!isNeighbour) return false;
         const next = travelToWorld(state, locationId);
         if (!next) return false;
         state = next;

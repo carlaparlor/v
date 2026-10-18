@@ -105,12 +105,14 @@ test('every node knows its route from here (for click navigation)', () => {
 
   const smithy = node(m, 'smithy');
   assert.equal(smithy.reachable, true);
+  assert.equal(smithy.adjacent, true, 'a neighbour may be stepped to');
   assert.equal(smithy.distance, 1, 'a neighbour is one step');
   assert.deepEqual(smithy.path, ['east']);
   assert.equal(smithy.nextDirection, 'east');
 
   const cairn = node(m, 'cairn');
   assert.equal(cairn.reachable, true);
+  assert.equal(cairn.adjacent, false, 'a farther place is reachable only by stepping, never in one click');
   assert.equal(cairn.distance, 2, 'the cairn is two steps from the yard');
   assert.equal(cairn.path.length, 2);
   assert.equal(cairn.nextDirection, cairn.path[0]);
@@ -132,6 +134,7 @@ test('a place no route reaches is marked unreachable', () => {
   const m = renderMap(cutOff);
   const skerry = node(m, 'skerry');
   assert.equal(skerry.reachable, false);
+  assert.equal(skerry.adjacent, false);
   assert.equal(skerry.distance, null);
   assert.equal(skerry.path, null);
   assert.equal(skerry.nextDirection, null);

@@ -11,10 +11,11 @@
  * Centering (ADR-0007): the map is centered in the right pane, not hugging the faded seam.
  * The region header is left-aligned with the map (see panels.css).
  *
- * Navigation: a reachable place is a real control — click it (or focus it and
- * press Enter/Space) and you walk the shortest route there. The request is
- * dispatched to app/game as a 'vinland:navigate' event so this module never
- * requires app/game (the same decoupling as the text pane's actions).
+ * Navigation: a neighbouring place is a real control — click it (or focus it and
+ * press Enter/Space) and you step one exit to it. Farther places are drawn but
+ * are NOT controls: nobody teleports. You cross the map place by place. The
+ * request is dispatched to app/game as a 'vinland:navigate' event so this
+ * module never requires app/game (the same decoupling as the text pane's actions).
  */
 Vinland.define('ui/panel-map', function (require) {
   'use strict';
@@ -98,7 +99,8 @@ Vinland.define('ui/panel-map', function (require) {
       for (const node of model.nodes || []) {
         const classes = ['map__node'];
         if (node.isHere) classes.push('map__node--here');
-        else if (node.reachable) classes.push('map__node--reachable');
+        else if (node.adjacent) classes.push('map__node--reachable');
+        else if (node.reachable) classes.push('map__node--far');
         else classes.push('map__node--unreachable');
         const g = svgEl('g', classes.join(' '), {
           transform: `translate(${node.x} ${node.y})`,
@@ -106,15 +108,15 @@ Vinland.define('ui/panel-map', function (require) {
         g.dataset.location = node.id;
         if (node.isHere) {
           g.setAttribute('aria-current', 'true');
-        } else if (node.reachable) {
-          // A place you can walk to is a control: focusable, labelled, and
-          // activated by click or Enter/Space, like the prose interactables.
-          const steps = node.distance === 1 ? '1 step' : `${node.distance} steps`;
+        } else if (node.adjacent) {
+          // One step away is a control: focusable, labelled, and activated by
+          // click or Enter/Space, like the prose interactables. Nothing
+          // farther away is offered — stepping there would be teleporting.
           g.dataset.reachable = 'true';
           g.dataset.distance = String(node.distance);
           g.setAttribute('tabindex', '0');
           g.setAttribute('role', 'button');
-          g.setAttribute('aria-label', `Travel to ${node.name} (${steps} away)`);
+          g.setAttribute('aria-label', `Travel to ${node.name} (1 step away)`);
           g.addEventListener('click', function (ev) {
             if (ev && ev.stopPropagation) ev.stopPropagation();
             requestTravel(node.id);

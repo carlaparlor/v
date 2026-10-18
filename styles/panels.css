@@ -313,7 +313,9 @@
   fill: var(--color-map-node-here);
 }
 
-/* A place no route reaches from here: present, but plainly not on offer. */
+/* Places not one step away — a route exists (--far) or none does
+   (--unreachable): present on the map, but plainly not on offer. */
+.map__node--far,
 .map__node--unreachable {
   opacity: 0.55;
 }
