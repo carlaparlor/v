@@ -1,7 +1,7 @@
 # Conventions
 
 ## Naming
-- Files: `kebab-case.js` (`world-state.js`, `command-parser.js`).
+- Files: `kebab-case.js` (`render-map.js`, `world.js`).
 - Module ids: the path under `src/`, without the extension — `core/layout`, `ui/shell`,
   `ui/panels/log`. Ids are stable; never depend on load order in code.
 - Classes/constructors: `PascalCase`. Functions/variables: `camelCase`.
@@ -14,7 +14,8 @@
   player", never first person, never past tense for the world's own description.
 - Enforced by tests over the content pack (`test/data-pack.test.js`) — a passage without "you"
   fails the build.
-- Prose describes what *is*, not what the player should do. Choices belong to exits and verbs.
+- Prose describes what *is*, not what the player should do. Where you can go is stated by the
+  exits line, never implied by the prose.
 - Name places with a definite article ("The Yard", "The Cairn"): it reads well in a sentence and
   it reads well as a word on a map.
 

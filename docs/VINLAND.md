@@ -23,7 +23,7 @@ never explicitly authored. Practical consequence: no system may hardcode knowled
 system's internals — they talk through shared state and events.
 
 ### Sandbox
-No rail. The player is dropped into a simulated place and given verbs. There is no "correct"
+No rail. The player is dropped into a simulated place and left to act in it. There is no "correct"
 path, no forced quest chain, no invisible walls. Consequence: the world must be able to represent
 and resolve situations the author did not plan for, and it must fail soft (describe what happened,
 never crash).
@@ -34,7 +34,7 @@ never crash).
 | --- | --- |
 | **Modularity** | Small modules, one job each, explicit interfaces. No cross-module reach-ins. |
 | **Scalability** | Works with 10 entities and 100,000. State is data, not closures. No global singletons that block testing. |
-| **Extensibility** | Adding a system/verb/entity type must not require editing existing systems. Register, don't edit. |
+| **Extensibility** | Adding a system or entity type must not require editing existing systems. Register, don't edit. |
 | **Moddability** | Content is data (JSON/JS modules), not code branches. A mod folder plus a manifest must be enough to add content. This is a first-class feature, not an afterthought — every design decision is checked against "could a modder do this without forking?" |
 | **Tested & documented ruthlessly** | Every iteration ships with tests and docs. Docs that lag the code are treated as a bug. |
 | **Setup is trivial** | **Double-click `index.html`.** No install, no build step, no server, no Node, no dependencies, no environment variables, no database, no accounts. Enforced by `test/setup-is-trivial.test.js`. |
@@ -52,4 +52,5 @@ blending only at the very tip where they meet. No borders. Runs by double-clicki
 Modules are registered through `src/kernel.js`, and redefining a module id replaces it — that is
 the modding seam everything else will hang off. See `docs/CHANGELOG.md`.
 
-Nothing is simulated yet: no world state, no systems, no verbs, no content.
+Not simulated yet: the world state holds places and the ways between them, and nothing changes
+on its own. No systems tick.

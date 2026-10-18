@@ -4,6 +4,32 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 4 (correction) — an unrequested parser, removed
+
+**Asked:** "did i say i need a parser?"
+
+No. I had written a text parser and a verb system into `ARCHITECTURE.md` as an "extension point",
+into `CHANGELOG.md` as a "known limitation", and into `README.md` as a seam "not wired yet" — and
+then reported their absence as though it were a gap in the delivery. None of it had been requested.
+
+**Removed:** every mention of a parser, verbs and commands from `ARCHITECTURE.md`,
+`CONVENTIONS.md`, `VINLAND.md`, `CHANGELOG.md` and `README.md`. What remains about input is one
+factual line — there is none, because none was asked for.
+
+**Rule added** to `docs/WORKFLOW.md`, rule 3: *no speculative roadmap*. Docs describe what exists
+and why. A missing thing gets said once in chat, not written into the architecture as a promise to
+myself. The definition of done now includes: "nothing in the docs, comments or changelog describes
+a feature that was not asked for." Rule 4 was reworded for the same reason — document the seam you
+built, not the seams you imagine.
+
+**Also finished,** because it was in flight when this came up: `tools/scan-source.js` (shared
+source scanning for tests, replacing duplicated helpers in two test files) and two guard tests in
+`test/setup-is-trivial.test.js` — nothing shipped may use `fetch`, XHR, dynamic `import()`,
+`document.write` or ESM syntax, and `index.html` may not reference a CDN. Every one of those breaks
+the double-click-to-run promise. 106 → **108 tests, all passing.** Say the word and I drop them.
+
+---
+
 ## Iteration 4 — a map of words and lines, and a text pane synced to it
 
 **Asked:** "this game is second person / the right panel is for a map made of words and lines /
@@ -26,8 +52,8 @@ location.
   cells, unknown endpoints, unknown directions, a missing start, a blank passage, and — the useful
   one — a declared direction that contradicts the grid positions, naming both locations.
 - **`src/core/render-text.js`** — world state → `{ region, place, title, paragraphs, exits,
-  exitsLine }`. Pure. Emits structured `exits` alongside the prose so a future parser has
-  something to match against.
+  exitsLine }`. Pure. The prose exits line is derived from the structured `exits` list, so the
+  two can never disagree.
 - **`src/core/render-map.js`** — world state → a character grid. Names centred on their **cell's**
   centre column (not their own, which is what caused `││` doubling), `─` filling the gap between
   east/west neighbours with a space beside each word, `│` on the connector row for north/south,
@@ -84,8 +110,8 @@ checks. `package.json` → 0.4.0.
 
 ### Known limitations, flagged not fixed
 
-- No input yet: movement is via `game.travel(direction)` in the console. The parser/verbs
-  extension point is documented but unwired — that is a future instruction.
+- No input handling of any kind, because none was asked for. `travel(direction)` exists in the
+  game API and is reachable from the console; nothing in the UI calls it.
 - The map has no fog of war; every location is always visible.
 - Only orthogonal edges are drawn. Diagonals need a taller cell (3 rows) and a `╱ ╲` vocabulary.
 - Every render rebuilds both panes' DOM. Fine now; needs dirty-checking when the text pane becomes
@@ -216,7 +242,7 @@ default-config test in `test/core-layout.test.js`. Fixed one bad test along the 
 [docs/TESTING.md](TESTING.md).
 
 **Deliberately not built:** pane content, panels, splitter, responsive stacking, game systems,
-parser, a mod loader/manifest. Those are future instructions.
+input handling, a mod loader/manifest. Those are future instructions.
 
 ---
 

@@ -28,7 +28,7 @@ v/
 │     ├─ panel-text.js        paints a text view model into the left pane
 │     └─ panel-map.js         paints a map view model into the right pane
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (106)
+├─ test/                      node:test unit tests (108)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
@@ -69,7 +69,7 @@ refers to modules by id, never by load order.
 app/       composition root. May require anything. Nothing requires it except main.js.
 ui/        paints view models into panes, collects input. The ONLY layer that touches the DOM.
 core/      game systems, world state, view models. Pure: no DOM, no globals, no I/O.
-data/      content packs (locations, exits, passages; later entities, verbs, world gen inputs)
+data/      content packs (locations, exits, passages; later: entities, world gen inputs)
 ```
 
 `core/` and `data/` must never require `ui/`. That is what keeps the game testable in Node
@@ -107,10 +107,6 @@ inventing a new one.
 3. **Systems** — `core/systems/*` register into a system list and are ticked in order. The seam
    already exists in miniature: `game.setState(next)` replaces the world and re-renders every pane,
    which is exactly what a tick will do.
-4. **Verbs/commands** — a parser resolves player text to a registered verb. `renderText` already
-   emits structured `exits` (`{ direction, to, name }`) alongside the prose so a parser has
-   something to match against.
-
 ## ADRs
 
 ## ADRs
@@ -215,7 +211,7 @@ current location in both the map and the text module (two facts about one thing)
 layout from the exit graph alone (that is a graph-drawing problem — authoring `at:` positions is
 cheaper, deterministic and moddable).
 **Consequences:** Sync is structural rather than coordinated, and both panes are testable without a
-browser (106 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
+browser (108 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
 will need dirty-checking once the text pane becomes a scrolling log; the map draws orthogonal edges
 only (diagonals need a taller cell); there is no fog of war yet, so every location is always
 visible; and `--color-text-dim` clears AA on the dark pane only, so it must not be used on the

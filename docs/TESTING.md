@@ -23,7 +23,7 @@ second-person passages per location.
 npm test
 ```
 
-Expected: **106 tests, 0 failures.** Coverage by layer:
+Expected: **108 tests, 0 failures.** Coverage by layer:
 
 | Area | File | What it proves |
 | --- | --- | --- |
@@ -80,7 +80,7 @@ Expected map at the start (exact characters — this is the snapshot the tests a
 
 ### Definition of pass
 
-Checks 1-11 pass, all four regression checks behave, `npm test` green (106).
+Checks 1-11 pass, all four regression checks behave, `npm test` green (108).
 
 ---
 

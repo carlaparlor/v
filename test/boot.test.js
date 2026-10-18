@@ -7,27 +7,12 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
-
-import { ROOT, loadScripts } from '../tools/load-scripts.js';
+import { loadScripts } from '../tools/load-scripts.js';
+import { read, scriptOrder, sourceFiles, stripComments } from '../tools/scan-source.js';
 import { installDocument, makeDocument, findByClass } from '../tools/dom-stub.js';
 
-const indexHtml = readFileSync(join(ROOT, 'index.html'), 'utf8');
-
 /** The script order index.html declares — read from the file, not duplicated here. */
-const SCRIPTS = [...indexHtml.matchAll(/<script src="\.\/([^"]+)"/g)].map((m) => m[1]);
-
-/** Every .js file under src/, recursively. */
-function sourceFiles(dir = join(ROOT, 'src')) {
-  const out = [];
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
-    else if (entry.endsWith('.js')) out.push(relative(ROOT, full).split('\\').join('/'));
-  }
-  return out.sort();
-}
+const SCRIPTS = scriptOrder();
 
 test('the kernel loads first and the entry point loads last', () => {
   assert.equal(SCRIPTS[0], 'src/kernel.js');
@@ -40,19 +25,12 @@ test('every source file is actually loaded by index.html', () => {
   assert.deepEqual(missing, [], 'these files exist but index.html never loads them');
 });
 
-/**
- * Strip comments before scanning, so documented examples (`require('core/other')` in the
- * kernel's docblock) are not mistaken for real dependencies.
- */
-const stripComments = (code) =>
-  code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-
 test('dependencies load before the modules that require them', () => {
   const definedBy = new Map(); // module id -> script that defines it
   const requiredBy = new Map(); // module id -> scripts that require it
 
   for (const script of SCRIPTS) {
-    const code = stripComments(readFileSync(join(ROOT, script), 'utf8'));
+    const code = stripComments(read(script));
     for (const m of code.matchAll(/Vinland\.define\(\s*['"]([^'"]+)['"]/g)) definedBy.set(m[1], script);
     for (const m of code.matchAll(/require\(\s*['"]([^'"]+)['"]\s*\)/g)) {
       if (!requiredBy.has(m[1])) requiredBy.set(m[1], []);

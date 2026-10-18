@@ -6,23 +6,11 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { ROOT } from '../tools/load-scripts.js';
-
-const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
-
-/** Every shipped .js file under src/, recursively. */
-function sourceFiles(dir = join(ROOT, 'src')) {
-  const out = [];
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
-    else if (entry.endsWith('.js')) out.push(relative(ROOT, full).split('\\').join('/'));
-  }
-  return out.sort();
-}
+import { read, shippedFiles, sourceFiles, stripComments, styleFiles } from '../tools/scan-source.js';
 
 const indexHtml = read('index.html');
 
@@ -70,10 +58,10 @@ test('there is no lockfile and no build step', () => {
 });
 
 test('stylesheets only use tokens for colour (retheme/mod point)', () => {
-  const sheets = readdirSync(join(ROOT, 'styles')).filter((f) => f.endsWith('.css') && f !== 'tokens.css');
+  const sheets = styleFiles();
   assert.ok(sheets.length >= 2, 'expected layout.css and panels.css');
   for (const sheet of sheets) {
-    const css = read(`styles/${sheet}`);
+    const css = read(sheet);
     const hardcoded = [...css.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g)];
     assert.deepEqual(hardcoded.map((m) => m[0]), [], `colours belong in tokens.css, not ${sheet}`);
   }
@@ -109,4 +97,33 @@ test('each tone is held solid; the blend happens only at the seam', () => {
 
   // Stacked layouts flip the axis instead of redefining the whole gradient.
   assert.match(layout, /--fade-axis:\s*to bottom/);
+});
+
+test('nothing shipped needs a network or a server origin', () => {
+  // Each of these is blocked or broken when index.html is opened from file://, which is the
+  // only setup Vinland promises (ADR-0003). Content arrives as a <script> tag, not a fetch.
+  const banned = [
+    [/\bfetch\s*\(/, 'fetch() is blocked on file:// — ship content as a <script> tag'],
+    [/\bXMLHttpRequest\b/, 'XHR is blocked on file://'],
+    [/\bimport\s*\(/, 'dynamic import() is blocked on file://'],
+    [/\bdocument\.write\b/, 'document.write would fight the boot order'],
+    [/^\s*import\s/m, 'ESM import is blocked on file://'],
+    [/^\s*export\s/m, 'ESM export is blocked on file://'],
+  ];
+
+  for (const file of shippedFiles()) {
+    const code = stripComments(read(file));
+    for (const [pattern, why] of banned) {
+      assert.equal(pattern.test(code), false, `${file}: ${why}`);
+    }
+  }
+});
+
+test('index.html pulls nothing from a CDN', () => {
+  const external = [...indexHtml.matchAll(/(?:src|href)\s*=\s*["'](?:https?:)?\/\//g)];
+  assert.deepEqual(
+    external.map((m) => m[0]),
+    [],
+    'every asset must be local: Vinland has to work offline, straight off the filesystem',
+  );
 });

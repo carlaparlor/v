@@ -86,5 +86,5 @@ Content is data and modules are registered by id, so a mod is a `<script>` tag a
   — the last registration for a role wins.
 - **Replace any module:** defining an existing id swaps it and drops its cache.
 
-Details and the seams that are not wired yet (systems, verbs) are in
+Details, and the one seam that is not wired yet (systems), are in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
