@@ -469,7 +469,7 @@ Automated coverage: core-time.test.js plus app-game clock integration tests.
 ## Seasons and weather
 
 1. Refresh the preview or open index.html directly. Under the place name and
-   clock, confirm **Spring · Day 1/30 · clear**. Waiting, examining, and Back
+   clock, confirm **Spring · Day 1 · clear**. Waiting, examining, and Back
    must not reroll the weather or advance the calendar.
 2. Use the console to explore conditions without playing through thirty days:
    ```js
@@ -488,7 +488,7 @@ Automated coverage: core-time.test.js plus app-game clock integration tests.
    elapsed. With `'storm'` at that same time, travel takes ten minutes.
    `conditions(91, 6, 'snow')`: winter snow also costs ten minutes per outdoor step.
 4. `conditions(91, 12, 'snow', 'hall')`: enter the Longhall. Entering takes ten
-   minutes; the label now says **snow outside · sheltered**. Indoor steps and
+   minutes; the label still says **Winter · Day 1 · snow**. Indoor steps and
    stairs cost five minutes. Leaving the building costs ten. Prose describes
    shelter, not being soaked by outdoor weather.
 5. `conditions(1, 6, 'fog', 'cairn')`: approach the raven; ten minutes pass.
@@ -500,7 +500,7 @@ Automated coverage: core-time.test.js plus app-game clock integration tests.
    dawn starts, and at 16:00 winter night begins.
 7. Set `timeSeconds` to `30 * 86400 - 30`; inspect the environment, then advance
    thirty seconds using a valid failed attempt or console state replacement.
-   Confirm summer day 1/30 (absolute Day 31). At absolute Day 121, spring returns.
+   Confirm summer day 1 (absolute Day 31). At absolute Day 121, spring returns.
 8. Check a storm just before its next three-hour boundary. Travel pays its
    departure cost even if it arrives in rain; the next action uses the new weather.
    Reapply a JSON-round-tripped world state and confirm identical conditions.
