@@ -31,7 +31,8 @@ of one immutable world state rendered in one pass, so they cannot disagree. Movi
 Coloured words in the prose are interactables with dropdown actions; containers offer Open while
 closed and Close while open, stay as you leave them, and show what they hold in their own
 open/examine view — never in the room's prose. Places nest: the Longhall on the shore is a
-building you can enter, and inside it has a map of its own — as deep as content nests.
+building you can enter, and inside it has a map of its own — floors included: the
+Longhall's loft is a real upper storey, up the stairs from the hall.
 See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 ```

@@ -4,6 +4,61 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 1) — multiple floors: a building's storeys are maps too
+
+**Asked:** "so what about if a building has multiple floors?"
+
+**Clarified before building:** build it with the Longhall as the example; you get
+between floors by a Climb/Descend action on a stairs word (mirroring Enter/Exit);
+upstairs is the Loft plus a landing at the stair head.
+
+### What was wrong
+
+The Loft was a floor in prose only — mechanically it was a room one step north of
+The Hall on the same interior map. Rooms on different storeys would have been drawn
+side by side on one flat map, because a layer was defined by `within` alone.
+
+### The model (`core/world`)
+
+- **Floors are `floor`, inside the layer.** A room may declare `floor: 'Ground Floor'`
+  (any label). The map a room lives on is now its container *and* its floor:
+  `render-map` draws only rooms sharing both, and the breadcrumb grows the floor —
+  `Straumfjord › The Longhall › Upper Floor`. Grid cells and exits are validated per
+  floor, so the landing may sit at the same coordinates as The Hall below it.
+- **Stairs are `stairsUp`, crossed like a doorway.** The room below names where the
+  stairs arrive (`longhall-hall: stairsUp: 'longhall-landing'`); the way down is
+  derived, so stairs cannot be half-declared either. `stairsTarget`/`crossStairs`
+  mirror `portalTarget`/`crossPortal`; the verbs are `climb`/`descend` on the stairs
+  word (`core/actions` shares one crossing gate for enter/exit/climb/descend, and
+  refuses a verb with no crossing behind it). In `app/game`, climbing is travel, not
+  a view — exactly like entering. Exits, routes, and one-step map travel never cross
+  a floor. Stairs chain: a landing with its own `stairsUp` is the next floor's way
+  down, so three, four, any storeys are the same data edit.
+- **Validation keeps authors honest:** stairs to an unknown room, to the same floor,
+  to another building, declared from both ends, in a loop, or two staircases arriving
+  at one room (the way down would be ambiguous) are all rejected with named messages.
+
+### The building (`data/vinland`)
+
+The Hall and the Store Room are the **Ground Floor**. The Hall's prose now shows
+{stairs} along the wall, offering **examine, climb**. Upstairs is the **Upper Floor**:
+**The Landing** (new — a full place at the stair head, with a window slit over the
+yard, and the stairs word offering **descend**) and **The Loft** (north of the
+landing, blankets and all). The old hall→loft northern exit is gone: the loft is up,
+not north.
+
+### Tests: 145 → 153
+
+New `test/core-floors.test.js` (7) and an app-level climb/descend test: per-floor maps
+and breadcrumbs, stair derivation and gating, no routes or exits across floors, a
+synthetic three-storey tower (same cell on three floors, chained stairs), and every
+stair validation. Older flat-interior assumptions were re-scoped to the ground floor.
+
+**Test it:** double-click `index.html`, then run the floors script in
+[docs/TESTING.md](TESTING.md).
+
+---
+
 ## Iteration 6 — layered maps: buildings you can enter, with maps of their own
 
 **Asked:** "you will extend the map / there are levels/layers to it / some places have

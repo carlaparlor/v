@@ -27,7 +27,7 @@
 Vinland.define('core/render-map', function (require) {
   'use strict';
 
-  const { DIRECTIONS, locationIds, location, pathTo, parentOf, locationsInLayer, breadcrumb } = require('core/world');
+  const { DIRECTIONS, locationIds, location, pathTo, parentOf, floorOf, locationsInLayer, breadcrumb } = require('core/world');
 
   const MARKER = '@';
   const ELLIPSIS = '\u2026'; // …
@@ -98,10 +98,12 @@ Vinland.define('core/render-map', function (require) {
    *   (x, y) are node centres in viewBox units; edges join centres exactly.
    */
   function renderMap(world) {
-    // One map shows one layer: the places that share your parent. Step
-    // through a doorway and the map you get is the inside's own.
+    // One map shows one layer — and one floor of it: the places that share
+    // your parent and your floor. Step through a doorway, or climb the
+    // stairs, and the map you get is that layer's own.
     const layerParent = parentOf(world, world.current);
-    const layerLocs = locationsInLayer(world, layerParent);
+    const layerFloor = floorOf(world, world.current);
+    const layerLocs = locationsInLayer(world, layerParent, layerFloor);
     const ids = layerLocs.map(function (loc) { return loc.id; });
     const b = bounds(world, ids);
 
@@ -166,6 +168,7 @@ Vinland.define('core/render-map', function (require) {
       region: world.region,
       breadcrumb: breadcrumb(world),
       layer: layerParent,
+      floor: layerFloor,
       place: world.current,
       nodes,
       edges,

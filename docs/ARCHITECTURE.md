@@ -302,3 +302,15 @@ cannot span them (open the barrel outside, step in, step out: one state througho
 interactable can in principle be performed from another layer via the API; the UI only
 ever offers the current place's words, and one-step travel cannot exploit it. The map
 gives no hint of other layers beyond the breadcrumb and the building word itself.
+
+**Amendment (Iteration 6, correction 1) — floors are sub-layers, stairs are crossings.**
+A room may declare `floor: '<label>'`; the map it lives on is its `within` container
+*and* its floor, and the breadcrumb appends the floor (`… › The Longhall › Upper
+Floor`). Stairs follow the doorway pattern exactly: the room below declares
+`stairsUp: '<arrivalRoomId>'`, the way down is derived (`stairsTarget`/`crossStairs`),
+and the verbs are `climb`/`descend` on a stairs word — travel, not a view. Exits,
+routes, and map travel never cross a floor. Rejected: `up`/`down` as directional exits
+— the grid is two-dimensional, and a vertical exit would either lie about geometry or
+make route-finding ride between maps, breaking the rule that crossings are explicit
+actions. Because the arrival room may itself declare `stairsUp`, storeys chain to any
+height with no new mechanism.

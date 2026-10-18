@@ -10,6 +10,47 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 6 (correction 1) — multiple floors: up the longhall stairs
+
+**Asked:** "so what about if a building has multiple floors?" Clarified: build it with
+the Longhall as the example; Climb/Descend on a stairs word; upstairs is a landing
+plus the Loft.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **153 tests, 0 failures.** New: `test/core-floors.test.js` (7) plus an app
+test — per-floor maps and breadcrumbs, stair derivation/gating, no exits or routes
+across floors, a synthetic three-storey tower, and stair validation.
+
+### Manual
+
+**Double-click `index.html`.** First get inside the Longhall (yard → The Longhall →
+**longhall** → enter).
+
+| # | Check | Expected |
+| --- | --- | --- |
+| 1 | The ground floor map | Header `Straumfjord › The Longhall › Ground Floor`; only **The Hall** and **The Store Room** are drawn. The Loft is not on this map. |
+| 2 | The stairs word | The Hall's prose ends with **stairs** climbing along the wall. Its menu: **examine, climb**. |
+| 3 | Climb | Choose **climb**. No result view: you arrive on **The Landing**; the map is now The Landing + The Loft under `… › Upper Floor`. |
+| 4 | The loft is a step, not a climb | Click **The Loft** on the upper map (or step north): you arrive; south returns to the landing. |
+| 5 | No crossing without stairs | From the landing, try the console: `Vinland.require('app/game').getGame().travelTo('longhall-hall')` → `false`. From The Hall, stepping north goes nowhere — the loft is up, not north. |
+| 6 | Descend | On the landing, **stairs → descend**: you are back in The Hall and the ground floor map is restored. |
+
+### Regression checks
+
+- **Iteration 6 invariants:** entering/leaving still swap whole layers; routes never cross a doorway; the elder still talks in The Hall (map dims + tape while engaged).
+- **Three storeys are data:** (console) `Vinland.require('core/world')` exposes `stairsTarget`/`crossStairs` — another floor is a `floor` label plus a `stairsUp`, not a code path.
+
+### Definition of pass
+
+Checks 1-6 pass, both regression checks behave, `npm test` green (153).
+
+---
+
 ## Iteration 6 — layered maps: the Longhall, inside and out
 
 **Asked:** extend the map — layers, buildings that can be entered, buildings with maps

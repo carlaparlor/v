@@ -32,7 +32,7 @@ test('every location has a name, a passage and an integer grid position', () => 
 });
 
 test('no two locations share a grid cell on the same layer', () => {
-  const cells = pack.locations.map((l) => (l.within ?? '') + '@' + l.at.join(','));
+  const cells = pack.locations.map((l) => (l.within ?? '') + '#' + (l.floor ?? '') + '@' + l.at.join(','));
   assert.equal(new Set(cells).size, cells.length);
 });
 
@@ -67,10 +67,15 @@ test('the world is connected: every location is reachable from the start', () =>
     adjacency.get(exit.to).add(exit.from);
   }
   // Doorways connect layers: a building and its door room reach each other.
+  // Stairs do the same between floors.
   for (const loc of pack.locations) {
     if (loc.entry) {
       adjacency.get(loc.id).add(loc.entry);
       adjacency.get(loc.entry).add(loc.id);
+    }
+    if (loc.stairsUp) {
+      adjacency.get(loc.id).add(loc.stairsUp);
+      adjacency.get(loc.stairsUp).add(loc.id);
     }
   }
   const seen = new Set([pack.start]);
@@ -124,7 +129,8 @@ test('validatePack rejects the ways a pack can be wrong', () => {
   assert.throws(() => validatePack(crooked), /the map grid disagrees/);
 
   const collision = JSON.parse(JSON.stringify(good));
-  collision.locations[1].at = [...collision.locations[0].at];
+  const hallCell = collision.locations.find((l) => l.id === 'longhall-hall').at;
+  collision.locations.find((l) => l.id === 'longhall-store').at = [...hallCell];
   assert.throws(() => validatePack(collision), /share the map grid position/);
 
   const badStart = JSON.parse(JSON.stringify(good));

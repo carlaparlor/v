@@ -417,23 +417,57 @@ test('entering the longhall swaps both panes to its interior, and leaving swaps 
   assert.equal(g.getMode(), 'place');
   assert.equal(g.getState().current, 'longhall-hall');
   assert.equal(findByClass(left, 'text__title').textContent, 'The Hall');
-  assert.deepEqual(mapIds(), ['longhall-hall', 'longhall-loft', 'longhall-store']);
-  assert.match(findByClass(right, 'map__region').textContent, /Straumfjord › The Longhall/);
+  assert.deepEqual(mapIds(), ['longhall-hall', 'longhall-store'], 'the ground floor map only');
+  assert.match(findByClass(right, 'map__region').textContent, /Straumfjord › The Longhall › Ground Floor/);
   assert.equal(right.classList.contains('pane--dimmed'), false, 'arriving is not engaging a view');
   assert.equal(left.dataset.place, right.dataset.place, 'both panes still agree, one layer down');
 
-  // Step around the inside like anywhere else.
+  // Step around the ground floor like anywhere else — but not up: the loft
+  // is another floor, reached by the stairs, not a step north.
   assert.equal(g.travel('west'), true);
   assert.equal(g.getState().current, 'longhall-store');
   assert.equal(g.travel('east'), true);
-  assert.equal(g.travel('north'), true);
-  assert.equal(g.getState().current, 'longhall-loft');
-  assert.equal(g.travel('south'), true);
+  assert.equal(g.travel('north'), false);
+  assert.equal(g.getState().current, 'longhall-hall');
 
   // Out through the door, back onto the shore map.
   g.performAction('longhall-door', 'exit');
   assert.equal(g.getState().current, 'hall');
   assert.ok(mapIds().includes('cairn'), 'the shore map is back');
+});
+
+test('climbing the longhall stairs swaps the map to the upper floor, and descending swaps back', () => {
+  const g = start();
+  const [left, right] = doc.shell.children;
+  const mapIds = () => findAllByClass(right, 'map__node').map((n) => n.dataset.location).sort();
+
+  g.travel('north');
+  g.performAction('longhall-building', 'enter');
+  assert.equal(g.getState().current, 'longhall-hall');
+
+  // Climb: travel, not a view — you arrive on the landing, upper floor map.
+  g.performAction('longhall-stairs', 'climb');
+  assert.equal(g.getMode(), 'place');
+  assert.equal(g.getState().current, 'longhall-landing');
+  assert.equal(findByClass(left, 'text__title').textContent, 'The Landing');
+  assert.deepEqual(mapIds(), ['longhall-landing', 'longhall-loft']);
+  assert.match(findByClass(right, 'map__region').textContent, /Straumfjord › The Longhall › Upper Floor/);
+  assert.equal(right.classList.contains('pane--dimmed'), false, 'arriving upstairs is not engaging a view');
+
+  // The loft steps off the landing like any neighbouring place.
+  assert.equal(g.travel('north'), true);
+  assert.equal(g.getState().current, 'longhall-loft');
+  assert.equal(g.travel('south'), true);
+
+  // No riding the map or a route back downstairs or out of the building.
+  assert.equal(g.travelTo('longhall-hall'), false);
+  assert.equal(g.travelTo('yard'), false);
+  assert.equal(g.getState().current, 'longhall-landing');
+
+  // Down the stairs, back onto the ground floor map.
+  g.performAction('longhall-stairs-down', 'descend');
+  assert.equal(g.getState().current, 'longhall-hall');
+  assert.deepEqual(mapIds(), ['longhall-hall', 'longhall-store']);
 });
 
 test('the running game is reachable for testing and the console', () => {

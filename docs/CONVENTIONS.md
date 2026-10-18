@@ -32,6 +32,9 @@
   (nesting is arbitrary), and `entry: '<doorId>'` on the container names the doorway
   location inside it. Grid positions and exits never cross a layer; the only way between
   layers is a doorway word offering `enter` (outside) or `exit` (at the door inside).
+- **Floors are data too:** `floor: '<label>'` splits a layer into storeys (each its own
+  map), and `stairsUp: '<roomId>'` on the room below names where the stairs arrive —
+  crossed by a stairs word offering `climb` (below) or `descend` (above), never by an exit.
 - **Containers hold contents as data:** a `container` may declare `contains: [...]` (one level
   deep — contents cannot be containers). Never offer both `open` and `close` in an `actions`
   list: the offered verb is derived from the container's state. Write `open:` prose that
