@@ -33,6 +33,44 @@ test('the left pane crossfades on step timing, in sync with the glide', () => {
   assert.match(layout, /\.pane--stepping \{\s*opacity: 0;/);
 });
 
+test('the arrival state eases on the map instead of snapping at the landing', () => {
+  // Node state classes (here/reachable/far) and pill colours transition on
+  // step timing, so prepareArrival can start the arrival mid-glide.
+  const panelsCss = readFileSync(join(ROOT, 'styles/panels.css'), 'utf8');
+  assert.match(panelsCss, /\.map__node \{[^}]*transition: opacity calc\(var\(--duration-step\)/);
+  assert.match(panelsCss, /\.map__node-box \{[^}]*fill calc\(var\(--duration-step\)/);
+
+  const { doc } = installDocument();
+  const Vinland = loadScripts([
+    'src/kernel.js',
+    'src/core/world.js',
+    'src/core/render-map.js',
+    'src/ui/panels.js',
+    'src/ui/panel-map.js',
+    'src/data/vinland.js',
+  ]);
+  const { createWorld, travel } = Vinland.require('core/world');
+  const { renderMap } = Vinland.require('core/render-map');
+  const panel = Vinland.require('ui/panel-map');
+  assert.equal(typeof panel.prepareArrival, 'function');
+
+  const pane = doc.createElement('div');
+  const pack = Vinland.require('data/vinland');
+  const before = createWorld(pack);
+  panel.render(pane, renderMap(before));
+
+  // The destination model (one step east) begins arriving on this DOM.
+  const destination = renderMap(travel(before, 'east'));
+  assert.equal(panel.prepareArrival(pane, destination), true);
+  const groups = new Map();
+  (function walk(n) {
+    if (n.dataset && n.dataset.location) groups.set(n.dataset.location, n);
+    for (const kid of n.children || []) walk(kid);
+  })(pane);
+  assert.ok(groups.get('smithy').className.includes('map__node--here'), 'destination lights up mid-glide');
+  assert.ok(groups.get('yard').className.includes('map__node--reachable'), 'origin recedes to a neighbour');
+});
+
 test('the @ badge glides from the node you are on to the node you clicked', () => {
   const { doc } = installDocument();
   const Vinland = loadScripts([

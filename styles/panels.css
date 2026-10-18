@@ -276,10 +276,21 @@
   stroke-linecap: round;
 }
 
+.map__node {
+  /* Arrival is a transition, not a swap: when a step lands, the here/far
+     state classes change, and they ease over the last stretch of the glide
+     (see prepareArrival) instead of snapping in one frame. */
+  transition: opacity calc(var(--duration-step) * 0.4) var(--ease-step);
+}
+
 .map__node-box {
   fill: var(--color-map-node);
   stroke: var(--color-map-node-border);
   stroke-width: 1.5;
+  transition:
+    fill calc(var(--duration-step) * 0.4) var(--ease-step),
+    stroke calc(var(--duration-step) * 0.4) var(--ease-step),
+    stroke-width calc(var(--duration-step) * 0.4) var(--ease-step);
 }
 
 .map__node--here .map__node-box {
@@ -295,8 +306,9 @@
 
 .map__node--reachable .map__node-box {
   transition:
-    fill 120ms ease,
-    stroke 120ms ease;
+    fill calc(var(--duration-step) * 0.4) var(--ease-step),
+    stroke calc(var(--duration-step) * 0.4) var(--ease-step),
+    stroke-width calc(var(--duration-step) * 0.4) var(--ease-step);
 }
 
 .map__node--reachable:hover .map__node-box,

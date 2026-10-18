@@ -74,6 +74,7 @@ Vinland.define('app/game', function (require) {
     let stepping = false;
     let stepTimer = null;
     let stepTextTimer = null;
+    let stepMapTimer = null;
 
     function cancelPendingStep() {
       if (stepTimer) {
@@ -83,6 +84,10 @@ Vinland.define('app/game', function (require) {
       if (stepTextTimer) {
         clearTimeout(stepTextTimer);
         stepTextTimer = null;
+      }
+      if (stepMapTimer) {
+        clearTimeout(stepMapTimer);
+        stepMapTimer = null;
       }
       stepping = false;
       const textBinding = findBinding('text');
@@ -96,11 +101,12 @@ Vinland.define('app/game', function (require) {
      * Commit a one-step move within this map, as one continuous motion:
      * the @ marker glides along the connector over STEP_MS while the left
      * pane crossfades in sync (old prose out over the first half; the new
-     * place's prose swapped in while faded and back in over the second).
-     * Only as the marker lands does the world commit and the map re-render —
-     * with the badge already exactly where the glide left it, so there is
-     * no stop-then-bam. Where there is nothing to animate (tests, reduced
-     * motion) the step is immediate.
+     * place's prose swapped in while faded and back in over the second) —
+     * and the map's arrival state (destination lit, origin receded) eases
+     * in over the last stretch, still in flight. As the marker lands, the
+     * world commits and the map re-renders into a picture that is already
+     * on screen, so there is no stop-then-bam. Where there is nothing to
+     * animate (tests, reduced motion) the step is immediate.
      * @returns {boolean} false when a step is already in flight
      */
     function beginStep(next) {
@@ -132,6 +138,17 @@ Vinland.define('app/game', function (require) {
               }
             }, STEP_MS / 2);
             if (stepTextTimer && typeof stepTextTimer.unref === 'function') stepTextTimer.unref();
+            // Before the marker lands: the destination map state starts
+            // arriving on the still-rendered map — the destination pill
+            // lights up and the old one recedes while the @ is still in
+            // flight, so the landing itself has nothing left to snap.
+            if (typeof panel.prepareArrival === 'function') {
+              stepMapTimer = setTimeout(function () {
+                stepMapTimer = null;
+                try { panel.prepareArrival(mapBinding.pane, panel.model(next)); } catch (_) {}
+              }, Math.round(STEP_MS * 0.58));
+              if (stepMapTimer && typeof stepMapTimer.unref === 'function') stepMapTimer.unref();
+            }
             stepTimer = setTimeout(function () {
               stepTimer = null;
               stepping = false;
