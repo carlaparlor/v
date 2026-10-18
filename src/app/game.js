@@ -55,6 +55,9 @@ Vinland.define('app/game', function (require) {
     let state = createWorld(pack);
     let mode = { kind: 'place' }; // 'place' | 'action'
     let pendingResult = null;
+    // Views you dived through to get to pendingResult, most recent last.
+    // Back pops one; only when it is empty does Back reach the place.
+    let resultStack = [];
 
     function findBinding(role) {
       for (let i = 0; i < bindings.length; i++) if (bindings[i].role === role) return bindings[i];
@@ -109,7 +112,7 @@ Vinland.define('app/game', function (require) {
       var textBinding = findBinding('text');
       if (textBinding && typeof textBinding.panel.renderResult === 'function') {
         textBinding.panel.renderResult(textBinding.pane, result, function () {
-          returnToPlace();
+          goBack();
         });
       } else if (textBinding) {
         // Fallback: simple div
@@ -135,7 +138,25 @@ Vinland.define('app/game', function (require) {
     function returnToPlace() {
       mode = { kind: 'place' };
       pendingResult = null;
+      resultStack = [];
       fadeSwap(function () { renderPlace(); });
+    }
+
+    /**
+     * One step back: to the view you came from, if you dived into this one
+     * from another view (examining the herring from inside the barrel takes
+     * you back to the barrel), or to the place if you came from there. The
+     * view returned to is refreshed against the current world, so a thing
+     * taken in the meantime is no longer highlighted in it.
+     */
+    function goBack() {
+      if (mode.kind !== 'action' || resultStack.length === 0) {
+        returnToPlace();
+        return;
+      }
+      var previous = resultStack.pop();
+      pendingResult = Vinland.require('core/actions').refreshResult(state, previous);
+      fadeSwap(function () { renderResult(pendingResult); });
     }
 
     const game = {
@@ -186,6 +207,7 @@ Vinland.define('app/game', function (require) {
         state = next;
         mode = { kind: 'place' };
         pendingResult = null;
+        resultStack = [];
         return renderPlace();
       },
 
@@ -204,6 +226,10 @@ Vinland.define('app/game', function (require) {
           return outcome;
         }
         state = outcome.nextWorld;
+        // Diving from one view into another (barrel -> the herring inside it)
+        // stacks the view you left, so Back lands there, not at the place.
+        if (mode.kind === 'action' && pendingResult) resultStack.push(pendingResult);
+        else if (mode.kind !== 'action') resultStack = [];
         pendingResult = outcome.result;
         mode = { kind: 'action' };
         // Whole-shell fade: the shell owns the transition (ADR-0007)
@@ -213,8 +239,11 @@ Vinland.define('app/game', function (require) {
         return outcome;
       },
 
-      /** Leave action result, back to place (visible as Return button). */
+      /** Leave every action view at once, straight back to the place. */
       returnToPlace: returnToPlace,
+
+      /** One step back (the Back button): previous view, or the place. */
+      back: goBack,
 
       /** Which mode we are in — for tests. */
       getMode() {
