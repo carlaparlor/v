@@ -90,6 +90,15 @@
   --tape-angle: -12deg;
   --tape-opacity: 0.92;
 
+  /* Player status block — the block lives in the LEFT pane, which is the dark
+     pane, so these pair against --color-shell-dark. Values are body-text safe
+     there; theme-contrast.test.js keeps it that way. */
+  --color-status: #a99c8c;
+  --color-status-bright: #ded4c3;
+  --color-stat-low: #d9a441;
+  --color-stat-critical: #e2705c;
+  --color-status-border: rgba(255, 255, 255, 0.08);
+
   /* Interactables — each type has its own color (plus per-instance color override).
      Chosen for visibility on the dark pane (#0b0a08): all clear WCAG AA there. */
   --color-interactable-object: #8ecae6;

@@ -10,6 +10,7 @@ Vinland.define('core/world', function (require) {
   'use strict';
 
   const time = require('core/time');
+  const playerMod = require('core/player');
 
   /** Canonical exit order: how the game lists directions everywhere. */
   const DIRECTIONS = ['north', 'east', 'south', 'west'];
@@ -34,6 +35,37 @@ Vinland.define('core/world', function (require) {
     if (inter.color !== undefined && inter.color !== null && typeof inter.color !== 'string') throw new Error(`interactable "${inter.id}" color must be a string`);
     if (inter.actions !== undefined && inter.actions !== null) {
       if (!Array.isArray(inter.actions)) throw new Error(`interactable "${inter.id}" actions must be an array`);
+      for (const verb of inter.actions) {
+        if (verb === 'eat' && inter.food === undefined) throw new Error(`interactable "${inter.id}" offers eat but declares no food values`);
+        if (verb === 'drink' && inter.water === undefined) throw new Error(`interactable "${inter.id}" offers drink but declares no water values`);
+        if (verb === 'rest' && inter.rest === undefined) throw new Error(`interactable "${inter.id}" offers rest but declares no rest values`);
+      }
+    }
+    if (inter.food !== undefined && inter.food !== null) {
+      if (typeof inter.food !== 'object' || Array.isArray(inter.food)) throw new Error(`interactable "${inter.id}" food must be an object`);
+      for (const key of ['hunger', 'thirst', 'energy']) {
+        if (inter.food[key] !== undefined && (typeof inter.food[key] !== 'number' || !Number.isFinite(inter.food[key]))) {
+          throw new Error(`interactable "${inter.id}" food.${key} must be a number`);
+        }
+      }
+    }
+    if (inter.water !== undefined && inter.water !== null) {
+      if (typeof inter.water !== 'object' || Array.isArray(inter.water)) throw new Error(`interactable "${inter.id}" water must be an object`);
+      if (inter.water.thirst !== undefined && (typeof inter.water.thirst !== 'number' || !Number.isFinite(inter.water.thirst))) {
+        throw new Error(`interactable "${inter.id}" water.thirst must be a number`);
+      }
+    }
+    if (inter.rest !== undefined && inter.rest !== null) {
+      if (typeof inter.rest !== 'object' || Array.isArray(inter.rest)) throw new Error(`interactable "${inter.id}" rest must be an object`);
+      if (!Number.isInteger(inter.rest.minutes) || inter.rest.minutes < 1 || inter.rest.minutes > 12 * 60) {
+        throw new Error(`interactable "${inter.id}" rest.minutes must be an integer of 1..720`);
+      }
+      if (inter.rest.energy !== undefined && (typeof inter.rest.energy !== 'number' || !Number.isFinite(inter.rest.energy) || inter.rest.energy < 0)) {
+        throw new Error(`interactable "${inter.id}" rest.energy must be a non-negative number`);
+      }
+    }
+    if (inter.restText !== undefined && inter.restText !== null && typeof inter.restText !== 'string') {
+      throw new Error(`interactable "${inter.id}" restText must be a string`);
     }
   }
 
@@ -46,6 +78,30 @@ Vinland.define('core/world', function (require) {
 
     if (pack.weatherSeed !== undefined && (!Number.isInteger(pack.weatherSeed) || pack.weatherSeed < 0 || pack.weatherSeed > 0xffffffff)) {
       throw new Error('weatherSeed must be an unsigned 32-bit integer');
+    }
+
+    // Optional player overrides: starting attributes only, in the configured range.
+    if (pack.player !== undefined && pack.player !== null) {
+      if (typeof pack.player !== 'object' || Array.isArray(pack.player)) {
+        throw new Error('pack.player must be an object');
+      }
+      if (pack.player.attributes !== undefined && pack.player.attributes !== null) {
+        const attrs = pack.player.attributes;
+        if (typeof attrs !== 'object' || Array.isArray(attrs)) {
+          throw new Error('pack.player.attributes must be an object');
+        }
+        for (const key of playerMod.ATTRIBUTES) {
+          if (attrs[key] === undefined) continue;
+          if (!Number.isInteger(attrs[key]) || attrs[key] < playerMod.PLAYER_CONFIG.attributeMin || attrs[key] > playerMod.PLAYER_CONFIG.attributeMax) {
+            throw new Error(`pack.player.attributes.${key} must be an integer between ${playerMod.PLAYER_CONFIG.attributeMin} and ${playerMod.PLAYER_CONFIG.attributeMax}`);
+          }
+        }
+        for (const key of Object.keys(attrs)) {
+          if (playerMod.ATTRIBUTES.indexOf(key) === -1) {
+            throw new Error(`pack.player.attributes has unknown attribute "${key}" (${playerMod.ATTRIBUTES.join(', ')})`);
+          }
+        }
+      }
     }
 
     const byId = new Map();
@@ -313,6 +369,8 @@ Vinland.define('core/world', function (require) {
       portals: Object.freeze(portals),
       stairsUp: Object.freeze(stairsUp),
       stairsDown: Object.freeze(stairsDown),
+      player: playerMod.initialPlayer(pack),
+      lastEvent: null,
     });
   }
 
@@ -354,7 +412,7 @@ Vinland.define('core/world', function (require) {
   function travel(world, direction) {
     const to = world?.exits?.[world.current]?.[direction];
     if (!to) return null;
-    return time.advance(Object.freeze({ ...world, current: to }), 'walk', world);
+    return playerMod.step(Object.freeze({ ...world, current: to }), 'walk', { source: world });
   }
 
   /**

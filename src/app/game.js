@@ -16,6 +16,7 @@ Vinland.define('app/game', function (require) {
   const { createWorld, travel, here, canTravel, travelTo: travelToWorld } = require('core/world');
   const { mountShell } = require('ui/shell');
   const panels = require('ui/panels');
+  const playerMod = require('core/player');
 
   // Requiring a panel module registers it. A mod adds or replaces panels the same way.
   require('ui/panel-text');
@@ -159,6 +160,15 @@ Vinland.define('app/game', function (require) {
               setMapDimmed(false);
               if (textBinding && textBinding.pane.classList) {
                 textBinding.pane.classList.remove('pane--step-fade');
+              }
+              // A collapse lands mid-walk: the step still happens, and then
+              // the day cuts out. Consume the event and show the view.
+              if (state.lastEvent && state.lastEvent.kind === 'collapse') {
+                state = Object.freeze({ ...state, lastEvent: null });
+                pendingResult = playerMod.collapseResult();
+                mode = { kind: 'action' };
+                resultStack = [];
+                fadeSwap(function () { renderResult(pendingResult); });
               }
             }, STEP_MS);
             if (stepTimer && typeof stepTimer.unref === 'function') stepTimer.unref();
@@ -326,12 +336,12 @@ Vinland.define('app/game', function (require) {
       var mapBinding = findBinding('map');
       if (mapBinding) mapBinding.panel.render(mapBinding.pane, mapBinding.panel.model(state));
       setMapDimmed(true);
-      // Text pane shows result
+      // Text pane shows result (with the status block, still synced to world)
       var textBinding = findBinding('text');
       if (textBinding && typeof textBinding.panel.renderResult === 'function') {
         textBinding.panel.renderResult(textBinding.pane, result, function () {
           goBack();
-        });
+        }, state);
       } else if (textBinding) {
         // Fallback: simple div
         var pane = textBinding.pane;
@@ -402,7 +412,17 @@ Vinland.define('app/game', function (require) {
         // If in action overlay, return first
         if (mode.kind === 'action') returnToPlace();
         const next = travel(state, direction);
-        if (!next) return false;
+        if (!next) {
+          // The map may still show a way that your body refuses: no energy left
+          // for the open ground. Tell the player why, and charge the attempt.
+          const reason = playerMod.travelRefused(state, direction);
+          if (reason) {
+            state = playerMod.payFailure(state, 'failure');
+            renderPlace();
+            showToast(reason);
+          }
+          return false;
+        }
         return beginStep(next);
       },
 
@@ -423,6 +443,13 @@ Vinland.define('app/game', function (require) {
           }
         }
         if (!isNeighbour) return false;
+        const refused = playerMod.exposedTravelRefused(state, locationId);
+        if (refused) {
+          state = playerMod.payFailure(state, 'failure');
+          renderPlace();
+          showToast(refused);
+          return false;
+        }
         const next = travelToWorld(state, locationId);
         if (!next) return false;
         return beginStep(next);
@@ -455,6 +482,11 @@ Vinland.define('app/game', function (require) {
           return outcome;
         }
         state = outcome.nextWorld;
+        // A collapse replaces the action's result: the prose is already the
+        // collapse, so the event itself is consumed right here.
+        if (state.lastEvent && state.lastEvent.kind === 'collapse') {
+          state = Object.freeze({ ...state, lastEvent: null });
+        }
         // Taking is not a view: no fade, no result screen, no place on the
         // stack. You stay exactly where you are — the current view simply
         // re-renders (which un-highlights the word: it is yours now, not a

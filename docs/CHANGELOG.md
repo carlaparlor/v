@@ -4,6 +4,52 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 9 — the player: attributes, skills, stats
+
+**Asked:** A carefully designed stats system. The design: three distinct tiers —
+attributes (innate, modify the rules), skills (grown by practice, modify costs) and
+stats (current condition, drift with the world) — with full dynamics (drift +
+consequences), a collapse instead of a death, eat/rest verbs, and an always-on
+status block in the left pane.
+
+- **Attributes** (fixed for the run, defaults 10, packs may override 1–20):
+  strength lowers the energy cost of effort, constitution slows cold and speeds
+  healing, dexterity shortens fine-motor work, intelligence makes practice count
+  for more, charisma smooths conversation. They never change; they bend the rules.
+- **Skills** (travel, talk, approach, craft, gather): every paid action trains its
+  category with diminishing returns, and a trained category works faster (up to
+  25% of its time cost at 100). The same action that costs five minutes on day one
+  costs 4:58.5 a few walks later.
+- **Stats** (health, hunger, thirst, energy, warmth, 0–100): hunger and thirst fall
+  as the clock moves; warmth follows shelter, season, weather and night; sheltered
+  energy and health come back. Effort spends energy. Starving, dehydrating or
+  freezing below 25 — or sitting at zero — drains health; a body that is fed, warm
+  and watered indoors recovers.
+- **Consequences:** exhaustion (energy below 25) makes every action take 50%
+  longer; freezing (warmth below 25) makes exposed travel take 20% longer; at zero
+  energy the open ground refuses you (indoor steps stay possible).
+- **Collapse, not death:** health at zero ends the day, not the game. The step or
+  action that does it still happens, then you are out for two hours and wake where
+  you fell — a quarter of your health, a fifth of your strength, the conditions
+  that got you down still having run. The world never resets and never kills.
+- **Eat, drink, rest:** herring and salt-fish are edible (salt costs a little
+  thirst), the yard gains a trough of dark water to drink from, the bench is a
+  twenty-minute sit and the loft's blankets a two-hour sleep. Food, water and rest
+  values are data on the interactables; a content pack's `player.attributes`
+  overrides the starting body. `validatePack` rejects data that lies about its own
+  verbs and values.
+- **The status block:** pinned above the prose in the left pane, in every view
+  (place and result) — who you are (attributes), what you have learned (skills),
+  how you are (stats), and a second-person note for anything not ok. The block
+  reads the same world state as the prose; it cannot disagree.
+
+All rates live in `PLAYER_CONFIG` (core/player); the pipeline is attributes → skill
+→ condition → weather, priced at departure like everything else. With default
+attributes, zero skills and a full body, every legacy cost is exactly the old cost
+(the tests pin both). 208 tests; see "Player and survival" in docs/TESTING.md.
+
+**Test:** `npm test` (208 tests); Player and survival in docs/TESTING.md.
+
 ## Iteration 8 (correction 2) — show the day only once
 
 Removed the day from the bottom environment line: it now reads **Spring · clear**.

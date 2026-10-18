@@ -41,6 +41,18 @@ never crash).
 
 ## Current state
 
+**Iteration 9** — the player: three tiers in one frozen body. **Attributes**
+(strength, charisma, intelligence, dexterity, constitution) are fixed for the
+run and modify the rules; **skills** (travel, talk, approach, craft, gather)
+grow by practice and make that practice faster; **stats** (health, hunger,
+thirst, energy, warmth) drift with time, weather and shelter, are spent by
+effort, restored by eating, drinking and resting — and matter: exhaustion
+slows everything, freezing slows the open ground, and starvation, thirst and
+cold drain health. Health zero does not end the game: you collapse, stay down
+two hours, and wake where you fell. A status block in the left pane shows who
+you are, what you have learned and how you are, in every view. See
+`docs/CHANGELOG.md`.
+
 **Iteration 4** — Straumfjord: the left pane narrates where you are in the second person, the
 right pane is a map of that same shore made of words and lines, and both are views of one world
 state, so they cannot disagree. You can move (`travel`), the map's `@` moves with you, and the

@@ -58,7 +58,7 @@ Vinland.define('data/vinland', function () {
         interactables: [
           { id: 'longhall-door', name: 'door', type: 'fixture', actions: ['examine', 'exit'], examine: 'You look at the door. Shoulder-worn, draughty, and the only way back to the yard that does not involve a window.', exit: 'You shoulder the door and step back out onto the shore.' },
           { id: 'longhall-stairs', name: 'stairs', type: 'fixture', actions: ['examine', 'climb'], examine: 'You look at the stairs. Steep as a ladder, worn in the middle of every tread. The smoke goes up them whether you do or not.', climb: 'You climb the stairs, ducking as the roof comes down to meet you.' },
-          { id: 'bench', name: 'bench', type: 'fixture', examine: 'You run your hand along the bench. It is worn smooth by countless winters, and cold to the touch. You suspect it will stay empty until someone decides otherwise.', use: 'You sit on the bench. The wood creaks but holds. You feel no warmer, but you are at least sitting.' },
+          { id: 'bench', name: 'bench', type: 'fixture', rest: { minutes: 20, energy: 10 }, examine: 'You run your hand along the bench. It is worn smooth by countless winters, and cold to the touch. You suspect it will stay empty until someone decides otherwise.', use: 'You sit on the bench. The wood creaks but holds. You feel no warmer, but you are at least sitting. Twenty minutes, and some of your strength comes back with the ache.' },
           { id: 'firepit', name: 'firepit', type: 'fixture', examine: 'You lean toward the firepit. Ash and half-burnt birch, still breathing heat. You see your own boots reflected in the dark of it.', use: 'You stir the firepit with a nearby stick. Sparks climb and vanish into the smoke-hole.' },
           { id: 'elder', name: 'elder', type: 'npc', color: '#90be6d', examine: 'You study the elder — weathered face, hands that have stacked every stone on the cairn. They watch you without speaking.', talk: 'You speak to the elder. They nod slowly. \u201CThe sea has been empty nine days,\u201D they say. \u201CWhen it returns, it will have made a decision for us.\u201D' },
         ],
@@ -101,7 +101,9 @@ Vinland.define('data/vinland', function () {
         passage:
           'You duck off the landing into the loft, where the smoke arrives before you do and the roof is close enough to touch. {wool-blankets|Blankets} lie folded along the beams, holding the day\u2019s last warmth like a rumour.',
         interactables: [
-          { id: 'wool-blankets', name: 'blankets', type: 'object', examine: 'You run a hand over the blankets. Wool, lanolin, and other people\u2019s sleep. Folded with a care that says somebody\u2019s mother still inspects them.' },
+          { id: 'wool-blankets', name: 'blankets', type: 'object', rest: { minutes: 120, energy: 60 }, actions: ['examine', 'rest'],
+            examine: 'You run a hand over the blankets. Wool, lanolin, and other people\u2019s sleep. Folded with a care that says somebody\u2019s mother still inspects them.',
+            restText: 'You sleep on the blankets. Two hours pass like a held breath, and you wake with the smoke\u2019s weight on you and most of your strength back.' },
         ],
       },
       {
@@ -124,7 +126,10 @@ Vinland.define('data/vinland', function () {
         interactables: [
           { id: 'knorr', name: 'knorr', type: 'object', examine: 'You look at the knorr. Clinker-built, tar dark, ropes stowed with care. It could take you across the water if the water agreed to be crossed.' },
           { id: 'cargo', name: 'cargo', type: 'container', examine: 'You eye the cargo lashed to the low-riding knorr. Canvas, barrel shapes beneath. Someone meant to hide what it is.', examineOpen: 'You look over the open cargo. Canvas thrown back, rope slack. A {salt-fish} glints beneath, and a {linen-bundle} lies under it in plain sight.', open: 'You pull at the canvas on the cargo. Rope groans. You work the canvas back and leave it open. A {salt-fish} glints beneath, and a {linen-bundle} lies under it.', close: 'You retie the canvas over the cargo. The harbour wind tugs at it as if impatient.', contains: [
-            { id: 'salt-fish', name: 'salt-fish', type: 'item', examine: 'You turn a salt-fish over in your hands. Stiff as a plank, white with brine. It will keep longer than most promises.', take: 'You take a salt-fish from the cargo. It leaves brine on your fingers.' },
+            { id: 'salt-fish', name: 'salt-fish', type: 'item', food: { hunger: 25, thirst: -10, energy: 5 }, actions: ['examine', 'take', 'eat'],
+              examine: 'You turn a salt-fish over in your hands. Stiff as a plank, white with brine. It will keep longer than most promises.',
+              take: 'You take a salt-fish from the cargo. It leaves brine on your fingers.',
+              eat: 'You eat the salt-fish. Brine dries on your lips and something in you turns over in to the sea. It is not as much as you would have liked to want.' },
             { id: 'linen-bundle', name: 'linen-bundle', type: 'item', actions: ['examine'], examine: 'You lift the linen-bundle without unwrapping it. It is heavier at one end, and somebody tied it with more knots than linen needs. You leave the knots alone.' },
           ] },
           { id: 'gull', name: 'gull', type: 'wildlife', color: '#f9c74f', examine: 'You follow the gull with your eyes. It wheels, crying, as if it knows something about tomorrow that you do not.', approach: 'You approach the gull\u2019s shadow on the planks. The bird itself stays high, circling. You are not worth descending for.' },
@@ -135,11 +140,17 @@ Vinland.define('data/vinland', function () {
         name: 'The Yard',
         at: [1, 1],
         passage:
-          'You cross the yard, which is mud in the winter, dust in the summer, and an argument the rest of the year. {ropes}, {barrel} and a {grindstone} worn into a saddle. Every door here opens onto somebody\u2019s work, and all of them are within earshot of the others.',
+          'You cross the yard, which is mud in the winter, dust in the summer, and an argument the rest of the year. {ropes}, a {trough} of dark water, a {barrel} and a {grindstone} worn into a saddle. Every door here opens onto somebody\u2019s work, and all of them are within earshot of the others.',
         interactables: [
+          { id: 'trough', name: 'trough', type: 'fixture', water: { thirst: 40 }, actions: ['examine', 'drink'],
+            examine: 'You stoop to the trough. The water in it is dark and still, holding a sky that is not the one above you. It has stood here through every weather this yard has had.',
+            drink: 'You drink from the trough. The water is cold and it goes down like a decision finally made.' },
           { id: 'grindstone', name: 'grindstone', type: 'fixture', color: '#e76f51', examine: 'You kneel at the grindstone. Its wheel is dished from years of iron meeting stone. You see dark water in the trough beside it, holding a last reflection of the sky.', use: 'You work the grindstone. The wheel turns, slow, then keen. Sparks are not made here — patience is.' },
           { id: 'barrel', name: 'barrel', type: 'container', examine: 'You rap the barrel with your knuckles. It answers dull — half full. Brine, or something kept from flies.', examineOpen: 'You look into the open barrel. Brine catches the light, and a {herring} shifts below it.', open: 'You pry the lid from the barrel and set it aside, leaving the barrel open. Salt, water, and a {herring} stares up at you.', close: 'You press the lid back onto the barrel. The wood sighs.', contains: [
-            { id: 'herring', name: 'herring', type: 'item', examine: 'You look at the herring. Silver gone dull in the brine, eyes clouded. It has waited in the dark without complaint.', take: 'You fish out a herring. Brine runs down your wrist and you do not mind as much as you expected.' },
+            { id: 'herring', name: 'herring', type: 'item', food: { hunger: 30, thirst: -5, energy: 5 }, actions: ['examine', 'take', 'eat'],
+              examine: 'You look at the herring. Silver gone dull in the brine, eyes clouded. It has waited in the dark without complaint.',
+              take: 'You fish out a herring. Brine runs down your wrist and you do not mind as much as you expected.',
+              eat: 'You eat the herring. It is salt and smoke and it goes down hard, and your stomach says it understands.' },
           ] },
           { id: 'ropes', name: 'ropes', type: 'item', examine: 'You lift the ropes. Hemp, tarred in places, frayed in others. They have held heavier things than you.', take: 'You coil the ropes and take them. They are heavier than they looked, and they smell of the harbour.' },
         ],

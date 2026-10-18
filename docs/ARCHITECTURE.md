@@ -18,6 +18,11 @@ v/
 │  ├─ core/
 │  │  ├─ layout.js            pane specs (count, ids, roles, size weights) — pure
 │  │  ├─ world.js             world state: locations, exits, travel — pure, immutable
+│  │  ├─ time.js              action-driven clock: costs, advance — pure
+│  │  ├─ environment.js       calendar, daylight, weather, exposure — pure
+│  │  ├─ player.js            the person in the world: attributes, skills, stats — pure
+│  │  ├─ interactables.js     types, colors, default verbs — pure
+│  │  ├─ actions.js           action resolution: perform() -> { nextWorld, result } — pure
 │  │  ├─ render-text.js       world state -> second-person view model — pure
 │  │  └─ render-map.js        world state -> map geometry (nodes + edges) — pure
 │  ├─ data/
@@ -28,7 +33,7 @@ v/
 │     ├─ panel-text.js        paints a text view model into the left pane
 │     └─ panel-map.js         paints a map view model into the right pane
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (113)
+├─ test/                      node:test unit tests (208)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
@@ -263,7 +268,7 @@ current location in both the map and the text module (two facts about one thing)
 layout from the exit graph alone (that is a graph-drawing problem — authoring `at:` positions is
 cheaper, deterministic and moddable).
 **Consequences:** Sync is structural rather than coordinated, and both panes are testable without a
-browser (113 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
+browser (208 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
 will need dirty-checking once the text pane becomes a scrolling log; the map draws orthogonal edges
 only (diagonals need a taller cell); there is no fog of war yet, so every location is always
 visible; and `--color-text-dim` clears AA on the dark pane only, so it must not be used on the
@@ -419,3 +424,52 @@ pricing or double-charging crossings. The final state drives the map, clock and
 prose together, including when an action crosses a slot or season boundary.
 `core/render-map` supplies the environment label; `core/render-text` adds authored
 season/weather atmosphere. UI only displays those models.
+
+### ADR-0013 — the player lives in the world state, and costs flow one way
+
+**Context:** The game needed a player with three distinct tiers — attributes
+(innate), skills (practiced), stats (condition) — without breaking the sync
+guarantee (ADR-0006), the determinism of the environment (ADR-0012), or the
+modding rule that content is data.
+
+**Decision:**
+
+1. **The player is world state.** `world.player` is plain frozen data
+   (`attributes`, `skills`, `stats`) created by `core/player.initialPlayer(pack)`
+   in `createWorld`, and `world.lastEvent` carries the most recent notable
+   transition (a collapse). Every transition returns a new world, so the body —
+   like the clock and the weather — survives serialization, JSON round trips and
+   `setState`, and the status block in the left pane and the prose can never
+   disagree about it.
+2. **One pipeline, one direction.** `core/player.step(world, action, opts)` is
+   the only place an action is priced and paid: base cost (core/time) →
+   attributes → skill → condition (core/player) → weather (core/environment),
+   priced at departure like everything else; then the clock advances, the world
+   drifts the body for those seconds, energy is spent, the skill is trained, and
+   a collapse is checked. `core/world.travel` and `core/actions.perform` both
+   end in `step`; `time.advance` is not on the success path anymore (it keeps
+   its old signature for callers who only need the clock). The order is fixed so
+   weather always adds its flat minutes to a cost that already reflects the
+   person, and a mod that replaces any module still sees one seam.
+3. **Collapse instead of death.** Health zero is a transition, not an end:
+   `step` writes `lastEvent: { kind: 'collapse' }`, adds the two unconscious
+   hours (which keep drifting the body) and sets the wake values. The UI
+   consumes the event (a result view); the next action clears it. The sandbox
+   has no rail and no kill screen.
+4. **The block is view-model data, rendered once.** `core/player.model` turns
+   the player into plain data (values, bands, notes); `core/render-text` puts it
+   in the place view model and `ui/panel-text` renders it in every view of the
+   left pane — place and result. Nothing in the block is computed at render
+   time, and the note lines follow the second-person/present-tense convention.
+5. **Data is data.** Food (`food`), water (`water`) and rest (`rest` +
+   `restText` prose) live on interactables in the content pack; a pack may
+   override starting attributes via `pack.player.attributes` (validated in
+   `validatePack`, which also rejects verbs without their values). All rates
+   live in `PLAYER_CONFIG` in core/player, next to `COSTS` in core/time.
+
+**Consequences:** With default attributes, zero skills and a full body every
+cost is exactly the legacy cost (the tests pin both the old costs and the new
+relieved ones). A second walk of the day is already a shade cheaper, so
+"five minutes a step" is now the *untrained* price — docs and tests say so.
+The status block adds a fixed few lines to the left pane in every view; the
+panes themselves are untouched (ADR-0002 stands).
