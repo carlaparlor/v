@@ -196,6 +196,54 @@ Vinland.define('core/world', function () {
     return Object.freeze({ ...world, current: to });
   }
 
+  /**
+   * Shortest route from where you are to a place, as a list of directions.
+   * Breadth-first over the exit graph, exploring in canonical direction order,
+   * so the answer is deterministic as well as shortest.
+   * @returns {string[]|null} [] when already there, null when the place does
+   *   not exist or cannot be reached from here
+   */
+  function pathTo(world, targetId) {
+    if (!world || !location(world, targetId) || !location(world, world.current)) return null;
+    if (world.current === targetId) return [];
+
+    // cameFrom: id -> { from, direction } — how BFS first reached that id.
+    const cameFrom = new Map([[world.current, null]]);
+    const queue = [world.current];
+    for (let head = 0; head < queue.length; head += 1) {
+      const at = queue[head];
+      for (const exit of exitsOf(world, at)) {
+        if (cameFrom.has(exit.to)) continue;
+        cameFrom.set(exit.to, { from: at, direction: exit.direction });
+        if (exit.to === targetId) {
+          const path = [];
+          for (let cur = targetId; cameFrom.get(cur); cur = cameFrom.get(cur).from) {
+            path.unshift(cameFrom.get(cur).direction);
+          }
+          return path;
+        }
+        queue.push(exit.to);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Walk to a place along the shortest route. Returns NEW frozen state, or
+   * null when there is no route (or you are already there — nothing moved).
+   * @returns {object|null}
+   */
+  function travelTo(world, targetId) {
+    const path = pathTo(world, targetId);
+    if (!path || path.length === 0) return null;
+    let next = world;
+    for (const direction of path) {
+      next = travel(next, direction);
+      if (!next) return null; // unreachable in practice: pathTo proved the route
+    }
+    return next;
+  }
+
   /** Every location id, sorted — useful for tests and for map bounds. */
   function locationIds(world) {
     return Object.keys(world?.locations ?? {}).sort();
@@ -242,6 +290,8 @@ Vinland.define('core/world', function () {
     exitsOf,
     canTravel,
     travel,
+    pathTo,
+    travelTo,
     locationIds,
     interactablesAt,
     findInteractable,

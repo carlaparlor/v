@@ -10,6 +10,11 @@
  *
  * Centering (ADR-0007): the map is centered in the right pane, not hugging the faded seam.
  * The region header is left-aligned with the map (see panels.css).
+ *
+ * Navigation: a reachable place is a real control — click it (or focus it and
+ * press Enter/Space) and you walk the shortest route there. The request is
+ * dispatched to app/game as a 'vinland:navigate' event so this module never
+ * requires app/game (the same decoupling as the text pane's actions).
  */
 Vinland.define('ui/panel-map', function (require) {
   'use strict';
@@ -38,6 +43,19 @@ Vinland.define('ui/panel-map', function (require) {
     }
     if (text !== undefined) node.textContent = text;
     return node;
+  }
+
+  /** Ask the composition root to take us somewhere (decoupled dispatch). */
+  function requestTravel(id) {
+    if (typeof document === 'undefined' || !document.dispatchEvent) return;
+    const detail = { to: id };
+    let event;
+    if (typeof CustomEvent === 'function') {
+      event = new CustomEvent('vinland:navigate', { detail, bubbles: true });
+    } else {
+      event = { type: 'vinland:navigate', detail };
+    }
+    document.dispatchEvent(event);
   }
 
   const panel = {
@@ -78,13 +96,38 @@ Vinland.define('ui/panel-map', function (require) {
 
       const nodeLayer = svgEl('g', 'map__nodes');
       for (const node of model.nodes || []) {
-        const g = svgEl(
-          'g',
-          node.isHere ? 'map__node map__node--here' : 'map__node',
-          { transform: `translate(${node.x} ${node.y})` },
-        );
+        const classes = ['map__node'];
+        if (node.isHere) classes.push('map__node--here');
+        else if (node.reachable) classes.push('map__node--reachable');
+        else classes.push('map__node--unreachable');
+        const g = svgEl('g', classes.join(' '), {
+          transform: `translate(${node.x} ${node.y})`,
+        });
         g.dataset.location = node.id;
-        if (node.isHere) g.setAttribute('aria-current', 'true');
+        if (node.isHere) {
+          g.setAttribute('aria-current', 'true');
+        } else if (node.reachable) {
+          // A place you can walk to is a control: focusable, labelled, and
+          // activated by click or Enter/Space, like the prose interactables.
+          const steps = node.distance === 1 ? '1 step' : `${node.distance} steps`;
+          g.dataset.reachable = 'true';
+          g.dataset.distance = String(node.distance);
+          g.setAttribute('tabindex', '0');
+          g.setAttribute('role', 'button');
+          g.setAttribute('aria-label', `Travel to ${node.name} (${steps} away)`);
+          g.addEventListener('click', function (ev) {
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            requestTravel(node.id);
+          });
+          g.addEventListener('keydown', function (ev) {
+            if (ev && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar')) {
+              if (ev.preventDefault) ev.preventDefault();
+              requestTravel(node.id);
+            }
+          });
+        } else {
+          g.setAttribute('aria-disabled', 'true');
+        }
         g.appendChild(
           svgEl('title', 'map__node-title', undefined, node.isHere ? `${node.name} (you)` : node.name),
         );

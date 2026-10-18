@@ -77,6 +77,44 @@ test('travel is not possible where there is no exit', () => {
   assert.equal(world.canTravel(w, 'north'), true, 'the harbour is north of the beach');
 });
 
+test('pathTo finds the shortest route, step by step', () => {
+  const w = fresh(); // yard
+  assert.deepEqual(world.pathTo(w, 'yard'), [], 'already there is an empty route');
+  assert.deepEqual(world.pathTo(w, 'hall'), ['north'], 'a neighbour is one step');
+  assert.equal(world.pathTo(w, 'cairn').length, 2, 'the cairn is two steps from the yard');
+  assert.equal(world.pathTo(w, 'beach').length, 2, 'the beach is two steps from the yard');
+  // Every step of a route actually travels, and the walk ends at the target.
+  for (const target of ['cairn', 'beach', 'hall', 'harbour']) {
+    let at = w;
+    for (const direction of world.pathTo(w, target)) at = world.travel(at, direction);
+    assert.equal(at.current, target, `route to ${target} arrives`);
+  }
+  assert.equal(world.pathTo(w, 'nowhere'), null, 'unknown places have no route');
+});
+
+test('travelTo walks the route and returns new frozen state', () => {
+  const w = fresh(); // yard
+  const next = world.travelTo(w, 'cairn');
+  assert.notEqual(next, w);
+  assert.equal(next.current, 'cairn', 'two steps away, arrived in one call');
+  assert.equal(w.current, 'yard', 'the old state must not be mutated');
+  assert.equal(Object.isFrozen(next), true);
+  assert.equal(world.travelTo(w, 'yard'), null, 'already there means nothing moved');
+  assert.equal(world.travelTo(w, 'nowhere'), null, 'unknown places cannot be walked to');
+});
+
+test('an unreachable place has no route and cannot be walked to', () => {
+  const cutOff = world.createWorld({
+    ...pack,
+    locations: [
+      ...pack.locations,
+      { id: 'skerry', name: 'The Skerry', at: [5, 5], passage: 'You are on the skerry.' },
+    ],
+  });
+  assert.equal(world.pathTo(cutOff, 'skerry'), null, 'no exits join the skerry');
+  assert.equal(world.travelTo(cutOff, 'skerry'), null);
+});
+
 test('travelled-to state is frozen too', () => {
   const next = world.travel(fresh(), 'north');
   assert.equal(Object.isFrozen(next), true);

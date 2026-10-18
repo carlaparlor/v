@@ -16,13 +16,17 @@
  *   - each exit becomes one edge between the two node centres; the panel draws
  *     edges UNDER the pills, so a line appears to run cleanly into each pill
  *     and stop at its edge — no overshoot, no gap, at any display size
+ *   - navigation: every node carries its shortest route from where you are
+ *     (`pathTo` in core/world): `reachable`, `distance` and `nextDirection`.
+ *     The panel makes reachable nodes clickable; you walk the route, you
+ *     never teleport past ground the exits do not join.
  *
  * This module still knows nothing about the DOM.
  */
 Vinland.define('core/render-map', function (require) {
   'use strict';
 
-  const { DIRECTIONS, locationIds, location } = require('core/world');
+  const { DIRECTIONS, locationIds, location, pathTo } = require('core/world');
 
   const MARKER = '@';
   const ELLIPSIS = '\u2026'; // …
@@ -83,7 +87,10 @@ Vinland.define('core/render-map', function (require) {
    * @returns {{ region: string, place: string, nodes: object[], edges: object[],
    *             gridCols: number, gridRows: number, viewWidth: number, viewHeight: number,
    *             legend: string, marker: string }}
-   *   nodes: { id, name, label, gx, gy, x, y, width, height, isHere }
+   *   nodes: { id, name, label, gx, gy, x, y, width, height, isHere,
+   *            reachable, distance, path, nextDirection }
+   *            (`path` is the shortest route from here as directions; `distance`
+   *            its length in steps; both null when the place cannot be reached)
    *   edges: { from, to, direction, orientation: 'horizontal'|'vertical', x1, y1, x2, y2 }
    *   (x, y) are node centres in viewBox units; edges join centres exactly.
    */
@@ -99,6 +106,8 @@ Vinland.define('core/render-map', function (require) {
       const gy = loc.at[1] - b.minY;
       // Fit the label to the widest pill first, then size the pill to the label.
       const label = fit(loc.name, labelChars(NODE_MAX_W));
+      const isHere = id === world.current;
+      const path = isHere ? [] : pathTo(world, id);
       const node = {
         id,
         name: loc.name,
@@ -109,7 +118,11 @@ Vinland.define('core/render-map', function (require) {
         y: (gy + 0.5) * CELL_H,
         width: nodeWidth(label),
         height: NODE_H,
-        isHere: id === world.current,
+        isHere,
+        reachable: Boolean(path) && !isHere,
+        distance: path ? path.length : null,
+        path: path ? path.slice() : null,
+        nextDirection: path && path.length > 0 ? path[0] : null,
       };
       nodes.push(node);
       byId.set(id, node);
@@ -153,7 +166,7 @@ Vinland.define('core/render-map', function (require) {
       cellWidth: CELL_W,
       cellHeight: CELL_H,
       marker: MARKER,
-      legend: `${MARKER} you \u2014 a way through`,
+      legend: `${MARKER} you \u2014 click a place to travel`,
     };
   }
 

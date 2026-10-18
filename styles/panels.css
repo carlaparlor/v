@@ -237,6 +237,36 @@
   stroke-width: 2.5;
 }
 
+/* A place you can walk to is clickable: pointer, and it answers the mouse. */
+.map__node--reachable {
+  cursor: pointer;
+}
+
+.map__node--reachable .map__node-box {
+  transition:
+    fill 120ms ease,
+    stroke 120ms ease;
+}
+
+.map__node--reachable:hover .map__node-box,
+.map__node--reachable:focus-visible .map__node-box {
+  fill: var(--color-map-node-hover);
+  stroke: var(--color-text-bright);
+}
+
+.map__node--reachable:focus-visible {
+  outline: none;
+}
+
+.map__node--reachable:active .map__node-box {
+  fill: var(--color-map-node-here);
+}
+
+/* A place no route reaches from here: present, but plainly not on offer. */
+.map__node--unreachable {
+  opacity: 0.55;
+}
+
 .map__node-label {
   fill: var(--color-text-bright);
   font-family: var(--font-ui);

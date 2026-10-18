@@ -96,6 +96,47 @@ test('exactly one place is marked as you, and it follows you when you move', () 
   assert.equal(after.place, 'harbour');
 });
 
+test('every node knows its route from here (for click navigation)', () => {
+  const m = map(); // yard
+  const yard = node(m, 'yard');
+  assert.equal(yard.reachable, false, 'you do not travel to where you stand');
+  assert.deepEqual(yard.path, []);
+  assert.equal(yard.distance, 0);
+
+  const smithy = node(m, 'smithy');
+  assert.equal(smithy.reachable, true);
+  assert.equal(smithy.distance, 1, 'a neighbour is one step');
+  assert.deepEqual(smithy.path, ['east']);
+  assert.equal(smithy.nextDirection, 'east');
+
+  const cairn = node(m, 'cairn');
+  assert.equal(cairn.reachable, true);
+  assert.equal(cairn.distance, 2, 'the cairn is two steps from the yard');
+  assert.equal(cairn.path.length, 2);
+  assert.equal(cairn.nextDirection, cairn.path[0]);
+
+  const after = map(travel(createWorld(pack), 'west')); // harbour
+  assert.equal(node(after, 'yard').distance, 1, 'routes are computed from where you are now');
+  assert.equal(node(after, 'yard').nextDirection, 'east');
+  assert.equal(node(after, 'beach').path.join(','), 'south');
+});
+
+test('a place no route reaches is marked unreachable', () => {
+  const cutOff = createWorld({
+    ...pack,
+    locations: [
+      ...pack.locations,
+      { id: 'skerry', name: 'The Skerry', at: [5, 5], passage: 'You are on the skerry.' },
+    ],
+  });
+  const m = renderMap(cutOff);
+  const skerry = node(m, 'skerry');
+  assert.equal(skerry.reachable, false);
+  assert.equal(skerry.distance, null);
+  assert.equal(skerry.path, null);
+  assert.equal(skerry.nextDirection, null);
+});
+
 test('the map shows the region it belongs to', () => {
   assert.equal(map().region, pack.region);
 });

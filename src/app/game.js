@@ -13,7 +13,7 @@ Vinland.define('app/game', function (require) {
   'use strict';
 
   const { SHELL_CONFIG, createPaneSpecs } = require('core/layout');
-  const { createWorld, travel, here, canTravel } = require('core/world');
+  const { createWorld, travel, here, canTravel, travelTo: travelToWorld } = require('core/world');
   const { mountShell } = require('ui/shell');
   const panels = require('ui/panels');
 
@@ -167,6 +167,20 @@ Vinland.define('app/game', function (require) {
         return true;
       },
 
+      /**
+       * Walk to a place along the shortest route (map navigation) and
+       * re-render every pane from the destination state.
+       * @returns {boolean} false when there is no route (state untouched)
+       */
+      travelTo(locationId) {
+        if (mode.kind === 'action') returnToPlace();
+        const next = travelToWorld(state, locationId);
+        if (!next) return false;
+        state = next;
+        renderPlace();
+        return true;
+      },
+
       /** Replace the state wholesale (future: systems, loading saves) and re-render. */
       setState(next) {
         state = next;
@@ -222,6 +236,16 @@ Vinland.define('app/game', function (require) {
         var detail = e.detail || {};
         if (detail.interactableId && detail.action) {
           game.performAction(detail.interactableId, detail.action);
+        }
+      });
+    }
+
+    // Listen for map navigation (panel dispatches decoupled, like actions)
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('vinland:navigate', function (e) {
+        var detail = e.detail || {};
+        if (detail.to) {
+          game.travelTo(detail.to);
         }
       });
     }

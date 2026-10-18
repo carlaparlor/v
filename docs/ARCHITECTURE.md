@@ -28,7 +28,7 @@ v/
 │     ├─ panel-text.js        paints a text view model into the left pane
 │     └─ panel-map.js         paints a map view model into the right pane
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (104)
+├─ test/                      node:test unit tests (113)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
@@ -204,7 +204,7 @@ must be incapable of disagreeing.
   between two node centres. `ui/panel-map` draws the edges as vector lines under pill-shaped
   name nodes, so connectors meet each place exactly and stay true at any size (the character
   grid this replaced could not: glyph widths and the player marker kept nudging its columns
-  out of line). You are `@`, badged on the current location's pill.
+  out of line). You are `@`, badged on the current location's pill. The map is also how you travel: `core/world.pathTo` finds the shortest route over the exits, each node carries its route (`reachable`, `distance`), and clicking a place (or focusing it and pressing Enter/Space) walks that route — `app/game.travelTo` — so navigation can never teleport past ground the exits do not join.
 - **Voice: second person, present tense**, asserted over every passage in
   `test/data-pack.test.js`. It is a design requirement, not a stylistic preference.
 **Rejected:** each pane reading state and re-rendering independently (they can drift); storing the
@@ -212,7 +212,7 @@ current location in both the map and the text module (two facts about one thing)
 layout from the exit graph alone (that is a graph-drawing problem — authoring `at:` positions is
 cheaper, deterministic and moddable).
 **Consequences:** Sync is structural rather than coordinated, and both panes are testable without a
-browser (104 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
+browser (113 tests). Costs: every render rebuilds both panes' DOM, which is fine at this size but
 will need dirty-checking once the text pane becomes a scrolling log; the map draws orthogonal edges
 only (diagonals need a taller cell); there is no fog of war yet, so every location is always
 visible; and `--color-text-dim` clears AA on the dark pane only, so it must not be used on the

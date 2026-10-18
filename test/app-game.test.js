@@ -6,7 +6,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { loadScripts } from '../tools/load-scripts.js';
-import { installDocument, makeDocument, makeElement, findByClass, findAllByClass } from '../tools/dom-stub.js';
+import { installDocument, makeDocument, makeElement, findByClass, findAllByClass, findByDataset } from '../tools/dom-stub.js';
 
 const Vinland = loadScripts([
   'src/kernel.js',
@@ -118,6 +118,67 @@ test('both panes are rendered from the SAME state — that is the sync', () => {
     agree();
   }
   assert.equal(g.here().id, 'harbour');
+});
+
+test('clicking a neighbouring place on the map walks you there', () => {
+  const g = start();
+  const [left, right] = doc.shell.children;
+
+  const smithy = findByDataset(right, 'location', 'smithy');
+  assert.ok(smithy, 'the smithy is on the map');
+  assert.equal(smithy.dataset.reachable, 'true');
+  assert.equal(smithy.getAttribute('role'), 'button');
+  assert.match(smithy.getAttribute('aria-label'), /Travel to The Smithy/);
+
+  smithy.click();
+
+  assert.equal(g.getState().current, 'smithy');
+  assert.equal(findByClass(left, 'text__title').textContent, 'The Smithy', 'the prose follows the map click');
+  assert.equal(findByClass(right, 'map__node--here').dataset.location, 'smithy');
+  assert.equal(left.dataset.place, right.dataset.place, 'both panes still agree');
+});
+
+test('clicking a farther place walks the whole route, no teleporting', () => {
+  const g = start();
+  const [, right] = doc.shell.children;
+
+  const cairn = findByDataset(right, 'location', 'cairn');
+  assert.equal(cairn.dataset.distance, '2', 'the cairn is two steps from the yard');
+  cairn.click();
+
+  assert.equal(g.getState().current, 'cairn');
+  // …and from the cairn, the world is exactly one honest walk away everywhere:
+  assert.equal(g.travelTo('beach'), true);
+  assert.equal(g.getState().current, 'beach');
+  assert.equal(g.travelTo('beach'), false, 'clicking where you stand goes nowhere');
+  assert.equal(g.travelTo('nowhere'), false, 'unknown places go nowhere');
+  assert.equal(g.getState().current, 'beach', 'a failed travelTo changes nothing');
+});
+
+test('map places can be travelled to from the keyboard', () => {
+  const g = start();
+  const [, right] = doc.shell.children;
+
+  const hall = findByDataset(right, 'location', 'hall');
+  assert.equal(hall.getAttribute('tabindex'), '0', 'a reachable place can be focused');
+  hall.dispatchEvent({ type: 'keydown', key: 'Enter', preventDefault() {} });
+  assert.equal(g.getState().current, 'hall');
+
+  const [, rightNow] = doc.shell.children;
+  const yard = findByDataset(rightNow, 'location', 'yard');
+  yard.dispatchEvent({ type: 'keydown', key: ' ', preventDefault() {} });
+  assert.equal(g.getState().current, 'yard', 'Space travels too');
+});
+
+test('the place you are standing on is not a travel control', () => {
+  const g = start();
+  const [, right] = doc.shell.children;
+
+  const here = findByClass(right, 'map__node--here');
+  assert.equal(here.dataset.location, 'yard');
+  assert.equal(here.dataset.reachable, undefined, 'where you stand offers no route to itself');
+  here.click();
+  assert.equal(g.getState().current, 'yard');
 });
 
 test('a failed move changes nothing anywhere', () => {

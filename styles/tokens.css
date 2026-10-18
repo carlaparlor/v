@@ -41,6 +41,7 @@
   /* Map (custom SVG rendering): node pills, connector lines, player marker. */
   --map-font-size: 13px;
   --color-map-node: #3a3128;
+  --color-map-node-hover: #4a3b2a;
   --color-map-node-border: #8a7a63;
   --color-map-node-here: #453723;
   --color-map-edge: #b8a888;

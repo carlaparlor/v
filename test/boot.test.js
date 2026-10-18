@@ -92,6 +92,13 @@ test('booting the real scripts renders both panes from one world state', () => {
   assert.ok(here, 'the map marks where you are');
   assert.equal(here.dataset.location, 'yard');
   assert.match(here.textContent, /The Yard/);
+  // Navigation: every other place is a clickable travel control.
+  const reachable = findAllByClass(mapPane, 'map__node--reachable');
+  assert.equal(reachable.length, 6, 'every other place can be walked to');
+  assert.ok(
+    reachable.every((n) => n.getAttribute('role') === 'button' && n.getAttribute('tabindex') === '0'),
+    'reachable places are focusable buttons',
+  );
 });
 
 test('a missing #shell fails soft and says so', () => {
