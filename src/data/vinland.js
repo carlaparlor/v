@@ -47,10 +47,13 @@ Vinland.define('data/vinland', function () {
         name: 'The Hall',
         at: [1, 1],
         within: 'hall',
+        floor: 'Ground Floor',
+        stairsUp: 'longhall-landing',
         passage:
-          'You stand under the ridge-beam of the longhall, where the smoke finds its way out and the light does not. A {bench} near the {longhall-door|door} is empty. It has been empty all winter, and nobody sits on it. Near the centre a {firepit} smoulders, and against the far wall {elder} keeps watch over the room.',
+          'You stand under the ridge-beam of the longhall, where the smoke finds its way out and the light does not. A {bench} near the {longhall-door|door} is empty. It has been empty all winter, and nobody sits on it. Near the centre a {firepit} smoulders, and against the far wall {elder} keeps watch over the room. Along the wall, {longhall-stairs|stairs} climb into the smoke toward the loft.',
         interactables: [
           { id: 'longhall-door', name: 'door', type: 'fixture', actions: ['examine', 'exit'], examine: 'You look at the door. Shoulder-worn, draughty, and the only way back to the yard that does not involve a window.', exit: 'You shoulder the door and step back out onto the shore.' },
+          { id: 'longhall-stairs', name: 'stairs', type: 'fixture', actions: ['examine', 'climb'], examine: 'You look at the stairs. Steep as a ladder, worn in the middle of every tread. The smoke goes up them whether you do or not.', climb: 'You climb the stairs, ducking as the roof comes down to meet you.' },
           { id: 'bench', name: 'bench', type: 'fixture', examine: 'You run your hand along the bench. It is worn smooth by countless winters, and cold to the touch. You suspect it will stay empty until someone decides otherwise.', use: 'You sit on the bench. The wood creaks but holds. You feel no warmer, but you are at least sitting.' },
           { id: 'firepit', name: 'firepit', type: 'fixture', examine: 'You lean toward the firepit. Ash and half-burnt birch, still breathing heat. You see your own boots reflected in the dark of it.', use: 'You stir the firepit with a nearby stick. Sparks climb and vanish into the smoke-hole.' },
           { id: 'elder', name: 'elder', type: 'npc', color: '#90be6d', examine: 'You study the elder — weathered face, hands that have stacked every stone on the cairn. They watch you without speaking.', talk: 'You speak to the elder. They nod slowly. \u201CThe sea has been empty nine days,\u201D they say. \u201CWhen it returns, it will have made a decision for us.\u201D' },
@@ -61,6 +64,7 @@ Vinland.define('data/vinland', function () {
         name: 'The Store Room',
         at: [0, 1],
         within: 'hall',
+        floor: 'Ground Floor',
         passage:
           'You duck into the store room, where the air goes cool and close. {store-sacks|Sacks} slump against the wall in a tired row, and everything here is kept at the temperature of a decision not yet made.',
         interactables: [
@@ -68,12 +72,26 @@ Vinland.define('data/vinland', function () {
         ],
       },
       {
+        id: 'longhall-landing',
+        name: 'The Landing',
+        at: [1, 1],
+        within: 'hall',
+        floor: 'Upper Floor',
+        passage:
+          'You arrive on the landing, a platform of boards at the head of the {longhall-stairs-down|stairs}, where the roof is already too low to stand straight. A {loft-window|window} slit lets in one blade of daylight, and the smoke pools here before deciding where to go.',
+        interactables: [
+          { id: 'longhall-stairs-down', name: 'stairs', type: 'fixture', actions: ['examine', 'descend'], examine: 'You look down the stairs. The hall fire breathes up through the treads, and the way down is steeper than the way up felt.', descend: 'You descend the stairs, one ducked shoulder at a time, back into the hall.' },
+          { id: 'loft-window', name: 'window', type: 'fixture', examine: 'You put an eye to the window slit. The yard, the harbour, and one stripe of sea. The whole settlement fits through it if you stand in the right place.' },
+        ],
+      },
+      {
         id: 'longhall-loft',
         name: 'The Loft',
         at: [1, 0],
         within: 'hall',
+        floor: 'Upper Floor',
         passage:
-          'You climb into the loft, where the smoke arrives before you do and the roof is close enough to duck for. {wool-blankets|Blankets} lie folded along the beams, holding the day\u2019s last warmth like a rumour.',
+          'You duck off the landing into the loft, where the smoke arrives before you do and the roof is close enough to touch. {wool-blankets|Blankets} lie folded along the beams, holding the day\u2019s last warmth like a rumour.',
         interactables: [
           { id: 'wool-blankets', name: 'blankets', type: 'object', examine: 'You run a hand over the blankets. Wool, lanolin, and other people\u2019s sleep. Folded with a care that says somebody\u2019s mother still inspects them.' },
         ],
@@ -162,7 +180,7 @@ Vinland.define('data/vinland', function () {
       { from: 'hall', to: 'cairn', direction: 'east' },
       { from: 'hall', to: 'yard', direction: 'south' },
       { from: 'longhall-hall', to: 'longhall-store', direction: 'west' },
-      { from: 'longhall-hall', to: 'longhall-loft', direction: 'north' },
+      { from: 'longhall-landing', to: 'longhall-loft', direction: 'north' },
       { from: 'cairn', to: 'smithy', direction: 'south' },
       { from: 'yard', to: 'harbour', direction: 'west' },
       { from: 'yard', to: 'smithy', direction: 'east' },

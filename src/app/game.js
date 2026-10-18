@@ -363,9 +363,10 @@ Vinland.define('app/game', function (require) {
           showToast('You have taken ' + outcome.result.title);
           return outcome;
         }
-        // Crossing a doorway is travel, not a view: you arrive in the new
-        // layer, both panes render it, and there is nothing to go Back to.
-        if (action === 'enter' || action === 'exit') {
+        // Crossing a doorway — or a floor, by the stairs — is travel, not a
+        // view: you arrive on the new layer, both panes render it, and
+        // there is nothing to go Back to.
+        if (action === 'enter' || action === 'exit' || action === 'climb' || action === 'descend') {
           cancelPendingTake();
           mode = { kind: 'place' };
           pendingResult = null;

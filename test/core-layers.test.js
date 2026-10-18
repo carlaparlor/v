@@ -43,9 +43,10 @@ test('the longhall is a building outside and a map inside', () => {
   assert.ok(!outside.nodes.some((n) => n.id === 'longhall-hall'), 'rooms are not drawn on the shore map');
 
   const inside = renderMap(at('longhall-hall'));
-  assert.deepEqual(inside.breadcrumb, ['Straumfjord', 'The Longhall']);
-  assert.deepEqual(inside.nodes.map((n) => n.id).sort(), ['longhall-hall', 'longhall-loft', 'longhall-store']);
-  assert.equal(inside.edges.length, 2, 'hall-store and hall-loft, on their own map');
+  assert.deepEqual(inside.breadcrumb, ['Straumfjord', 'The Longhall', 'Ground Floor']);
+  assert.deepEqual(inside.nodes.map((n) => n.id).sort(), ['longhall-hall', 'longhall-store']);
+  assert.equal(inside.edges.length, 1, 'hall-store, on the ground floor map');
+  assert.ok(!inside.nodes.some((n) => n.id === 'longhall-loft'), 'the loft is upstairs, not on this map');
 });
 
 test('you enter through the building word, and leave through the door', () => {
@@ -77,7 +78,8 @@ test('rooms move like places: one step, same-layer only, no riding routes out', 
   assert.equal(travel(w, 'south'), null, 'no exit leaks out of the building');
   assert.equal(travelTo(at('longhall-hall'), 'yard'), null, 'routes never cross a doorway');
   assert.equal(world.pathTo(at('longhall-hall'), 'yard'), null);
-  assert.equal(world.pathTo(at('longhall-hall'), 'longhall-loft').length, 1);
+  assert.equal(world.pathTo(at('longhall-hall'), 'longhall-store').length, 1);
+  assert.equal(travel(at('longhall-hall'), 'north'), null, 'the loft is up the stairs now, not a step north');
 });
 
 test('the contents of the old hall interior moved inside with it', () => {
@@ -140,7 +142,7 @@ test('validatePack rejects layer nonsense with actionable messages', () => {
   // Same coordinates on different layers is fine (the pack itself proves it),
   // but two rooms at the same spot on the same layer is not.
   assert.throws(() => validatePack(withLoc((p) => {
-    p.locations.find((l) => l.id === 'longhall-store').at = [1, 0];
+    p.locations.find((l) => l.id === 'longhall-store').at = [1, 1];
   })), /same layer/);
 });
 

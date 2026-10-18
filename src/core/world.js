@@ -100,7 +100,15 @@ Vinland.define('core/world', function () {
     // Layers: `within` places a location on the map inside another location
     // (a room inside a building, a cellar inside a room — nesting is arbitrary).
     // `entry` on a containing location names the doorway location inside it.
+    // Floors: inside one container, `floor` splits rooms into storeys — each
+    // floor is its own map. `stairsUp` on a room names the room the stairs
+    // arrive at on another floor; the way down is derived from it.
     for (const loc of pack.locations) {
+      if (loc.floor !== undefined && loc.floor !== null) {
+        if (typeof loc.floor !== 'string' || loc.floor.length === 0) {
+          throw new Error(`location "${loc.id}" floor must be a non-empty string (e.g. "Ground Floor")`);
+        }
+      }
       if (loc.within !== undefined && loc.within !== null) {
         if (typeof loc.within !== 'string' || !byId.has(loc.within)) {
           throw new Error(`location "${loc.id}" is within unknown location "${loc.within}"`);
@@ -123,13 +131,48 @@ Vinland.define('core/world', function () {
           throw new Error(`location "${loc.id}" enters "${loc.entry}", but "${loc.entry}" is not within "${loc.id}"`);
         }
       }
+      if (loc.stairsUp !== undefined && loc.stairsUp !== null) {
+        if (typeof loc.stairsUp !== 'string' || !byId.has(loc.stairsUp)) {
+          throw new Error(`location "${loc.id}" has stairs up to unknown location "${loc.stairsUp}"`);
+        }
+        if (loc.stairsUp === loc.id) throw new Error(`location "${loc.id}" cannot have stairs up to itself`);
+        const top = byId.get(loc.stairsUp);
+        if ((top.within ?? null) !== (loc.within ?? null)) {
+          throw new Error(`location "${loc.id}" has stairs up to "${loc.stairsUp}", but they are not in the same building`);
+        }
+        if ((top.floor ?? null) === (loc.floor ?? null)) {
+          throw new Error(`location "${loc.id}" has stairs up to "${loc.stairsUp}", but they are on the same floor`);
+        }
+        if (top.stairsUp === loc.id) {
+          throw new Error(`locations "${loc.id}" and "${loc.stairsUp}" declare stairsUp at each other; declare it once, from below`);
+        }
+        // The chain of stairs must climb to a top floor, never loop.
+        const seenStairs = new Set([loc.id]);
+        let cursorUp = loc.stairsUp;
+        while (cursorUp) {
+          if (seenStairs.has(cursorUp)) throw new Error(`location "${loc.id}" has a circular "stairsUp" chain`);
+          seenStairs.add(cursorUp);
+          cursorUp = byId.get(cursorUp).stairsUp ?? null;
+        }
+      }
+    }
+    // One staircase arrives at one room from below: two rooms claiming the
+    // same arrival room would make the way back down ambiguous.
+    const stairArrivals = new Set();
+    for (const loc of pack.locations) {
+      if (!loc.stairsUp) continue;
+      if (stairArrivals.has(loc.stairsUp)) {
+        throw new Error(`two locations have stairs up to "${loc.stairsUp}"; the way down would be ambiguous`);
+      }
+      stairArrivals.add(loc.stairsUp);
     }
 
     // Grid positions are per layer: a room may share coordinates with the
-    // shore outside — they are on different maps and never collide there.
+    // shore outside — or with the room directly below it on another floor —
+    // they are on different maps and never collide there.
     const positions = new Set();
     for (const loc of pack.locations) {
-      const key = (loc.within ?? '') + '@' + loc.at.join(',');
+      const key = (loc.within ?? '') + '#' + (loc.floor ?? '') + '@' + loc.at.join(',');
       if (positions.has(key)) {
         throw new Error(`two locations share the map grid position [${loc.at}] on the same layer`);
       }
@@ -149,6 +192,11 @@ Vinland.define('core/world', function () {
       if ((byId.get(exit.from).within ?? null) !== (byId.get(exit.to).within ?? null)) {
         throw new Error(
           `exit ${exit.from}->${exit.to} crosses layers; cross a layer through an "entry" doorway, not an exit`,
+        );
+      }
+      if ((byId.get(exit.from).floor ?? null) !== (byId.get(exit.to).floor ?? null)) {
+        throw new Error(
+          `exit ${exit.from}->${exit.to} crosses floors; cross a floor through "stairsUp" stairs, not an exit`,
         );
       }
       if (!DIRECTIONS.includes(exit.direction)) {
@@ -199,6 +247,8 @@ Vinland.define('core/world', function () {
         passage: loc.passage,
         within: loc.within ?? null,
         entry: loc.entry ?? null,
+        floor: loc.floor ?? null,
+        stairsUp: loc.stairsUp ?? null,
         interactables: Object.freeze(inters),
       };
     }
@@ -210,6 +260,17 @@ Vinland.define('core/world', function () {
       if (loc.entry) {
         portals[loc.id] = loc.entry;
         portals[loc.entry] = loc.id;
+      }
+    }
+
+    // Stairs between floors, derived both ways from `stairsUp`: the room
+    // below knows where the stairs arrive, the room above knows the way down.
+    const stairsUp = {};
+    const stairsDown = {};
+    for (const loc of pack.locations) {
+      if (loc.stairsUp) {
+        stairsUp[loc.id] = loc.stairsUp;
+        stairsDown[loc.stairsUp] = loc.id;
       }
     }
 
@@ -230,6 +291,8 @@ Vinland.define('core/world', function () {
       inventory: Object.freeze([]),
       containerStates: Object.freeze({}),
       portals: Object.freeze(portals),
+      stairsUp: Object.freeze(stairsUp),
+      stairsDown: Object.freeze(stairsDown),
     });
   }
 
@@ -378,12 +441,26 @@ Vinland.define('core/world', function () {
     return loc ? loc.within ?? null : null;
   }
 
-  /** Every location on the same map as `parentId` (null = the top layer). */
-  function locationsInLayer(world, parentId) {
+  /** The floor a location is on (`floor`), or null when it declares none. */
+  function floorOf(world, id) {
+    const loc = location(world, id);
+    return loc ? loc.floor ?? null : null;
+  }
+
+  /**
+   * Every location on the same map as `parentId` (null = the top layer).
+   * When `floor` is given, only that floor of the layer — a map shows one
+   * floor of one building at a time. Omit it for the whole layer.
+   */
+  function locationsInLayer(world, parentId, floor) {
     const want = parentId ?? null;
+    const wantFloor = floor === undefined ? undefined : floor ?? null;
     return locationIds(world)
       .map(function (id) { return location(world, id); })
-      .filter(function (loc) { return (loc.within ?? null) === want; });
+      .filter(function (loc) {
+        if ((loc.within ?? null) !== want) return false;
+        return wantFloor === undefined || (loc.floor ?? null) === wantFloor;
+      });
   }
 
   /** Where a doorway leads from `id`, in either direction, or null. */
@@ -403,9 +480,32 @@ Vinland.define('core/world', function () {
   }
 
   /**
+   * Where the stairs at `id` lead for `verb` ('climb' up, 'descend' down),
+   * or null when this room has no stairs that way.
+   */
+  function stairsTarget(world, id, verb) {
+    if (!world) return null;
+    if (verb === 'climb') return (world.stairsUp && world.stairsUp[id]) || null;
+    if (verb === 'descend') return (world.stairsDown && world.stairsDown[id]) || null;
+    return null;
+  }
+
+  /**
+   * Take the stairs at the current location. Returns NEW frozen state, or
+   * null when here has no stairs that way — crossing floors is this, never
+   * an exit and never travel, exactly like crossing a doorway.
+   */
+  function crossStairs(world, verb) {
+    const to = stairsTarget(world, world && world.current, verb);
+    if (!to) return null;
+    return Object.freeze({ ...world, current: to });
+  }
+
+  /**
    * Names from the world down to where you are, for the map header:
-   * [region, …containers outermost-first]. The current place itself is
-   * marked on the map and titled in the prose, so it is not repeated here.
+   * [region, …containers outermost-first, floor?]. The current place itself
+   * is marked on the map and titled in the prose, so it is not repeated
+   * here — but its floor is, because the floor is which map you are on.
    */
   function breadcrumb(world) {
     const names = [world.region];
@@ -415,7 +515,8 @@ Vinland.define('core/world', function () {
       chain.unshift(location(world, cursor).name);
       cursor = parentOf(world, cursor);
     }
-    return names.concat(chain);
+    const floor = floorOf(world, world && world.current);
+    return floor ? names.concat(chain, [floor]) : names.concat(chain);
   }
 
   return {
@@ -439,9 +540,12 @@ Vinland.define('core/world', function () {
     containerState,
     contentsOf,
     parentOf,
+    floorOf,
     locationsInLayer,
     portalTarget,
     crossPortal,
+    stairsTarget,
+    crossStairs,
     breadcrumb,
   };
 });

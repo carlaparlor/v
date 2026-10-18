@@ -54,6 +54,8 @@ Vinland.define('core/actions', function (require) {
       case 'close': return 'You close the ' + name + '.';
       case 'enter': return 'You enter the ' + name + '.';
       case 'exit': return 'You step out through the ' + name + '.';
+      case 'climb': return 'You climb the ' + name + '.';
+      case 'descend': return 'You descend the ' + name + '.';
       case 'use': return 'You put the ' + name + ' to use.';
       case 'talk': return 'You speak to ' + name + '. They do not answer yet.';
       case 'approach': return 'You approach the ' + name + ' cautiously.';
@@ -156,6 +158,33 @@ Vinland.define('core/actions', function (require) {
     return segments;
   }
 
+  /** The verbs that move you between layers/floors instead of showing a view. */
+  function isCrossing(action) {
+    return action === 'enter' || action === 'exit' || action === 'climb' || action === 'descend';
+  }
+
+  /**
+   * Where a crossing verb takes you from the interactable's location, or
+   * null when no crossing of that kind stands there. `enter` crosses a
+   * doorway into a place inside this one; `exit` crosses back out; `climb`
+   * and `descend` take the stairs derived from `stairsUp`.
+   */
+  function crossingTarget(world, found, action) {
+    if (!found || found.fromInventory || !found.locationId) return null;
+    if (action === 'climb' || action === 'descend') {
+      return worldMod.stairsTarget(world, found.locationId, action);
+    }
+    var doorTarget = worldMod.portalTarget(world, found.locationId);
+    if (!doorTarget) return null;
+    var holderLoc = worldMod.location(world, found.locationId);
+    var targetLoc = worldMod.location(world, doorTarget);
+    if (!holderLoc || !targetLoc) return null;
+    var through = action === 'enter'
+      ? (targetLoc.within ?? null) === holderLoc.id
+      : (holderLoc.within ?? null) === targetLoc.id;
+    return through ? doorTarget : null;
+  }
+
   /** Plain text of a segmented result: placeholders resolved to their words. */
   function plainFromSegments(segments) {
     return segments.map(function (s) { return s.type === 'text' ? s.text : (s.display || s.name || s.id); }).join('');
@@ -189,15 +218,10 @@ Vinland.define('core/actions', function (require) {
       return { nextWorld: world, result: null, error: 'action \"' + action + '\" not available for ' + interactableId };
     }
 
-    if ((action === 'enter' || action === 'exit') && !found.fromInventory && found.locationId) {
-      var earlyTarget = worldMod.portalTarget(world, found.locationId);
-      var earlyHolder = worldMod.location(world, found.locationId);
-      var earlyTargetLoc = earlyTarget ? worldMod.location(world, earlyTarget) : null;
-      var earlyThrough = action === 'enter'
-        ? Boolean(earlyTargetLoc && earlyHolder && (earlyTargetLoc.within ?? null) === earlyHolder.id)
-        : Boolean(earlyTargetLoc && earlyHolder && (earlyHolder.within ?? null) === earlyTargetLoc.id);
-      if (!earlyThrough) {
-        return { nextWorld: world, result: null, error: 'there is no doorway to ' + action + ' through "' + interactableId + '"' };
+    if (isCrossing(action) && !found.fromInventory && found.locationId) {
+      if (!crossingTarget(world, found, action)) {
+        var way = (action === 'climb' || action === 'descend') ? 'stairs' : 'doorway';
+        return { nextWorld: world, result: null, error: 'there are no ' + way + ' to ' + action + ' through "' + interactableId + '"' };
       }
     }
 
@@ -242,18 +266,13 @@ Vinland.define('core/actions', function (require) {
       var states = Object.assign({}, world.containerStates || {});
       states[interactableId] = action === 'open' ? 'open' : 'closed';
       nextWorld = Object.freeze(Object.assign({}, world, { containerStates: states }));
-    } else if (action === 'enter' || action === 'exit') {
-      // Crossing a layer through a doorway: `enter` only into a place inside
-      // the interactable's location; `exit` only out of one. Anything else
-      // claiming these verbs has no doorway to cross.
-      var doorTarget = worldMod.portalTarget(world, found.locationId);
-      var holderLoc = found.locationId ? worldMod.location(world, found.locationId) : null;
-      var targetLoc = doorTarget ? worldMod.location(world, doorTarget) : null;
-      var through = action === 'enter'
-        ? Boolean(targetLoc && holderLoc && (targetLoc.within ?? null) === holderLoc.id)
-        : Boolean(targetLoc && holderLoc && (holderLoc.within ?? null) === targetLoc.id);
-      nextWorld = through
-        ? Object.freeze(Object.assign({}, world, { current: doorTarget }))
+    } else if (isCrossing(action)) {
+      // Crossing a layer through a doorway, or a floor through the stairs:
+      // the target was proven by the gate above. Anything else claiming
+      // these verbs has no crossing to take and stays where it is.
+      var crossTo = crossingTarget(world, found, action);
+      nextWorld = crossTo
+        ? Object.freeze(Object.assign({}, world, { current: crossTo }))
         : world;
     } else if (action === 'use' || action === 'talk' || action === 'approach' || action === 'examine') {
       // No structural mutation yet — could later tick systems
@@ -279,5 +298,5 @@ Vinland.define('core/actions', function (require) {
     };
   }
 
-  return { perform, locateInteractable, resultTextFor, fallbackText, segmentsForText, plainFromSegments, refreshResult };
+  return { perform, locateInteractable, resultTextFor, fallbackText, segmentsForText, plainFromSegments, refreshResult, isCrossing, crossingTarget };
 });
