@@ -4,6 +4,34 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 4) — the glide was dead in real browsers
+
+**Asked:** "there's no noticeable difference though? gliding? i dont see it."
+
+### What was wrong
+
+The user was right — the glide never ran outside tests. `animateMarker` searched the
+rendered map with `String(node.className)`, but on SVG elements in a real browser
+`className` is an `SVGAnimatedString` object, not a string: the search silently
+missed every node, `animateMarker` returned false, and the game fell back to the
+instant step it was supposed to replace. The stub DOM stores plain string class
+names, so every test passed while the browser cut.
+
+### The fix (`ui/panel-map`)
+
+- Class lookups now read the `class` **attribute** whenever `className` is not a
+  string (`classListOf`), which works for HTML and SVG in both browsers and the
+  stub. The @ badge is found, glides along the connector over `--duration-step`,
+  and the world commits as it lands.
+- The step-motion test now simulates the browser: it replaces SVG class names
+  with object stand-ins before gliding, so a regression fails the suite instead
+  of shipping silently.
+
+**Test it:** double-click `index.html` and click a neighbouring place — the @
+badge visibly walks the line. (Correction-3 script in [docs/TESTING.md](TESTING.md).)
+
+---
+
 ## Iteration 6 (correction 3) — clicking through the map glides, not cuts
 
 **Asked:** "i hate the abruptness of clicking through the map"

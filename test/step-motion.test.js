@@ -44,11 +44,22 @@ test('the @ badge glides from the node you are on to the node you clicked', () =
   const pane = doc.createElement('div');
   const model = renderMap(createWorld(Vinland.require('data/vinland')));
   panel.render(pane, model);
+  const here = findByClass(pane, 'map__node--here');
+  const badge = findByClass(here, 'map__node-badge');
+
+  // Simulate a real browser: on SVG elements `className` is an
+  // SVGAnimatedString object, NOT a string. Class lookups must go through
+  // the `class` attribute or they silently miss — which is exactly how the
+  // glide originally died in browsers while passing every stub test.
+  (function browserify(node) {
+    if (node.getAttribute && node.getAttribute('class')) {
+      node.className = { baseVal: node.getAttribute('class') };
+    }
+    for (const kid of node.children || []) browserify(kid);
+  })(pane);
 
   // Yard -> Smithy is one cell east: badge travels exactly that vector.
   assert.equal(panel.animateMarker(pane, 'yard', 'smithy', model, 520), true);
-  const here = findByClass(pane, 'map__node--here');
-  const badge = findByClass(here, 'map__node-badge');
   assert.match(badge.style.transform, new RegExp(`translate\\(${CELL_W}px,`));
 
   // Nothing to glide to: same place, or a place not on this map.
