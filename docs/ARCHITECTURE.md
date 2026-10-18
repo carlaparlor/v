@@ -344,3 +344,8 @@ Landing commit still re-renders, but `prepareArrival` starts the destination's n
 state on the old DOM mid-glide and the stylesheet transitions it, so the re-render
 targets a picture already on screen. Any future "swap at the end of an animation"
 must either pre-transition to its final visual state or not re-render.
+
+**Amendment (Iteration 6, correction 7) — the travelling marker paints last.** SVG
+has no z-index; paint order is document order. Anything animated *across* the map
+must be reparented to the end of its layer for the journey, or siblings drawn later
+will cover it mid-flight.

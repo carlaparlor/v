@@ -4,6 +4,38 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 7) — the @ rides over the pills, never behind them
+
+**Asked:** "sometimes, the @ goes behind the pallets, i dont like that. idk ifywim"
+
+### What the user meant
+
+The gliding @ would slide *under* a place pill and pop back out the other side.
+SVG paints in document order, and the badge lives inside its home pill's group —
+so any pill drawn after that group (which depends on where you stand, hence
+"sometimes") covered the travelling marker: Smithy → Yard hid it behind the Yard
+pill on arrival, other trips kept it on top.
+
+### The fix (`ui/panel-map`)
+
+For the duration of the glide, `animateMarker` lifts the badge out of its home
+group to the very end of the map's node layer — the last-painted element, above
+every pill — and glides it in absolute map coordinates to the destination's
+badge perch. The landing re-render rebuilds the badge at home on the destination
+pill, exactly where the glide left it. At rest nothing changes; only the
+travelling marker rides on top.
+
+### Tests: 161 (unchanged)
+
+The glide test now asserts the badge leaves its home pill, sits last in the node
+layer, and lands on the destination's absolute perch.
+
+**Test it:** double-click `index.html`; step Smithy → Yard and Yard → Smithy.
+The @ stays on top of both pills the whole way. (Correction-3 script in
+[docs/TESTING.md](TESTING.md).)
+
+---
+
 ## Iteration 6 (correction 6) — the arrival arrives before the marker stops
 
 **Asked:** "it still does that stop, bam thing. i dont know if yk what i mean"

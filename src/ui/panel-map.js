@@ -121,11 +121,32 @@ Vinland.define('ui/panel-map', function (require) {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const top = -from.height / 2;
+    // Ride on top: SVG paints in document order, and the badge normally
+    // lives inside its home pill's group — so any pill drawn after that
+    // group covers the travelling @, and it slips behind pills en route.
+    // For the glide, move the badge to the end of the node layer (above
+    // every pill). Its coordinates become absolute map coordinates; the
+    // landing re-render rebuilds it at home on the destination pill.
+    let startX = 0;
+    let startY = top;
+    let endX = dx;
+    let endY = top + dy;
+    const layer = fromGroup.parentNode;
+    if (layer && typeof layer.appendChild === 'function') {
+      layer.appendChild(badge);
+      startX = from.x;
+      startY = from.y + top;
+      endX = to.x;
+      endY = to.y + top;
+      if (typeof badge.setAttribute === 'function') {
+        badge.setAttribute('transform', `translate(${startX} ${startY})`);
+      }
+    }
     if (typeof badge.animate === 'function') {
       badge.animate(
         [
-          { transform: `translate(0px, ${top}px)` },
-          { transform: `translate(${dx}px, ${top + dy}px)` },
+          { transform: `translate(${startX}px, ${startY}px)` },
+          { transform: `translate(${endX}px, ${endY}px)` },
         ],
         // Gentle ease-in-out (mirrors --ease-step): eases into the walk and
         // settles into the landing instead of stopping dead at it.
@@ -133,9 +154,9 @@ Vinland.define('ui/panel-map', function (require) {
       );
     } else if (badge.style) {
       badge.style.transition = `transform ${durationMs}ms cubic-bezier(0.37, 0, 0.63, 1)`;
-      badge.style.transform = `translate(${dx}px, ${top + dy}px)`;
+      badge.style.transform = `translate(${endX}px, ${endY}px)`;
     } else if (badge.setAttribute) {
-      badge.setAttribute('transform', `translate(${dx} ${top + dy})`);
+      badge.setAttribute('transform', `translate(${endX} ${endY})`);
     } else {
       return false;
     }
