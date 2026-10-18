@@ -22,8 +22,15 @@ test('the step duration is a glide, not a snap and not a wait', () => {
   const m = tokens.match(/--duration-step:\s*(\d+)ms/);
   assert.ok(m, 'tokens.css must define --duration-step');
   const ms = Number(m[1]);
-  assert.ok(ms >= 300, `--duration-step at ${ms}ms would read as abrupt`);
-  assert.ok(ms <= 700, `--duration-step at ${ms}ms would read as sluggish`);
+  assert.ok(ms >= 650, `--duration-step at ${ms}ms would read as rushed (it was 520 and too fast)`);
+  assert.ok(ms <= 900, `--duration-step at ${ms}ms would read as sluggish`);
+  assert.ok(tokens.includes('--ease-step: cubic-bezier(0.37, 0, 0.63, 1)'), 'the step eases in-out gently');
+});
+
+test('the left pane crossfades on step timing, in sync with the glide', () => {
+  const layout = readFileSync(join(ROOT, 'styles/layout.css'), 'utf8');
+  assert.match(layout, /--step-fade \{[^}]*transition: opacity calc\(var\(--duration-step\) \/ 2\) var\(--ease-step\)/);
+  assert.match(layout, /\.pane--stepping \{\s*opacity: 0;/);
 });
 
 test('the @ badge glides from the node you are on to the node you clicked', () => {
@@ -59,10 +66,11 @@ test('the @ badge glides from the node you are on to the node you clicked', () =
   })(pane);
 
   // Yard -> Smithy is one cell east: badge travels exactly that vector.
-  assert.equal(panel.animateMarker(pane, 'yard', 'smithy', model, 520), true);
+  assert.equal(panel.animateMarker(pane, 'yard', 'smithy', model, 720), true);
   assert.match(badge.style.transform, new RegExp(`translate\\(${CELL_W}px,`));
+  assert.match(badge.style.transition, /cubic-bezier\(0\.37, 0, 0\.63, 1\)/, 'the glide eases in-out');
 
   // Nothing to glide to: same place, or a place not on this map.
-  assert.equal(panel.animateMarker(pane, 'yard', 'yard', model, 520), false);
-  assert.equal(panel.animateMarker(pane, 'yard', 'longhall-hall', model, 520), false);
+  assert.equal(panel.animateMarker(pane, 'yard', 'yard', model, 720), false);
+  assert.equal(panel.animateMarker(pane, 'yard', 'longhall-hall', model, 720), false);
 });

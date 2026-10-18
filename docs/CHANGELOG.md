@@ -4,6 +4,41 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 6 (correction 5) — the step is one motion, not glide-stop-bam
+
+**Asked:** "i dont like how it glides, stops, then bam / it also a bit too fast /
+i want a sort of ease in, but not too slow / the left pane should fade in sync as
+well"
+
+### What was wrong
+
+The glide ran for 520ms with an ease-out, then the world committed and both panes
+re-rendered in one frame. Three faults in one gesture: the marker visibly stopped
+before anything changed (glide, stop, bam), the pace was hurried, and the prose cut
+in after the movement instead of moving with it.
+
+### The fix (`app/game`, `ui/panel-map`, styles)
+
+- **One choreography:** the step is now 720ms (`--duration-step`, with
+  `--ease-step` a gentle ease-in-out on both marker and fade). The @ glides for the
+  whole step; the left pane fades out over the first half, swaps to the new place's
+  prose while faded, and fades back in over the second half — arriving as the
+  marker does. At landing, only the map re-renders, with the badge already exactly
+  where the glide left it, so the handoff has no jump and no pause.
+- Mid-glide steps are still refused, tests still land instantly, and
+  `prefers-reduced-motion` still steps immediately.
+
+### Tests: 159 → 160
+
+`test/step-motion.test.js` now pins the slower band (650–900ms), the ease-in-out
+timing on token and glide, and the left pane's synced crossfade in the stylesheet.
+
+**Test it:** double-click `index.html` and click a neighbouring place; the step
+should feel like one walk, not two cuts. (Correction-3 script in
+[docs/TESTING.md](TESTING.md).)
+
+---
+
 ## Iteration 6 (correction 4) — the glide was dead in real browsers
 
 **Asked:** "there's no noticeable difference though? gliding? i dont see it."

@@ -67,27 +67,40 @@ Vinland.define('app/game', function (require) {
 
     const TOAST_HOLD_MS = 3400; // plus the ~0.5s ease on each side
     const TAKE_SETTLE_MS = 520; // mirrors --duration-take in tokens.css
-    const STEP_MS = 520; // mirrors --duration-step in tokens.css
+    const STEP_MS = 720; // mirrors --duration-step in tokens.css
 
     // A step in flight: the @ marker is gliding to the next place and the
     // world has not been committed yet. Further steps wait for it to land.
     let stepping = false;
     let stepTimer = null;
+    let stepTextTimer = null;
 
     function cancelPendingStep() {
       if (stepTimer) {
         clearTimeout(stepTimer);
         stepTimer = null;
       }
+      if (stepTextTimer) {
+        clearTimeout(stepTextTimer);
+        stepTextTimer = null;
+      }
       stepping = false;
+      const textBinding = findBinding('text');
+      if (textBinding && textBinding.pane.classList) {
+        textBinding.pane.classList.remove('pane--stepping');
+        textBinding.pane.classList.remove('pane--step-fade');
+      }
     }
 
     /**
-     * Commit a one-step move within this map. In the browser the marker
-     * glides along the connector first (over STEP_MS) and the panes settle
-     * into the new place as it lands — clicking through the map is a walk,
-     * not a cut. Where there is nothing to animate (tests, reduced motion)
-     * the step is immediate.
+     * Commit a one-step move within this map, as one continuous motion:
+     * the @ marker glides along the connector over STEP_MS while the left
+     * pane crossfades in sync (old prose out over the first half; the new
+     * place's prose swapped in while faded and back in over the second).
+     * Only as the marker lands does the world commit and the map re-render —
+     * with the badge already exactly where the glide left it, so there is
+     * no stop-then-bam. Where there is nothing to animate (tests, reduced
+     * motion) the step is immediate.
      * @returns {boolean} false when a step is already in flight
      */
     function beginStep(next) {
@@ -103,11 +116,33 @@ Vinland.define('app/game', function (require) {
           } catch (_) { started = false; }
           if (started) {
             stepping = true;
+            const textBinding = findBinding('text');
+            if (textBinding && textBinding.pane.classList) {
+              textBinding.pane.classList.add('pane--step-fade');
+              textBinding.pane.classList.add('pane--stepping');
+            }
+            // Halfway: the old prose has faded out. Swap in the destination
+            // prose (rendered from `next`, not yet committed) and let it
+            // fade back in over the second half of the glide.
+            stepTextTimer = setTimeout(function () {
+              stepTextTimer = null;
+              if (textBinding) {
+                try { textBinding.panel.render(textBinding.pane, textBinding.panel.model(next)); } catch (_) {}
+                if (textBinding.pane.classList) textBinding.pane.classList.remove('pane--stepping');
+              }
+            }, STEP_MS / 2);
+            if (stepTextTimer && typeof stepTextTimer.unref === 'function') stepTextTimer.unref();
             stepTimer = setTimeout(function () {
               stepTimer = null;
               stepping = false;
               state = next;
-              renderPlace();
+              // The map alone re-renders: the badge lands exactly where the
+              // glide left it. The prose is already here and faded in.
+              if (mapBinding) mapBinding.panel.render(mapBinding.pane, mapBinding.panel.model(state));
+              setMapDimmed(false);
+              if (textBinding && textBinding.pane.classList) {
+                textBinding.pane.classList.remove('pane--step-fade');
+              }
             }, STEP_MS);
             if (stepTimer && typeof stepTimer.unref === 'function') stepTimer.unref();
             return true;

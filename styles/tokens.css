@@ -76,9 +76,11 @@
   --map-dim-opacity: 0.38;
 
   /* Step motion — clicking through the map: the @ marker glides along the
-     connector to the place you clicked, over this long, before the panes
-     settle into the new place. Same "just right" band as the take. */
-  --duration-step: 520ms;
+     connector to the place you clicked while the left pane crossfades in
+     sync, the whole step over --duration-step. Slower than a settle (it is
+     a walk, not a blink) without dragging. */
+  --duration-step: 720ms;
+  --ease-step: cubic-bezier(0.37, 0, 0.63, 1); /* gentle ease-in-out */
 
   /* Police tape over the dimmed map: one diagonal striped strip. */
   --color-tape: #e6c832;

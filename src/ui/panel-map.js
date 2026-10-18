@@ -127,10 +127,12 @@ Vinland.define('ui/panel-map', function (require) {
           { transform: `translate(0px, ${top}px)` },
           { transform: `translate(${dx}px, ${top + dy}px)` },
         ],
-        { duration: durationMs, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' },
+        // Gentle ease-in-out (mirrors --ease-step): eases into the walk and
+        // settles into the landing instead of stopping dead at it.
+        { duration: durationMs, easing: 'cubic-bezier(0.37, 0, 0.63, 1)', fill: 'forwards' },
       );
     } else if (badge.style) {
-      badge.style.transition = `transform ${durationMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      badge.style.transition = `transform ${durationMs}ms cubic-bezier(0.37, 0, 0.63, 1)`;
       badge.style.transform = `translate(${dx}px, ${top + dy}px)`;
     } else if (badge.setAttribute) {
       badge.setAttribute('transform', `translate(${dx} ${top + dy})`);
