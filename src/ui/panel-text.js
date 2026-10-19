@@ -29,8 +29,8 @@ Vinland.define('ui/panel-text', function (require) {
 
   /**
    * The always-on condition block: who this is (name) and how they are
-   * (stats), on one line, plus a second-person note for anything that is not
-   * ok. The attributes and skills live in the profile sheet on the map pane —
+   * (stats, directly under the name), plus a second-person note for
+   * anything that is not ok. The attributes and skills live in the profile sheet on the map pane —
    * the left pane carries only the name, condition and prose. The values come
    * from the view model — nothing is computed here.
    *
@@ -46,9 +46,8 @@ Vinland.define('ui/panel-text', function (require) {
     box.setAttribute('role', 'status');
     box.setAttribute('aria-label', playerModel.name + ', your condition');
 
-    // One line: the name on the left, the vitals on the right, aligned.
-    const line = el('div', 'status__line');
-    line.appendChild(el('div', 'status__name', playerModel.name));
+    // The name, then the vitals under it — both flush with the prose below.
+    box.appendChild(el('div', 'status__name', playerModel.name));
 
     const stats = el('div', 'status__row status__row--stats');
     for (const st of playerModel.stats) {
@@ -60,8 +59,7 @@ Vinland.define('ui/panel-text', function (require) {
       item.appendChild(document.createTextNode(String(st.value)));
       stats.appendChild(item);
     }
-    line.appendChild(stats);
-    box.appendChild(line);
+    box.appendChild(stats);
 
     for (const note of playerModel.notes) box.appendChild(el('p', 'status__note', note));
     return box;

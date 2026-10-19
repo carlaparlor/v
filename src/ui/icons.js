@@ -9,7 +9,7 @@
  *
  * Shape data is from lucide (https://lucide.dev, ISC-licensed): user-round,
  * settings and x for the ribbons; heart, utensils, droplet, zap and
- * thermometer for the five vitals — keyed by stat name, so
+ * thermometer (exposure: cold one way, hot the other) for the five vitals — keyed by stat name, so
  * icon(playerModel.stats[i].key) just works.
  */
 Vinland.define('ui/icons', function () {
@@ -71,7 +71,7 @@ Vinland.define('ui/icons', function () {
         },
       }),
     ]),
-    warmth: Object.freeze([
+    exposure: Object.freeze([
       // thermometer
       Object.freeze({ tag: 'path', attrs: { d: 'M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z' } }),
     ]),

@@ -1,6 +1,55 @@
 # Changelog
 
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
+---
+
+## Iteration 14 (correction 1) — "You" aligns with the prose; the stats go under it
+
+**Asked:** why isn't "You" aligned with the text below, and the stats
+should be under "You".
+
+Two faults, one block. The status block carried `padding-inline:
+var(--space-3)` that the prose below it does not, so the name sat indented
+from every line it introduced. And iteration 13's shared line put the
+vitals beside the name instead of beneath it. Now the block is stacked —
+**the name on its own line, the five vitals directly under it** — and
+`.status` has no inline padding at all, so "You" starts exactly where
+"The Yard" and the prose start (the pane's padding is the one shared
+inset). `.status__line` is gone from the DOM, the stylesheet and the
+suite, which now also reads `panels.css` and fails if the block ever
+grows a sideways inset again. **221 tests, 0 failures.**
+
+---
+
+## Iteration 14 — warmth becomes exposure: fine in the middle, too hot or too cold
+
+**Asked:** "replace warmth stat with exposure. there's a middle feeling
+fine, then too hot or too cold."
+
+Warmth was a tank: 100 was good, and the only way to suffer was to empty
+into the cold. **Exposure** replaces it as a needle with a comfortable
+middle. It starts at **50 — feeling fine** — and the open air pushes it
+away from there: **down toward 0 in the cold, up toward 100 in the heat**,
+toward a target set by season, weather and night (winter drags it down, a
+clear summer day pushes it up, snow drags it down hardest, night cools).
+Shelter settles it back toward 50 and stops there — a frozen body and a
+scorched body both recover indoors, and neither overshoots.
+
+Everything that read warmth now reads the **distance from the middle**:
+inside 25–75 is ok, outside it is low (too cold *or* too hot), past 40
+from the middle is critical (freezing *or* overheating — the status note
+names the side), outside the comfort range exposed travel takes 20%
+longer and health drains, faster at either end of the scale.
+Constitution now shrugs off the push away from fine in both directions.
+The thermometer icon stays (it was always two-ended), the collapse wake
+pushes the needle 10 further from fine instead of subtracting 10, and
+there is no `warmth` left in the code — the old stat's history stays in
+the entries below.
+
+Pinned in the player suite: the needle's drift in both directions,
+constitution on both sides, settling without overshoot, the band edges
+(25/75 ok, 24/76 low, 9/91 critical), health drain at both ends, and the
+status suite's `exposure: 50`. **220 tests, 0 failures.**
 
 ---
 
