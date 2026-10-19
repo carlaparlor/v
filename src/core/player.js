@@ -5,12 +5,8 @@
  *   strength     lowers the energy cost of effort
  *   constitution shrugs off heat and cold alike, and heals faster
  *   dexterity    shortens fine-motor work (take, open, close, use, eat, drink)
- *   intelligence makes practice count for more
+ *   intelligence improves judgement
  *   charisma     smooths conversation
- *
- * SKILLS — grown by practice. Every paid action trains its category (travel, talk,
- *   approach, craft, gather) with diminishing returns, and a trained category works
- *   faster (up to 25% of its time cost at 100).
  *
  * STATS — current condition, 0–100: health, hunger, thirst, energy, exposure.
  *   They drift with the world (hunger and thirst fall as the clock moves;
@@ -43,14 +39,12 @@ Vinland.define('core/player', function (require) {
   const ATTRIBUTE_SHORT = Object.freeze({
     strength: 'str', charisma: 'cha', intelligence: 'int', dexterity: 'dex', constitution: 'con'
   });
-  const SKILLS = Object.freeze(['travel', 'talk', 'approach', 'craft', 'gather']);
   const STATS = Object.freeze(['health', 'hunger', 'thirst', 'energy', 'exposure']);
 
   const PLAYER_CONFIG = Object.freeze({
     start: Object.freeze({
       name: 'You',
       attributes: Object.freeze({ strength: 10, charisma: 10, intelligence: 10, dexterity: 10, constitution: 10 }),
-      skills: Object.freeze({ travel: 0, talk: 0, approach: 0, craft: 0, gather: 0 }),
       stats: Object.freeze({ health: 100, hunger: 75, thirst: 75, energy: 100, exposure: 50 }),
     }),
     nameMin: 1,
@@ -72,17 +66,6 @@ Vinland.define('core/player', function (require) {
     fine: Object.freeze(['take', 'open', 'close', 'use', 'eat', 'drink']),
     dexTimePerPoint: 0.03,
     chaTimePerPoint: 0.03,
-    intGainPerPoint: 0.05,
-    skill: Object.freeze({ gainBase: 2, relief: 0.25 }),
-
-    /** Which practice category each verb trains. Unlisted verbs train nothing. */
-    category: Object.freeze({
-      walk: 'travel', enter: 'travel', exit: 'travel', climb: 'travel', descend: 'travel',
-      talk: 'talk', approach: 'approach',
-      open: 'craft', close: 'craft', use: 'craft',
-      take: 'gather', eat: 'gather', drink: 'gather'
-    }),
-
     drift: Object.freeze({
       /** Per second of in-game time (the clock only moves when an action costs). */
       hunger: 1 / 3600,          // 100 -> 0 in about four days
@@ -124,12 +107,10 @@ Vinland.define('core/player', function (require) {
     /**
      * Report-card grades for the profile sheet: the letter is the highest
      * whose threshold the value reaches, else F. Attributes grade on their
-     * 1–20 scale (the default 10 is a B — average, not good, not bad);
-     * skills grade on 0–100 (0 is an F — you have never done it).
+     * 1–20 scale (the default 10 is a B — average, not good, not bad).
      */
     grades: Object.freeze({
       attribute: Object.freeze({ S: 16, A: 13, B: 10, C: 7, D: 4 }),
-      skill: Object.freeze({ S: 90, A: 75, B: 50, C: 25, D: 10 })
     }),
 
     collapse: Object.freeze({
@@ -176,7 +157,6 @@ Vinland.define('core/player', function (require) {
     return Object.freeze({
       name: name,
       attributes: Object.freeze(attributes),
-      skills: Object.freeze({ ...start.skills }),
       stats: Object.freeze({ ...start.stats })
     });
   }
@@ -188,9 +168,9 @@ Vinland.define('core/player', function (require) {
 
   /**
    * Effective time cost for an action, before weather: base cost bent by attributes,
-   * then skill, then condition. Weather (core/environment) layers on after, in step,
+   * then condition. Weather (core/environment) layers on after, in step,
    * so it always adds its flat minutes to a cost that already reflects you.
-   * Neutral at the defaults: every factor is 1 at attribute 10, skill 0, stats >= 50.
+   * Neutral at the defaults: every factor is 1 at attribute 10 and stats >= 50.
    */
   function effectiveCost(player, action, base, exposed) {
     let cost = base;
@@ -198,8 +178,6 @@ Vinland.define('core/player', function (require) {
     const a = player.attributes;
     if (action === 'talk') cost *= clamp(1 - (a.charisma - 10) * C.chaTimePerPoint, 0.4, 1.6);
     if (C.fine.indexOf(action) !== -1) cost *= clamp(1 - (a.dexterity - 10) * C.dexTimePerPoint, 0.4, 1.6);
-    const category = C.category[action];
-    if (category) cost *= 1 - C.skill.relief * (player.skills[category] / C.max);
     const s = player.stats;
     if (s.energy < C.conditions.criticalBelow) cost *= C.conditions.exhaustedCost;
     if (exposed && C.effort.indexOf(action) !== -1 && exposureStressed(s.exposure)) {
@@ -217,18 +195,6 @@ Vinland.define('core/player', function (require) {
       return round2(base * clamp(1 - (player.attributes.strength - 10) * C.strEnergyPerPoint, 0.4, 1.6));
     }
     return base;
-  }
-
-  /** Practice an action earns right now (diminishing, intelligence-scaled). */
-  function skillGain(player, action) {
-    const C = PLAYER_CONFIG;
-    const category = C.category[action];
-    if (!category) return 0;
-    return round2(
-      C.skill.gainBase
-      * (1 - player.skills[category] / C.max)
-      * (1 + (player.attributes.intelligence - 10) * C.intGainPerPoint)
-    );
   }
 
   /**
@@ -289,10 +255,10 @@ Vinland.define('core/player', function (require) {
 
   /**
    * The action pipeline, shared by travel and interactable actions:
-   *   1. price the time (attributes -> skill -> condition -> weather),
+   *   1. price the time (attributes -> condition -> weather),
    *   2. advance the clock,
    *   3. let the world drift the body for those seconds,
-   *   4. spend the energy and train the skill,
+   *   4. spend the energy,
    *   5. if health has reached zero, collapse.
    * Free actions (cost 0) return the world untouched, so examining stays free.
    *
@@ -300,7 +266,7 @@ Vinland.define('core/player', function (require) {
    * @param {string} action verb
    * @param {object} [opts] { source: world the action started from (default: world),
    *   base: time override in seconds (rest), restEnergy: energy restored (rest),
-   *   skill: false to skip training (failed attempts) }
+   *
    */
   function step(world, action, opts) {
     opts = opts || {};
@@ -324,27 +290,20 @@ Vinland.define('core/player', function (require) {
         stats: driftStats(next.player, cost, departureContext(source, world.current))
       })
     });
-    next = spendAndTrain(next, action, opts);
+    next = spendEnergy(next, action, opts);
     if (next.player.stats.health <= 0) next = collapse(next, source, world.current);
     return next;
   }
 
-  function spendAndTrain(world, action, opts) {
+  function spendEnergy(world, action, opts) {
     const C = PLAYER_CONFIG;
     let energy = world.player.stats.energy;
     energy -= energyCost(world.player, action);
     if (opts.restEnergy) energy += opts.restEnergy;
-    const skills = { ...world.player.skills };
-    if (opts.skill !== false) {
-      const category = C.category[action];
-      const gain = skillGain(world.player, action);
-      if (category && gain > 0) skills[category] = round2(Math.min(C.max, skills[category] + gain));
-    }
     return Object.freeze({
       ...world,
       player: Object.freeze({
         ...world.player,
-        skills: Object.freeze(skills),
         stats: Object.freeze({ ...world.player.stats, energy: clampStat(energy) })
       })
     });
@@ -382,7 +341,7 @@ Vinland.define('core/player', function (require) {
 
   /** A genuine failed attempt: thirty seconds, a sliver of energy, no practice. */
   function payFailure(world, action) {
-    return step(world, action, { source: world, skill: false });
+    return step(world, action, { source: world });
   }
 
   /**
@@ -494,10 +453,6 @@ Vinland.define('core/player', function (require) {
         const value = player.attributes[key];
         return { key: key, short: ATTRIBUTE_SHORT[key], value: value, grade: grade(value, PLAYER_CONFIG.grades.attribute) };
       }),
-      skills: SKILLS.map(function (key) {
-        const value = Math.floor(player.skills[key]);
-        return { key: key, value: value, grade: grade(value, PLAYER_CONFIG.grades.skill) };
-      }),
       stats: stats,
       notes: notes
     };
@@ -518,8 +473,8 @@ Vinland.define('core/player', function (require) {
   }
 
   return {
-    PLAYER_CONFIG, ATTRIBUTES, ATTRIBUTE_SHORT, SKILLS, STATS,
-    initialPlayer, isExposed, effectiveCost, energyCost, skillGain, driftStats,
+    PLAYER_CONFIG, ATTRIBUTES, ATTRIBUTE_SHORT, STATS,
+    initialPlayer, isExposed, effectiveCost, energyCost, driftStats,
     step, payFailure, exposedTravelRefused, travelRefused,
     applyFood, applyWater, bandFor, exposureStressed, grade, model, collapseResult
   };
