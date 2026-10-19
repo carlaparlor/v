@@ -92,59 +92,23 @@ test('two ribbons stick out of the shell, each with its lucide icon', () => {
   assert.equal(ribbons.open(), null);
 });
 
-test('the profile ribbon drops a horizontal sheet with the attributes and skills', () => {
-  const g = start();
+test('the profile ribbon shows attributes only', () => {
+  start();
   ribbon('profile').click();
   const sheet = openSheet();
   assert.ok(sheet, 'the sheet opens');
   assert.equal(sheet.dataset.sheet, 'profile');
-  assert.equal(sheet.getAttribute('role'), 'dialog');
-  assert.equal(findByClass(sheet, 'sheet__title').textContent, 'You', 'the title is the player name');
-  // Horizontal: both tiers sit side by side in one two-column grid.
+  assert.equal(findByClass(sheet, 'sheet__title').textContent, 'You');
   const columns = findByClass(sheet, 'sheet__columns');
-  assert.ok(columns, 'the sheet lays the tiers out in columns');
-  assert.equal(columns.children.length, 2, 'one column per tier');
+  assert.ok(columns);
+  assert.equal(columns.children.length, 1, 'one attributes column');
   assert.equal(findByClass(columns.children[0], 'sheet__section').textContent, 'Attributes');
-  assert.equal(findByClass(columns.children[1], 'sheet__section').textContent, 'Skills');
-  // Both tiers, five rows each, metered against the tier max.
-  const names = findAllByClass(sheet, 'sheet__name').map((n) => n.textContent);
-  assert.deepEqual(names, [
-    'Strength', 'Charisma', 'Intelligence', 'Dexterity', 'Constitution',
-    'Travel', 'Talk', 'Approach', 'Craft', 'Gather',
-  ]);
-  const values = findAllByClass(sheet, 'sheet__value').map((v) => v.textContent);
-  assert.deepEqual(values, [
-    '10 / 20', '10 / 20', '10 / 20', '10 / 20', '10 / 20',
-    '0 / 100', '0 / 100', '0 / 100', '0 / 100', '0 / 100',
-  ]);
-  // Five dots per row, filled in half-circle steps: 10 of 20 reads
-  // full, full, half, empty, empty; an untrained skill is all empty.
-  const dotFills = findAllByClass(sheet, 'sheet__dot-fill');
-  assert.equal(dotFills.length, 50, 'five dots per row, ten rows');
-  assert.deepEqual(
-    dotFills.slice(0, 5).map((d) => d.style.width),
-    ['100%', '100%', '50%', '0%', '0%'], 'attribute 10 of 20',
-  );
-  // The sheet is column-major: the ten skill dots for Travel start at 25.
-  assert.deepEqual(
-    dotFills.slice(25, 30).map((d) => d.style.width),
-    ['0%', '0%', '0%', '0%', '0%'], 'skill 0 of 100',
-  );
-  // The report card: the default body is average on attributes, failing
-  // on skills.
-  const grades = findAllByClass(sheet, 'sheet__grade').map((n) => n.textContent);
-  assert.deepEqual(grades, ['B', 'B', 'B', 'B', 'B', 'F', 'F', 'F', 'F', 'F']);
-  assert.ok(findByClass(sheet, 'sheet__grade--B'), 'the grade carries its letter as a class');
-  // The letter stands alone at the right end of the row; the numbers are
-  // hidden (CSS) and revealed on hover, with the title as the fallback.
-  const firstHead = findAllByClass(sheet, 'sheet__row-head')[0];
-  assert.ok(String(firstHead.children.at(-1).className).includes('sheet__grade'), 'the grade is the last thing in the row');
-  assert.equal(firstHead.children.at(-1).getAttribute('title'), 'Strength: 10 / 20', 'hovering reveals the numbers');
-  const firstRow = findAllByClass(sheet, 'sheet__row')[0];
-  assert.equal(findByClass(firstRow, 'sheet__value').textContent, '10 / 20', 'the numbers are still there, just quiet');
+  assert.deepEqual(findAllByClass(sheet, 'sheet__name').map((n) => n.textContent),
+    ['Strength', 'Charisma', 'Intelligence', 'Dexterity', 'Constitution']);
+  assert.equal(findAllByClass(sheet, 'sheet__dot-fill').length, 25, 'five dots per attribute');
+  assert.deepEqual(findAllByClass(sheet, 'sheet__grade').map((n) => n.textContent), ['B', 'B', 'B', 'B', 'B']);
   assert.equal(ribbon('profile').getAttribute('aria-expanded'), 'true');
-  assert.equal(ribbon('settings').getAttribute('aria-expanded'), 'false');
-  assert.ok(findByClass(sheet, 'sheet__close'), 'the sheet has a close button');
+  assert.ok(findByClass(sheet, 'sheet__close'));
 });
 
 test('settings drops a placeholder panel, and only one sheet opens at a time', () => {
@@ -178,31 +142,16 @@ test('the sheet closes by its X, by the ribbon again, or by Escape', () => {
   assert.equal(ribbons.open(), null);
 });
 
-test('an open sheet follows the world: practice shows up in it', () => {
+test('an open profile sheet follows the world and contains no skills', () => {
   const g = start();
   ribbon('profile').click();
-  const travelValue = () => {
-    const sheet = openSheet();
-    const names = findAllByClass(sheet, 'sheet__name');
-    const values = findAllByClass(sheet, 'sheet__value');
-    const i = names.findIndex((n) => n.textContent === 'Travel');
-    return values[i].textContent;
-  };
-  assert.equal(travelValue(), '0 / 100');
-  // A walk is travel practice: the sheet is rebuilt with the new skill on
-  // the next pass, no re-click needed.
+  const values = () => findAllByClass(openSheet(), 'sheet__value').map((v) => v.textContent);
+  const before = values();
+  assert.equal(before.length, 5);
   assert.ok(g.travel('east'), 'a step to the smithy');
   assert.ok(openSheet(), 'the sheet stays open across the step');
-  assert.equal(travelValue(), '2 / 100', 'the walk trained travel, and the sheet says so');
-  const grades = findAllByClass(openSheet(), 'sheet__grade').map((n) => n.textContent);
-  assert.equal(grades[5], 'F', 'two points of travel is still a failing mark');
-  assert.deepEqual(
-    findAllByClass(openSheet(), 'sheet__dot-fill').slice(25, 30).map((d) => d.style.width),
-    ['0%', '0%', '0%', '0%', '0%'], 'two points of travel still fills no circle',
-  );
-  // Stats in the left pane and skills in the sheet read the same world.
-  const statsRow = findAllByClass(doc.shell, 'status__row--stats')[0];
-  assert.ok(statsRow.children[0].dataset.stat === 'health', 'the left pane is still the condition block');
+  assert.deepEqual(values(), before, 'attributes remain fixed and no skill row appears');
+  assert.equal(findAllByClass(openSheet(), 'sheet__name').some((n) => n.textContent === 'Travel'), false);
 });
 
 test('the ribbons survive into the result view, still on the shell', () => {

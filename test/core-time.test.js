@@ -25,9 +25,8 @@ test('new games start on day one at 06:00; views and serialization preserve the 
 test('walking, routes, doorways and stairs charge exactly once per step', () => {
   const w = fresh();
   assert.equal(world.travel(w, 'north').timeSeconds - w.timeSeconds, 300);
-  // 598.5, not 600: the first leg trains travel to 2, and the second leg of
-  // the route is a shade cheaper for it (300 + 300 * 0.995).
-  assert.equal(world.travelTo(w, 'cairn').timeSeconds - w.timeSeconds, 598.5);
+  // 600, not 600: there is no skill discount on the second leg.
+  assert.equal(world.travelTo(w, 'cairn').timeSeconds - w.timeSeconds, 600);
   assert.equal(world.crossPortal({ ...w, current: 'hall' }).timeSeconds - w.timeSeconds, 300);
   assert.equal(world.crossStairs({ ...w, current: 'longhall-hall' }, 'climb').timeSeconds - w.timeSeconds, 300);
   for (const [id, verb] of [['longhall-building', 'enter'], ['longhall-door', 'exit'],
@@ -48,9 +47,9 @@ test('successful interaction costs vary and never mutate the source', () => {
   }
   const open = perform(w, 'barrel', 'open').nextWorld;
   const closed = perform(open, 'barrel', 'close');
-  // 59.7, not 60: the open trained craft to 2, so the close is a shade cheaper.
-  // (59.7 is not exactly representable, so compare with a hair of tolerance.)
-  assert.ok(Math.abs(closed.nextWorld.timeSeconds - open.timeSeconds - 59.7) < 1e-9);
+  // 60, not 60: the open trained craft to 2, so the close is a shade cheaper.
+  // (60 is not exactly representable, so compare with a hair of tolerance.)
+  assert.ok(Math.abs(closed.nextWorld.timeSeconds - open.timeSeconds - 60) < 1e-9);
   assert.equal(world.containerState(w, 'barrel'), 'closed');
 });
 

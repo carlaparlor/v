@@ -1,9 +1,9 @@
 /**
- * core/player — attributes, skills and stats.
+ * core/player — attributes and stats.
  *
  * The system is deterministic and data-driven: the same world and the same action
  * always give the same body, and every rate lives in PLAYER_CONFIG. These tests pin
- * the three tiers: attributes bend the rules, skills grow by practice, stats drift
+ * the player: attributes bend the rules and stats drift
  * with the world and drive consequences — including the collapse that ends a day
  * instead of the game.
  */
@@ -44,15 +44,11 @@ function withStats(w, stats) {
 function withAttrs(w, attrs) {
   return Object.freeze({ ...w, player: Object.freeze({ ...w.player, attributes: Object.freeze({ ...w.player.attributes, ...attrs }) }) });
 }
-function withSkills(w, skills) {
-  return Object.freeze({ ...w, player: Object.freeze({ ...w.player, skills: Object.freeze({ ...w.player.skills, ...skills }) }) });
-}
-
-test('a fresh world carries the full player: name, five attributes, five skills, five stats', () => {
+test('a fresh world carries the player: name, five attributes, five stats, and no skills', () => {
   const w = fresh();
   assert.equal(w.player.name, 'You', 'the default name');
   assert.deepEqual(w.player.attributes, { strength: 10, charisma: 10, intelligence: 10, dexterity: 10, constitution: 10 });
-  assert.deepEqual(w.player.skills, { travel: 0, talk: 0, approach: 0, craft: 0, gather: 0 });
+  assert.equal('skills' in w.player, false, 'skills are not part of player state');
   assert.deepEqual(w.player.stats, { health: 100, hunger: 75, thirst: 75, energy: 100, exposure: 50 });
   assert.equal(w.lastEvent, null);
   assert.ok(Object.isFrozen(w.player), 'the player is frozen like the rest of the world');
@@ -197,20 +193,11 @@ test('strength lowers the energy cost of effort, not of talk', () => {
   assert.equal(player.energyCost(strong.player, 'talk'), 2, 'talk is not effort');
 });
 
-test('skills grow by practice with diminishing returns, and intelligence makes practice count for more', () => {
+test('intelligence does not modify action costs now that skills are removed', () => {
   const w = fresh();
-  const g0 = player.skillGain(w.player, 'walk');
-  const half = withSkills(w, { travel: 50 });
-  const gHalf = player.skillGain(half.player, 'walk');
-  const smart = withAttrs(half, { intelligence: 20 });
-  const dull = withAttrs(half, { intelligence: 5 });
-  assert.ok(g0 > gHalf, 'practice diminishes as the skill fills');
-  assert.ok(player.skillGain(smart.player, 'walk') > gHalf, 'intelligence sharpens practice');
-  assert.ok(player.skillGain(dull.player, 'walk') < gHalf, 'and a duller mind practices slower');
-  assert.equal(player.skillGain(w.player, 'examine'), 0, 'examining trains nothing');
-  // And a trained category works faster.
-  assert.ok(player.effectiveCost(withSkills(w, { travel: 100 }).player, 'walk', 300, true) < 300, 'travel 100 walks for 25% less');
-  assert.equal(player.effectiveCost(withSkills(w, { travel: 100 }).player, 'take', 60, false), 60, 'travel does not gather');
+  const smart = withAttrs(w, { intelligence: 20 });
+  assert.equal(player.effectiveCost(smart.player, 'walk', 300, true), 300);
+  assert.equal(player.effectiveCost(w.player, 'walk', 300, true), 300);
 });
 
 test('condition matters: exhaustion slows everything, exposure outside the middle slows exposed travel, zero energy refuses the open ground', () => {
@@ -238,19 +225,19 @@ test('paying a failure: thirty seconds, a sliver of energy, no practice; a faile
   const failed = player.payFailure(w, 'failure');
   assert.equal(failed.timeSeconds - w.timeSeconds, 30);
   assert.ok(failed.player.stats.energy < w.player.stats.energy, 'a failed attempt still costs something');
-  assert.deepEqual(failed.player.skills, w.player.skills, 'no practice from failure');
+  assert.equal('skills' in failed.player, false, 'failed actions do not create skills');
   assert.equal(player.payFailure(w, 'examine'), w, 'a failed examine costs nothing, as before');
 });
 
-test('walking trains travel and spends energy; the walk still costs five minutes in fair weather', () => {
+test('walking spends energy without training skills; its time cost stays fixed', () => {
   const w = at(1, 12, 'clear');
   const next = world.travel(w, 'north');
   assert.equal(next.timeSeconds - w.timeSeconds, 300, 'an untrained walk costs the full five minutes');
-  assert.ok(next.player.skills.travel > 0, 'a walk trains travel');
+  assert.equal('skills' in next.player, false, 'walking does not create skills');
   assert.ok(next.player.stats.energy < w.player.stats.energy, 'a walk spends energy');
   assert.ok(next.player.stats.hunger < w.player.stats.hunger, 'a walk burns a little food');
   const second = world.travel(next, 'east');
-  assert.equal(second.timeSeconds - next.timeSeconds, 298.5, 'the second walk is a shade cheaper — travel 2');
+  assert.equal(second.timeSeconds - next.timeSeconds, 300, 'walking has no skill discount');
 });
 
 test('eating: the herring goes into you and out of the barrel', () => {
@@ -265,7 +252,7 @@ test('eating: the herring goes into you and out of the barrel', () => {
   assert.equal(world.inventory(next).length, 0, 'it is not in your inventory');
   assert.equal(next.locations.yard.interactables.find((i) => i.id === 'barrel').contains.length, 0, 'the barrel no longer holds it');
   assert.equal(next.timeSeconds - opened.timeSeconds, 60, 'eating takes a minute');
-  assert.ok(next.player.skills.gather > opened.player.skills.gather, 'eating trains gather');
+  assert.equal('skills' in next.player, false, 'eating does not create skills');
   assert.ok(!outcome.failed, 'eating is not a failed attempt');
 });
 
@@ -359,7 +346,7 @@ test('the status model: bands, short attribute names, and a note for anything no
   assert.deepEqual(m.stats.map((s) => s.key), ['health', 'hunger', 'thirst', 'energy', 'exposure']);
   assert.deepEqual(m.stats.map((s) => s.band), ['ok', 'ok', 'ok', 'ok', 'ok']);
   assert.deepEqual(m.attributes.map((a) => a.short), ['str', 'cha', 'int', 'dex', 'con']);
-  assert.deepEqual(m.skills.map((s) => s.key), ['travel', 'talk', 'approach', 'craft', 'gather']);
+  assert.equal('skills' in m, false, 'the view model has no skills');
   assert.equal(m.notes.length, 0, 'a fresh body needs no notes');
   const worn = player.model(withStats(w, { hunger: 30, exposure: 5, energy: 60 }).player);
   assert.deepEqual(worn.notes.length, 2, 'one note per stat that is not ok');
@@ -379,23 +366,17 @@ test('the status model: bands, short attribute names, and a note for anything no
   assert.equal(player.model(null), null, 'no player, no block');
 });
 
-test('grades: report-card letters on the 1-20 and 0-100 scales', () => {
+test('attribute grades use the 1-20 scale', () => {
   const G = player.PLAYER_CONFIG.grades;
   // Attribute scale (1-20): the default 10 is a B — average, not good, not bad.
   assert.equal(player.grade(10, G.attribute), 'B', 'the default is average');
   for (const [v, letter] of [[16, 'S'], [15, 'A'], [13, 'A'], [12, 'B'], [9, 'C'], [7, 'C'], [6, 'D'], [4, 'D'], [3, 'F'], [1, 'F']]) {
     assert.equal(player.grade(v, G.attribute), letter, `attribute ${v} is ${letter}`);
   }
-  // Skill scale (0-100): 0 is an F — you have never done it.
-  assert.equal(player.grade(0, G.skill), 'F', 'untrained is a failing mark');
-  for (const [v, letter] of [[90, 'S'], [89, 'A'], [75, 'A'], [74, 'B'], [50, 'B'], [49, 'C'], [25, 'C'], [24, 'D'], [10, 'D'], [9, 'F']]) {
-    assert.equal(player.grade(v, G.skill), letter, `skill ${v} is ${letter}`);
-  }
   // The model carries the grade on every row.
   const m = player.model(withAttrs(fresh(), { strength: 17, charisma: 2 }).player);
   assert.equal(m.attributes.find((a) => a.key === 'strength').grade, 'S');
   assert.equal(m.attributes.find((a) => a.key === 'charisma').grade, 'F');
-  assert.equal(m.skills[0].grade, 'F', 'fresh skills are all failing marks');
 });
 
 test('the voice holds: notes are second person, present tense', () => {
