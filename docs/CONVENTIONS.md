@@ -189,6 +189,11 @@ ribbons (below). The block's colours are tokens (`--color-status*`,
   tests: if the picture changes, it should be because someone meant to change it.
 - Purely visual properties (gradient smoothness, colour choice) are checked by the manual script
   in `docs/TESTING.md`, not by regexing CSS.
+- The DOM stub is **more permissive than a real browser**: its `children` is an Array (browsers
+  expose an HTMLCollection — index/length only, no `.filter`/`.find`) and `className` is a string
+  (SVG in browsers is an object). Shipped code must be written for the browser, and when a
+  browser-shape bug is found the fix ships with a regression test that simulates the collection
+  shape (see the browser-shape tests in `test/ui-ribbons.test.js`).
 
 ## Git
 - Commit per iteration: `iter-N: <what it does>`.

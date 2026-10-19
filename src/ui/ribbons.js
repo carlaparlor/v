@@ -113,11 +113,26 @@ Vinland.define('ui/ribbons', function (require) {
     return svg;
   }
 
-  /** Retire a node without removeChild (the test stub has none). */
+  /**
+   * Retire a node. Browsers expose `children` as an HTMLCollection (no
+   * Array methods) and have removeChild; the test stub has neither
+   * Array-less children nor removeChild — so prefer removeChild, then fall
+   * back to an index walk (never `.filter` on `children`).
+   */
   function detach(node) {
-    if (!node || !node.parentNode || !node.parentNode.children) return;
-    const kept = node.parentNode.children.filter((n) => n !== node);
-    node.parentNode.replaceChildren(...kept);
+    if (!node || !node.parentNode) return;
+    const parent = node.parentNode;
+    if (typeof parent.removeChild === 'function') {
+      parent.removeChild(node);
+      return;
+    }
+    if (parent.children && typeof parent.replaceChildren === 'function') {
+      const kept = [];
+      for (let i = 0; i < parent.children.length; i++) {
+        if (parent.children[i] !== node) kept.push(parent.children[i]);
+      }
+      parent.replaceChildren(...kept);
+    }
   }
 
   function capitalize(key) {
