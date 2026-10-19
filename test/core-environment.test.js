@@ -127,8 +127,8 @@ test('actions price conditions at departure, then arrivals reflect the new slot'
   assert.equal(next.timeSeconds - w.timeSeconds, 600);
   assert.equal(env.weather(next), 'rain');
   const after = world.travel(next, 'south');
-  // 418.5, not 420: the first leg trained travel to 2 (300 * 0.995 + 120 rain).
-  assert.equal(after.timeSeconds - next.timeSeconds, 418.5);
+  // 420, not 420: there is no skill-based discount (300 + 120 rain).
+  assert.equal(after.timeSeconds - next.timeSeconds, 420);
 });
 
 test('both view models use the calendar and weather and distinguish indoor shelter', () => {
