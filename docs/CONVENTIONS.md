@@ -121,11 +121,15 @@ never disagree.
   must run from `file://` with nothing to fetch.
 - The profile sheet is **horizontal**: the two tiers sit side by side in
   `.sheet__columns` (one column each), titled with the player's name. Each row
-  is metered — name + `value / max` (attributes /20, skills /100), a
-  full-width meter (`.sheet__meter-fill` width set inline from the view model,
-  track and fill are tokens), and the one-line note. Sheet copy follows the
-  voice rules; section labels are the tier names ("Attributes", "Skills"). The
-  settings sheet is a placeholder until a real setting exists.
+  is metered — name, then the grade letter standing alone at the right end,
+  a full-width meter (`.sheet__meter-fill` width set inline from the view
+  model, track and fill are tokens), and the one-line note. The value
+  (`value / max`, attributes /20, skills /100) is part of the row but quiet:
+  hidden until the row is hovered or focused, with the grade's `title`
+  ("Strength: 10 / 20") as the reveal for tooltips and non-hover input. Sheet
+  copy follows the voice rules; section labels are the tier names
+  ("Attributes", "Skills"). The settings sheet is a placeholder until a real
+  setting exists.
 - **Grades:** each row leads with a report-card letter — S, A, B, C, D, F.
   The letter is view-model data (`core/player.grade` against
   `PLAYER_CONFIG.grades`: attributes 1–20 → S ≥ 16, A ≥ 13, B ≥ 10, C ≥ 7,

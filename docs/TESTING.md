@@ -691,9 +691,11 @@ trained prices alongside the untrained ones.
    **report-card grade**, colored: the default body reads **B** (gold-green
    body text) on every attribute and **F** (red) on every skill — you are
    average at being alive and bad at everything, because you have done
-   nothing yet. After the grade: the name with its value against the tier's
-   max at the top right (10 / 20, 0 / 100), a meter under it (half full for
-   an attribute at 10, empty for an untrained skill), and a one-line note.
+   nothing yet. **Only the letter stands at the right end of each row — the
+   numbers are not on screen.** Under each row sits its meter (half full for
+   an attribute at 10, empty for an untrained skill) and a one-line note,
+   both always visible. Hover a row (or focus it): its numbers fade in beside
+   the letter ("Strength … 10 / 20"), and the letter's tooltip says the same.
    The clicked ribbon lifts and stays lifted while its sheet is open.
 3. Watch it live: with the profile sheet open, walk one edge of the map. The
    sheet stays open and **Travel** ticks from 0 to 2 — the sheet is rebuilt

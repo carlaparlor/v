@@ -241,7 +241,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .toast,
-  .interactable {
+  .interactable,
+  .sheet__value {
     transition: none;
   }
 }
@@ -642,6 +643,15 @@
   color: var(--color-text-bright);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  /* The numbers do not get to crowd the report card: invisible until the
+     row is hovered (or focused), reserved in place so nothing jumps. */
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.sheet__row:hover .sheet__value,
+.sheet__row:focus-within .sheet__value {
+  opacity: 1;
 }
 
 /* The meter: value against the tier's max (attributes /20, skills /100).

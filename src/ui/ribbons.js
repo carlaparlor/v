@@ -140,19 +140,22 @@ Vinland.define('ui/ribbons', function (require) {
   }
 
   /**
-   * One metered row: the report-card grade (S–F) leading, the name, the
-   * value against the tier's max at the top right, a full-width meter
-   * (the fill's width is the value against the max), and the one-line note
-   * under it. The grade is view-model data — this module only paints it.
+   * One metered row: the name, the value (hidden until hover — the numbers
+   * do not get to crowd the report card) and the report-card grade (S–F),
+   * which stands alone at the right end, then the meter and the one-line
+   * note. The grade's title carries the numbers as the fallback reveal for
+   * tooltips and non-hover input. The grade is view-model data — this
+   * module only paints it.
    */
   function sheetRow(name, note, value, max, gradeLetter) {
     const row = el('div', 'sheet__row');
     const head = el('div', 'sheet__row-head');
-    const g = el('span', 'sheet__grade sheet__grade--' + gradeLetter, gradeLetter);
-    g.setAttribute('aria-label', 'grade ' + gradeLetter);
-    head.appendChild(g);
     head.appendChild(el('span', 'sheet__name', name));
     head.appendChild(el('span', 'sheet__value', value + ' / ' + max));
+    const g = el('span', 'sheet__grade sheet__grade--' + gradeLetter, gradeLetter);
+    g.setAttribute('aria-label', 'grade ' + gradeLetter);
+    g.setAttribute('title', name + ': ' + value + ' / ' + max);
+    head.appendChild(g);
     row.appendChild(head);
     const meter = el('div', 'sheet__meter');
     const fill = el('div', 'sheet__meter-fill');
