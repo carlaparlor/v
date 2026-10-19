@@ -9,7 +9,9 @@
  */
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadScripts } from '../tools/load-scripts.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT, loadScripts } from '../tools/load-scripts.js';
 import { installDocument, makeDocument, findByClass, findAllByClass, findByDataset } from '../tools/dom-stub.js';
 
 const Vinland = loadScripts([
@@ -218,6 +220,21 @@ test('the ribbons survive into the result view, still on the shell', () => {
  * The first live report was exactly this: the first click threw
  * "children.filter is not a function" and the ribbons appeared dead.
  */
+
+test('dot fills are boxes: width only applies to non-inline elements', () => {
+  // The stub stores an inline width in style no matter what, but a browser
+  // silently ignores width on an inline element — the reported "all circles
+  // blank" was a <span> fill with no display rule. Guard the CSS, not just
+  // the DOM shape.
+  const css = readFileSync(join(ROOT, 'styles', 'panels.css'), 'utf8');
+  const rule = /\.sheet__dot-fill\s*\{([^}]*)\}/.exec(css);
+  assert.ok(rule, 'the dot fill has a CSS rule');
+  assert.match(
+    rule[1],
+    /display\s*:\s*(block|inline-block|flex|grid)/,
+    'the fill must be a box that can take a width',
+  );
+});
 
 /** An HTMLCollection look-alike: numeric indices + length, no Array methods. */
 function toCollection(arr) {
