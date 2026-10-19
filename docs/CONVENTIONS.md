@@ -126,6 +126,13 @@ never disagree.
   track and fill are tokens), and the one-line note. Sheet copy follows the
   voice rules; section labels are the tier names ("Attributes", "Skills"). The
   settings sheet is a placeholder until a real setting exists.
+- **Grades:** each row leads with a report-card letter — S, A, B, C, D, F.
+  The letter is view-model data (`core/player.grade` against
+  `PLAYER_CONFIG.grades`: attributes 1–20 → S ≥ 16, A ≥ 13, B ≥ 10, C ≥ 7,
+  D ≥ 4 else F; skills 0–100 → S ≥ 90, A ≥ 75, B ≥ 50, C ≥ 25, D ≥ 10 else
+  F). The sheet renders `.sheet__grade--{letter}`; the six grade colours are
+  existing tokens, AA-checked on the sheet surface. The sheet never computes a
+  grade — same rule as the stats' bands.
 
 ## Calendar and environment
 - Time is action-driven; never use wall-clock time or `Math.random()` for weather.

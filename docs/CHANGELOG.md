@@ -4,6 +4,37 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 12 — the report card: S to F on every attribute and skill
+
+**Asked:** skills and attributes "in letters like S, A, F — if you're good at
+something, S, and if you're bad, F." A report card, not abbreviations.
+
+- **Grades are view-model data.** `core/player.grade(value, scale)` returns
+  the highest letter whose threshold the value reaches, else F; the scales
+  live in `PLAYER_CONFIG.grades`: attributes on their 1–20 scale
+  (S ≥ 16, A ≥ 13, B ≥ 10, C ≥ 7, D ≥ 4, else F — the default 10 is a B:
+  average, not good, not bad) and skills on 0–100 (S ≥ 90, A ≥ 75, B ≥ 50,
+  C ≥ 25, D ≥ 10, else F — an untrained skill is an F: you have never done
+  it). `core/player.model` carries the letter on every attribute and skill
+  row, so the pane/sheet split rule holds: the sheet paints, it never
+  computes.
+- **The profile sheet rows are graded.** Each row leads with the report-card
+  letter, colored: S gold, A green, B body, C dim, D orange, F red — all
+  existing tokens, all AA-checked on the sheet surface (theme-contrast
+  pins all six). The letter is a mark on the row, not a column: name, value
+  and meter follow it, unchanged.
+- Cost: a config block, one pure function, a model field per row, one leading
+  span and six colour rules. No state changes; the meter already ticked over
+  live, and now the grade does too (walk enough to cross a threshold and the
+  letter changes in the open sheet).
+
+What to test: `npm test` — **219 tests, 0 failures** (every boundary on both
+scales; the default body grades B B B B B / F F F F F; a walk still leaves
+travel an F; the six grade colours on the sheet surface). Then "Ribbons and
+sheets" step 2 in `docs/TESTING.md`.
+
+---
+
 ## Iteration 11 — a name above the vitals, a horizontal profile sheet
 
 **Asked:** the player's name should show up in the left pane above the stats,

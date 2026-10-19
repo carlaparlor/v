@@ -106,6 +106,17 @@ Vinland.define('core/player', function (require) {
       numbTravel: 1.2     // warmth below 25: exposed travel takes longer
     }),
 
+    /**
+     * Report-card grades for the profile sheet: the letter is the highest
+     * whose threshold the value reaches, else F. Attributes grade on their
+     * 1–20 scale (the default 10 is a B — average, not good, not bad);
+     * skills grade on 0–100 (0 is an F — you have never done it).
+     */
+    grades: Object.freeze({
+      attribute: Object.freeze({ S: 16, A: 13, B: 10, C: 7, D: 4 }),
+      skill: Object.freeze({ S: 90, A: 75, B: 50, C: 25, D: 10 })
+    }),
+
     collapse: Object.freeze({
       unconsciousSeconds: 2 * 3600,
       wake: Object.freeze({ health: 25, energy: 20, penalty: 10, min: 5 })
@@ -115,6 +126,18 @@ Vinland.define('core/player', function (require) {
   function round2(x) { return Math.round(x * 100) / 100; }
   function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
   function clampStat(x) { return round2(clamp(x, 0, PLAYER_CONFIG.max)); }
+
+  /**
+   * The report-card letter for `value` against a grade scale
+   * (PLAYER_CONFIG.grades.attribute or .skill): the highest letter whose
+   * threshold the value reaches, else F.
+   */
+  function grade(value, scale) {
+    for (const letter of ['S', 'A', 'B', 'C', 'D']) {
+      if (value >= scale[letter]) return letter;
+    }
+    return 'F';
+  }
 
   /**
    * The player for a fresh world. A content pack may override the starting
@@ -410,10 +433,12 @@ Vinland.define('core/player', function (require) {
     return {
       name: player.name,
       attributes: ATTRIBUTES.map(function (key) {
-        return { key: key, short: ATTRIBUTE_SHORT[key], value: player.attributes[key] };
+        const value = player.attributes[key];
+        return { key: key, short: ATTRIBUTE_SHORT[key], value: value, grade: grade(value, PLAYER_CONFIG.grades.attribute) };
       }),
       skills: SKILLS.map(function (key) {
-        return { key: key, value: Math.floor(player.skills[key]) };
+        const value = Math.floor(player.skills[key]);
+        return { key: key, value: value, grade: grade(value, PLAYER_CONFIG.grades.skill) };
       }),
       stats: stats,
       notes: notes
@@ -438,6 +463,6 @@ Vinland.define('core/player', function (require) {
     PLAYER_CONFIG, ATTRIBUTES, ATTRIBUTE_SHORT, SKILLS, STATS,
     initialPlayer, isExposed, effectiveCost, energyCost, skillGain, driftStats,
     step, payFailure, exposedTravelRefused, travelRefused,
-    applyFood, applyWater, bandFor, model, collapseResult
+    applyFood, applyWater, bandFor, grade, model, collapseResult
   };
 });

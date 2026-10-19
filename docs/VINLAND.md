@@ -41,6 +41,12 @@ never crash).
 
 ## Current state
 
+**Iteration 12** — the profile sheet is a report card: every attribute and
+skill row leads with a letter grade, S to F, colored (S gold, F red). The
+default body is a row of B's for attributes and F's for skills — average at
+being alive, failing at everything, because you have not done anything yet.
+See `docs/CHANGELOG.md`.
+
 **Iteration 11** — the player has a name above the vitals in the left pane
 ("You" by default; a content pack can name them via `pack.player.name`), and
 the profile sheet is a proper horizontal character sheet: attributes and
