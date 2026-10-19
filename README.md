@@ -25,6 +25,19 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 14 — warmth is now exposure, and it cuts both ways.** The fifth
+vital is no longer a tank that only empties into the cold. **Exposure** is a
+needle with a comfortable middle: it starts at **50 — feeling fine** — and the
+open air pushes it away from there, **down toward 0 when you are freezing, up
+toward 100 when you are overheating**. Inside 25–75 you are fine; outside it
+you are too cold or too hot (the note names the side), far outside it you are
+freezing or overheating, and either end slows exposed travel and drains
+health. Shelter settles the needle back to the middle. It keeps the
+thermometer icon; constitution now shrugs off heat as well as cold. The
+block above the prose is stacked, too: the name stands flush with the
+prose below it and the vitals sit directly under the name. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 13 — the vitals are icons, the line is aligned.** The left
 pane's condition block reads as a report: the name on the left, and on the
 right five vitals, each its lucide icon and the number (heart, fork-and-

@@ -3,7 +3,7 @@
  *
  * ATTRIBUTES — innate, fixed for the run. They never change; they bend the rules.
  *   strength     lowers the energy cost of effort
- *   constitution shrugs off the cold and heals faster
+ *   constitution shrugs off heat and cold alike, and heals faster
  *   dexterity    shortens fine-motor work (take, open, close, use, eat, drink)
  *   intelligence makes practice count for more
  *   charisma     smooths conversation
@@ -12,14 +12,20 @@
  *   approach, craft, gather) with diminishing returns, and a trained category works
  *   faster (up to 25% of its time cost at 100).
  *
- * STATS — current condition, 0–100: health, hunger, thirst, energy, warmth.
- *   They drift with the world (hunger and thirst fall as the clock moves; warmth
- *   follows shelter, season, weather and night; sheltered energy and health come
- *   back), are spent by effort, and restored by food, water and rest. Low stats
- *   matter: exhaustion (energy below 25) slows everything, freezing (warmth below
- *   25) slows exposed travel, and starving, dehydrating or freezing below 25 — or
- *   sitting at zero — drain health. Health at zero does not end the game: you
- *   collapse, stay down for two hours, and wake where you fell.
+ * STATS — current condition, 0–100: health, hunger, thirst, energy, exposure.
+ *   They drift with the world (hunger and thirst fall as the clock moves;
+ *   sheltered energy and health come back), are spent by effort, and restored
+ *   by food, water and rest. Low stats matter: exhaustion (energy below 25)
+ *   slows everything, and starving, dehydrating or suffering exposure below
+ *   25 — or sitting at zero — drain health. Health at zero does not end the
+ *   game: you collapse, stay down for two hours, and wake where you fell.
+ *
+ * EXPOSURE is the odd one out: it is not a tank that empties but a needle
+ *   with a comfortable middle. 50 is feeling fine; the air pushes the needle
+ *   away from it — down toward 0 (freezing) in the cold, up toward 100
+ *   (overheating) in the heat — and shelter lets it settle back to the
+ *   middle. Only the distance from 50 is severity, so its bands, its health
+ *   drain and its travel penalty all read off that distance, on either side.
  *
  * Pure module: no DOM, no globals, no I/O. The player lives inside world state as
  * plain frozen data (ADR-0006), so every transition returns a new world and the
@@ -38,14 +44,14 @@ Vinland.define('core/player', function (require) {
     strength: 'str', charisma: 'cha', intelligence: 'int', dexterity: 'dex', constitution: 'con'
   });
   const SKILLS = Object.freeze(['travel', 'talk', 'approach', 'craft', 'gather']);
-  const STATS = Object.freeze(['health', 'hunger', 'thirst', 'energy', 'warmth']);
+  const STATS = Object.freeze(['health', 'hunger', 'thirst', 'energy', 'exposure']);
 
   const PLAYER_CONFIG = Object.freeze({
     start: Object.freeze({
       name: 'You',
       attributes: Object.freeze({ strength: 10, charisma: 10, intelligence: 10, dexterity: 10, constitution: 10 }),
       skills: Object.freeze({ travel: 0, talk: 0, approach: 0, craft: 0, gather: 0 }),
-      stats: Object.freeze({ health: 100, hunger: 75, thirst: 75, energy: 100, warmth: 100 }),
+      stats: Object.freeze({ health: 100, hunger: 75, thirst: 75, energy: 100, exposure: 50 }),
     }),
     nameMin: 1,
     nameMax: 32,
@@ -81,18 +87,23 @@ Vinland.define('core/player', function (require) {
       /** Per second of in-game time (the clock only moves when an action costs). */
       hunger: 1 / 3600,          // 100 -> 0 in about four days
       thirst: 1 / 1800,          // 100 -> 0 in about two days
-      warmthRecover: 1 / 1800,   // sheltered
+      exposureRecover: 1 / 1800,  // sheltered: back toward the comfortable middle
       energyRecover: 1 / 2700,   // sheltered
-      warmthDecay: Object.freeze({ summer: 1 / 3600, spring: 1 / 2700, autumn: 1 / 2100, winter: 1 / 900 }),
-      warmthWeather: Object.freeze({ clear: 1, cloudy: 1.15, fog: 1.3, rain: 1.6, snow: 2.2, storm: 2.6 }),
-      warmthNight: 1.3,
+      // Where the open air pushes the needle, by season; weather and night
+      // bend that target further (rain cools a hot day and deepens a cold
+      // one, snow drags it down, a clear sky lets the season speak loudest).
+      exposureTarget: Object.freeze({ spring: 38, summer: 82, autumn: 32, winter: 12 }),
+      exposureWeather: Object.freeze({ clear: 6, cloudy: 3, fog: 0, rain: -8, snow: -22, storm: -10 }),
+      exposureNight: -8,
+      // How fast the needle chases its target (fraction of the gap per second).
+      exposureRate: 1 / 14400,
       conDecayPerPoint: 0.03,
       health: Object.freeze({
         lowBelow: 25,
         drain: Object.freeze({
           hunger: Object.freeze({ low: 1 / 3600, zero: 1 / 1200 }),
           thirst: Object.freeze({ low: 1 / 3600, zero: 1 / 900 }),
-          warmth: Object.freeze({ low: 1 / 2700, zero: 1 / 900 })
+          exposure: Object.freeze({ low: 1 / 2700, zero: 1 / 900 })
         }),
         recover: 1 / 1800,
         conRecoverPerPoint: 0.03
@@ -102,8 +113,12 @@ Vinland.define('core/player', function (require) {
     conditions: Object.freeze({
       lowBelow: 50,
       criticalBelow: 25,
-      exhaustedCost: 1.5, // energy below 25: every action takes longer
-      numbTravel: 1.2     // warmth below 25: exposed travel takes longer
+      // Exposure's comfortable middle: inside this range you feel fine;
+      // outside it you are too cold (below) or too hot (above), and the
+      // band is read off the distance from `comfort` (see bandFor).
+      exposure: Object.freeze({ comfort: 50, okWithin: 25, criticalBeyond: 40 }),
+      exhaustedCost: 1.5,  // energy below 25: every action takes longer
+      strainedTravel: 1.2  // exposure outside the comfort range: exposed travel takes longer
     }),
 
     /**
@@ -187,8 +202,8 @@ Vinland.define('core/player', function (require) {
     if (category) cost *= 1 - C.skill.relief * (player.skills[category] / C.max);
     const s = player.stats;
     if (s.energy < C.conditions.criticalBelow) cost *= C.conditions.exhaustedCost;
-    if (exposed && C.effort.indexOf(action) !== -1 && s.warmth < C.conditions.criticalBelow) {
-      cost *= C.conditions.numbTravel;
+    if (exposed && C.effort.indexOf(action) !== -1 && exposureStressed(s.exposure)) {
+      cost *= C.conditions.strainedTravel;
     }
     return round2(cost);
   }
@@ -227,23 +242,34 @@ Vinland.define('core/player', function (require) {
     s.hunger -= seconds * D.hunger;
     s.thirst -= seconds * D.thirst;
     if (context.exposed) {
-      const decay = D.warmthDecay[context.season]
-        * D.warmthWeather[context.weather]
-        * (context.phase === 'night' ? D.warmthNight : 1);
-      s.warmth -= seconds * decay * (1 - (player.attributes.constitution - 10) * D.conDecayPerPoint);
+      const target = clamp(
+        D.exposureTarget[context.season]
+        + D.exposureWeather[context.weather]
+        + (context.phase === 'night' ? D.exposureNight : 0), 0, PLAYER_CONFIG.max);
+      let step = (target - s.exposure) * Math.min(1, seconds * D.exposureRate);
+      // Constitution only shrugs off the air pushing you AWAY from fine;
+      // it never slows the needle settling back toward it.
+      const comfort = PLAYER_CONFIG.conditions.exposure.comfort;
+      if (Math.abs(s.exposure + step - comfort) > Math.abs(s.exposure - comfort)) {
+        step *= (1 - (player.attributes.constitution - 10) * D.conDecayPerPoint);
+      }
+      s.exposure += step;
     } else {
-      s.warmth += seconds * D.warmthRecover;
+      // Sheltered, the needle settles back toward feeling fine — never past it.
+      const comfort = PLAYER_CONFIG.conditions.exposure.comfort;
+      const settle = seconds * D.exposureRecover;
+      s.exposure += clamp(comfort - s.exposure, -settle, settle);
       s.energy += seconds * D.energyRecover;
     }
     const H = D.health;
     let health = s.health;
     const starving = s.hunger < H.lowBelow;
     const dehydrated = s.thirst < H.lowBelow;
-    const freezing = s.warmth < H.lowBelow;
+    const suffering = exposureStressed(s.exposure);
     if (starving) health -= seconds * (s.hunger <= 0 ? H.drain.hunger.zero : H.drain.hunger.low);
     if (dehydrated) health -= seconds * (s.thirst <= 0 ? H.drain.thirst.zero : H.drain.thirst.low);
-    if (freezing) health -= seconds * (s.warmth <= 0 ? H.drain.warmth.zero : H.drain.warmth.low);
-    if (!context.exposed && !starving && !dehydrated && !freezing) {
+    if (suffering) health -= seconds * (exposureExtreme(s.exposure) ? H.drain.exposure.zero : H.drain.exposure.low);
+    if (!context.exposed && !starving && !dehydrated && !suffering) {
       health += seconds * H.recover * (1 + (player.attributes.constitution - 10) * H.conRecoverPerPoint);
     }
     s.health = health;
@@ -344,7 +370,11 @@ Vinland.define('core/player', function (require) {
           energy: w.energy,
           hunger: Math.max(w.min, round2(drifted.hunger - w.penalty)),
           thirst: Math.max(w.min, round2(drifted.thirst - w.penalty)),
-          warmth: Math.max(w.min, round2(drifted.warmth - w.penalty))
+          // Waking costs you ground on the needle too: the penalty pushes
+          // it further from fine, whichever side it already sat on.
+          exposure: clampStat(PLAYER_CONFIG.conditions.exposure.comfort
+            + (drifted.exposure >= PLAYER_CONFIG.conditions.exposure.comfort ? 1 : -1)
+            * (Math.abs(drifted.exposure - PLAYER_CONFIG.conditions.exposure.comfort) + w.penalty))
         })
       })
     });
@@ -405,9 +435,30 @@ Vinland.define('core/player', function (require) {
     });
   }
 
+  /**
+   * Exposure reads off its distance from the comfortable middle, on either
+   * side: within `okWithin` of 50 you feel fine, beyond `criticalBeyond`
+   * you are freezing or overheating, and between the two you are merely
+   * too cold or too hot.
+   */
+  function exposureDeviation(value) {
+    return Math.abs(value - PLAYER_CONFIG.conditions.exposure.comfort);
+  }
+  function exposureStressed(value) {
+    return exposureDeviation(value) > PLAYER_CONFIG.conditions.exposure.okWithin;
+  }
+  function exposureExtreme(value) {
+    return exposureDeviation(value) >= PLAYER_CONFIG.conditions.exposure.comfort;
+  }
+
   /** Band for the status block: ok / low / critical. */
-  function bandFor(value) {
+  function bandFor(value, key) {
     const C = PLAYER_CONFIG.conditions;
+    if (key === 'exposure') {
+      const deviation = exposureDeviation(value);
+      return deviation > C.exposure.criticalBeyond ? 'critical'
+        : deviation > C.exposure.okWithin ? 'low' : 'ok';
+    }
     return value < C.criticalBelow ? 'critical' : value < C.lowBelow ? 'low' : 'ok';
   }
 
@@ -417,18 +468,25 @@ Vinland.define('core/player', function (require) {
     hunger: Object.freeze({ low: 'Your hunger is growing.', critical: 'Your hunger is pressing; your hands shake.' }),
     thirst: Object.freeze({ low: 'Your throat aches for water.', critical: 'You are parched.' }),
     energy: Object.freeze({ low: 'You feel your strength draining.', critical: 'You are exhausted; every step is an effort.' }),
-    warmth: Object.freeze({ low: 'You feel the cold settling into you.', critical: 'You are freezing; your fingers have gone numb.' })
+    exposure: Object.freeze({
+      cold: Object.freeze({ low: 'You feel the cold settling into you.', critical: 'You are freezing; your fingers have gone numb.' }),
+      hot: Object.freeze({ low: 'You feel the heat settling onto you.', critical: 'You are overheating; the heat swims in your head.' })
+    })
   });
 
   /** View model for the always-on status block in the text pane. */
   function model(player) {
     if (!player) return null;
     const stats = STATS.map(function (key) {
-      return { key: key, value: Math.round(player.stats[key]), band: bandFor(player.stats[key]) };
+      return { key: key, value: Math.round(player.stats[key]), band: bandFor(player.stats[key], key) };
     });
     const notes = [];
     for (const stat of stats) {
-      if (stat.band !== 'ok') notes.push(NOTES[stat.key][stat.band]);
+      if (stat.band === 'ok') continue;
+      // Exposure's note names the side of the needle you are suffering on.
+      notes.push(stat.key === 'exposure'
+        ? NOTES.exposure[player.stats.exposure < PLAYER_CONFIG.conditions.exposure.comfort ? 'cold' : 'hot'][stat.band]
+        : NOTES[stat.key][stat.band]);
     }
     return {
       name: player.name,
@@ -448,7 +506,7 @@ Vinland.define('core/player', function (require) {
   /** The prose shown when a collapse lands (second person, present tense). */
   function collapseResult() {
     const text = 'Your legs give way and the world goes out like a fire under the smoke-hole. '
-      + 'You wake on the same ground, weaker, your hands still cold. '
+      + 'You wake on the same ground, weaker, wrung out by the hours gone. '
       + 'You are alive, and the shore has not changed its mind about you.';
     return {
       title: 'You collapse',
@@ -463,6 +521,6 @@ Vinland.define('core/player', function (require) {
     PLAYER_CONFIG, ATTRIBUTES, ATTRIBUTE_SHORT, SKILLS, STATS,
     initialPlayer, isExposed, effectiveCost, energyCost, skillGain, driftStats,
     step, payFailure, exposedTravelRefused, travelRefused,
-    applyFood, applyWater, bandFor, grade, model, collapseResult
+    applyFood, applyWater, bandFor, exposureStressed, grade, model, collapseResult
   };
 });

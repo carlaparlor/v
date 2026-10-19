@@ -7,6 +7,68 @@ Two kinds of tests, both required every iteration:
 2. **Manual test script** — the steps below, run in a browser. This is what *you* run.
 
 New iterations are added at the top. Older ones stay as the regression suite.
+---
+
+## Iteration 14 (correction 1) — the name aligns, the stats sit under it
+
+**Asked:** why isn't "You" aligned with the bottom text, and the stats
+should be under "You".
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **221 tests, 0 failures.** The status suite pins the stacked
+shape (name first in the block, vitals second, no `status__line`) and
+reads `panels.css` to fail if `.status` ever carries inline padding
+again — that padding was the misalignment.
+
+### Manual
+
+1. Refresh the preview. In the left pane, "YOU" starts at exactly the
+   same left edge as the place name and prose below the divider.
+2. The five vitals (icons + numbers) sit on the line **under** "YOU",
+   also flush left — nothing sits beside the name.
+
+---
+
+## Iteration 14 — warmth becomes exposure: fine in the middle, too hot or too cold
+
+**Asked:** "replace warmth stat with exposure. there's a middle feeling
+fine, then too hot or too cold."
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **220 tests, 0 failures.** The player suite pins the needle:
+a fresh body starts at exposure 50; winter, storms and night push it down,
+a summer day pushes it up; constitution slows the push away from fine on
+either side; shelter settles either extreme back toward 50 and stops there;
+bands read off the distance from 50 (25–75 ok, 10–24/76–90 low, beyond
+that critical) and the notes name the side (freezing / overheating);
+either end drains health and slows exposed travel by 20%. The status
+suite pins `exposure: 50` in the tooltip and `data-stat="exposure"`.
+
+### Manual
+
+1. Refresh the preview. The fifth vital (thermometer) reads **50**, no
+   notes — you feel fine. Its tooltip reads "exposure: 50".
+2. Walk the open ground on a winter day and watch the number fall; stand
+   out in a summer day (set the clock from the console, as in "Player and
+   survival" below) and watch it climb past 50 instead.
+3. From the console in "Player and survival" step 5: `body({ exposure: 10 })`
+   — the thermometer bands low and the note says the cold is settling in;
+   `body({ exposure: 0 })` — critical, "You are freezing…". Then
+   `body({ exposure: 90 })` — low, the heat settling onto you;
+   `body({ exposure: 100 })` — critical, "You are overheating…".
+4. At either extreme an outdoor walk takes 20% longer and health ticks
+   down while you stay out; go indoors and the number walks back toward
+   50 (a frozen 5 and a scorched 95 both settle, and neither overshoots).
 
 ---
 
@@ -644,7 +706,7 @@ sheltered transitions; the existing time/navigation tests remain passing.
 1. Refresh the preview or open index.html directly. Above the prose in the left
    pane, confirm the status block: **You**, then `str 10 · cha 10 · int 10 ·
    dex 10 · con 10`, then `travel 0 · talk 0 · approach 0 · craft 0 · gather 0`,
-   then `health 100 · hunger 75 · thirst 75 · energy 100 · warmth 100`. No notes.
+   then `health 100 · hunger 75 · thirst 75 · energy 100 · exposure 50`. No notes.
 2. Open the barrel and take the herring (you now carry it). Eat it: hunger jumps
    toward full, thirst dips a shade (the brine), the herring is gone from your
    pack, and gather trained. Drink from the {trough} in the yard: thirst
@@ -652,7 +714,7 @@ sheltered transitions; the existing time/navigation tests remain passing.
    through every view.
 3. Sit on the bench in the Longhall: twenty minutes pass and energy comes back.
    Sleep on the loft's blankets: two hours pass (the clock makes the jump),
-   energy and warmth recover, hunger paid for the sleep.
+   energy recovers and exposure settles back toward 50, hunger paid for the sleep.
 4. Confirm practice: the first walk of a fresh day costs five minutes; the second
    costs a shade less (the block shows travel above 0 and the clock pays 4:58.5).
    Talking to the elder trains talk; working the grindstone trains craft.
@@ -666,8 +728,9 @@ sheltered transitions; the existing time/navigation tests remain passing.
    }
    ```
    `body({ energy: 24 })`: every action now takes 50% longer (a walk is 7:30).
-   `body({ warmth: 24 })`: an outdoor walk takes another 20% longer (numb);
-   indoor actions do not. `body({ energy: 0 })`: the open ground refuses you with
+   `body({ exposure: 24 })`: an outdoor walk takes another 20% longer (too
+   cold); `body({ exposure: 76 })` does the same (too hot); indoor actions
+   do not. `body({ exposure: 50 })` is feeling fine again. `body({ energy: 0 })`: the open ground refuses you with
    a reason and a thirty-second attempt; indoors you can still drag yourself
    between rooms. The block bands the stat (low/critical) and gains a note for
    each stat that is not ok.
@@ -684,11 +747,13 @@ sheltered transitions; the existing time/navigation tests remain passing.
      var next = Object.freeze({ ...g.getState(), timeSeconds: 90 * 86400 + 7 * 3600, weatherSeed: seed });
      if (e.weather(next) === 'storm') { g.setState(next); break; }
    }
-   body({ warmth: 0 });
+   body({ exposure: 0 });
    ```
-   Walk one edge: warmth 0 drains health while you walk (a starting health of 1
-   collapses mid-walk — the step still happens, then two hours of darkness).
-   Indoors the same night, warmth and health come back.
+   Walk one edge: exposure 0 (freezing) drains health while you walk (a
+   starting health of 1 collapses mid-walk — the step still happens, then
+   two hours of darkness). Indoors the same night, exposure settles back
+   toward 50 and health comes back. The same holds at the hot end:
+   `body({ exposure: 100 })` outdoors drains health just as fast.
 8. Reapply a JSON-round-tripped state and confirm the block is identical:
    `g.setState(JSON.parse(JSON.stringify(g.getState())))` — same values, same
    notes, and the next action prices the same cost as before the round trip.

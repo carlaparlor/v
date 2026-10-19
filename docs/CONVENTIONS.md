@@ -50,8 +50,8 @@ The player is world state (`world.player`) — plain frozen data created by
 
 - **Attributes** (`strength, charisma, intelligence, dexterity, constitution`):
   innate and fixed for the run. They never change; they modify the rules:
-  strength → energy cost of effort (`±2%`/point), constitution → cold decay and
-  health recovery (`±3%`/point), dexterity → time of fine work
+  strength → energy cost of effort (`±2%`/point), constitution → the push of
+  heat and cold on exposure, and health recovery (`±3%`/point), dexterity → time of fine work
   (`take, open, close, use, eat, drink`, `±3%`/point), intelligence → skill gain
   (`±5%`/point), charisma → talk time (`±3%`/point). At 10 every factor is 1.
 - **Skills** (`travel, talk, approach, craft, gather`): grown by practice. Each
@@ -59,17 +59,27 @@ The player is world state (`world.player`) — plain frozen data created by
   `2 × (1 − level/100) × (1 + (int − 10) × 0.05)` — diminishing, never reaching
   100 in a bounded number of uses. A trained category works faster:
   time cost × `(1 − 0.25 × level/100)`.
-- **Stats** (`health, hunger, thirst, energy, warmth`, 0–100): current
+- **Stats** (`health, hunger, thirst, energy, exposure`, 0–100): current
   condition. They drift with the world in `driftStats` (priced at departure):
-  hunger −1/3600s, thirst −1/1800s; exposed warmth decays by
-  season × weather × night × constitution, sheltered warmth/energy/health come
-  back; health drains when hunger/thirst/warmth are below 25 (faster at zero)
-  and recovers only sheltered, fed, warm and watered. Consequences: energy
-  below 25 → all costs × 1.5; warmth below 25 → exposed travel × 1.2; energy 0
-  → the open ground refuses (indoor steps stay). Health 0 → **collapse**: the
-  action still happens, +2h unconscious (still drifting), wake at
-  health 25 / energy 20 / the others −10 (min 5), `lastEvent: {kind:'collapse'}`.
-  There is no death and no reset — the sandbox endures.
+  hunger −1/3600s, thirst −1/1800s; sheltered exposure/energy/health come
+  back; health drains when hunger/thirst are below 25 (faster at zero) or
+  exposure is outside its comfort range (faster at either end, 0 or 100)
+  and recovers only sheltered, fed, comfortable and watered. Consequences:
+  energy below 25 → all costs × 1.5; exposure outside its comfort range →
+  exposed travel × 1.2; energy 0 → the open ground refuses (indoor steps
+  stay). Health 0 → **collapse**: the action still happens, +2h unconscious
+  (still drifting), wake at health 25 / energy 20 / hunger and thirst −10
+  (min 5) and exposure pushed 10 further from fine, `lastEvent:
+  {kind:'collapse'}`. There is no death and no reset — the sandbox endures.
+- **Exposure is two-ended** (`PLAYER_CONFIG.conditions.exposure`): unlike the
+  other stats it is a needle, not a tank. **50 is feeling fine**; the open air
+  pushes it toward a target set by season × weather × night (winter drags it
+  toward 0, a summer day pushes it toward 100), shelter settles it back to
+  50 without overshooting, and constitution slows only the push *away* from
+  fine. Bands read off the distance from 50 (`bandFor(value, 'exposure')`):
+  ≤ 25 ok, ≤ 40 low, beyond that critical — on either side — and the status
+  note names the side (freezing vs overheating). Never reintroduce a
+  one-directional temperature stat; too hot and too cold are this one needle.
 
 The cost pipeline is fixed and one-directional (ADR-0013): base (core/time) →
 attributes → skill → condition (core/player, `effectiveCost`) → weather
@@ -90,11 +100,14 @@ and verbs without their values. All rates live in `PLAYER_CONFIG`
 **Display:** the left pane carries **the name, condition and prose only**.
 The status block lives in the LEFT pane, in every view, rendered from
 `core/player.model` via the view model — the pane never computes a value —
-and shows the name and the five STATS on ONE line (`.status__line`: name
-left, vitals right, aligned, wrapping when the pane is narrow). Each stat is
+and shows the name with the five STATS directly under it — stacked, never
+side by side, and with no inline padding of its own, so the name starts
+exactly where the prose below the block starts (the pane's padding is the
+one shared inset). Each stat is
 its lucide icon (from `ui/icons`, keyed by stat name — heart, utensils,
 droplet, zap, thermometer) and the number; the WORD is off-screen, in the
-tooltip and the aria-label. The band (≥ 50 ok, 25–49 low, < 25 critical)
+tooltip and the aria-label. The band (≥ 50 ok, 25–49 low, < 25 critical —
+exposure instead reads off its distance from 50, either side)
 colours icon and number alike, because the icon strokes `currentColor`, and
 there is one second-person note per stat that is not ok. Attributes and
 skills are not displayed in the pane; they live in the profile sheet on the

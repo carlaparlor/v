@@ -45,7 +45,7 @@ Vinland.define('ui/ribbons', function (require) {
     charisma: 'Conversation takes less time.',
     intelligence: 'Practice counts for more.',
     dexterity: 'Fine work takes less time.',
-    constitution: 'The cold bites less, and you heal faster.',
+    constitution: 'Heat and cold bite less, and you heal faster.',
   });
 
   /** One line under each skill name: what the practice buys. */

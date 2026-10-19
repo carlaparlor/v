@@ -41,6 +41,13 @@ never crash).
 
 ## Current state
 
+**Iteration 14** — the fifth vital is **exposure**, not warmth: a needle
+with a comfortable middle (50 is feeling fine) that the open air pushes
+toward freezing at 0 or overheating at 100, and that shelter settles back.
+Too hot and too cold are the same stat, read off the distance from the
+middle; the note in the left pane names which side you are suffering on.
+See `docs/CHANGELOG.md`.
+
 **Iteration 13** — the left pane's condition block reads as a report: the
 name on the left, and on the right the five vitals, each its lucide icon and
 the number (heart, utensils, droplet, zap, thermometer) — the word lives in

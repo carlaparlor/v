@@ -37,21 +37,14 @@
   gap: var(--space-1);
   margin-block-end: var(--space-1);
   padding-block: var(--space-2);
-  padding-inline: var(--space-3);
+  /* No inline padding: the name and vitals start exactly where the prose
+     below starts (the pane's own padding is the one shared inset). */
   border-block-end: 1px solid var(--color-status-border);
 }
 
-/* The nameplate: who this is, above the vitals. From the view model. */
-/* One line, aligned: the name on the left, the vitals on the right.
-   Wraps when the pane is narrow; the two never fight for the edge. */
-.status__line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
-}
-
+/* The nameplate: who this is, above the vitals. From the view model.
+   Stacked, not side by side: the name on its own line, the vitals under
+   it, both flush with the prose that follows the block. */
 .status__name {
   color: var(--color-status-bright);
   font-size: var(--font-size-small);

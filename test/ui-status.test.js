@@ -4,7 +4,9 @@
  * The block is chrome, not prose: it must be present in EVERY view of the text
  * pane (place and result), read from the same world state the prose does, and
  * colour a stat the moment it leaves the ok band. The values come from the view
- * model — the pane renders them, it does not compute them.
+ * model — the pane renders them, it does not compute them. Layout: the name
+ * stands flush with the prose below it and the vitals sit directly under the
+ * name (no side-by-side line, no extra inset of its own).
  *
  * The block carries the STATS only (how you are) plus the notes; who you are
  * and what you have learned (attributes, skills) live in the profile sheet on
@@ -12,6 +14,9 @@
  */
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { loadScripts } from '../tools/load-scripts.js';
 import { installDocument, makeDocument, findByClass, findAllByClass } from '../tools/dom-stub.js';
 
@@ -59,7 +64,6 @@ beforeEach(() => {
 function statusRows(g) {
   return {
     box: findByClass(doc.shell, 'status'),
-    line: findByClass(doc.shell, 'status__line'),
     name: findByClass(doc.shell, 'status__name'),
     stats: findAllByClass(doc.shell, 'status__row--stats')[0],
     notes: findAllByClass(doc.shell, 'status__note'),
@@ -72,27 +76,26 @@ test('the text pane carries the condition block above the prose, in every view',
   assert.ok(pane, 'the text pane exists');
   const rows = statusRows(g);
   assert.ok(rows.box, 'the condition block is present');
-  // The name and the vitals share one line: name left, stats right.
-  assert.ok(rows.line, 'the name-and-vitals line is present');
-  assert.equal(rows.box.children[0], rows.line, 'the line is first in the block');
+  // The name stands on its own, and the vitals sit directly under it.
+  assert.equal(findByClass(doc.shell, 'status__line'), null, 'no shared name-and-vitals line any more');
   assert.ok(rows.name, 'the name is present');
   assert.equal(rows.name.textContent, 'You', 'the default name');
-  assert.equal(rows.line.children[0], rows.name, 'the name is first in the line');
-  assert.equal(rows.line.children[1], rows.stats, 'the vitals sit on the same line, after the name');
+  assert.equal(rows.box.children[0], rows.name, 'the name is first in the block');
+  assert.equal(rows.box.children[1], rows.stats, 'the vitals sit under the name, not beside it');
   // Vitals: five stats, each its icon and the number; the word is off-screen.
   assert.equal(rows.stats.children.length, 5, 'five stats');
   assert.deepEqual(
     rows.stats.children.map((s) => s.textContent),
-    ['100', '75', '75', '100', '100'],
+    ['100', '75', '75', '100', '50'],
   );
   assert.deepEqual(
     rows.stats.children.map((s) => s.getAttribute('title')),
-    ['health: 100', 'hunger: 75', 'thirst: 75', 'energy: 100', 'warmth: 100'],
+    ['health: 100', 'hunger: 75', 'thirst: 75', 'energy: 100', 'exposure: 50'],
     'the word survives in the tooltip',
   );
   assert.deepEqual(
     rows.stats.children.map((s) => s.dataset.stat),
-    ['health', 'hunger', 'thirst', 'energy', 'warmth'],
+    ['health', 'hunger', 'thirst', 'energy', 'exposure'],
   );
   assert.deepEqual(
     rows.stats.children.map((s) => s.children[0].className),
@@ -136,14 +139,14 @@ test('a low or critical stat is banded and narrated', () => {
     ...w,
     player: Object.freeze({
       ...w.player,
-      stats: Object.freeze({ ...w.player.stats, hunger: 30, warmth: 10 }),
+      stats: Object.freeze({ ...w.player.stats, hunger: 30, exposure: 5 }),
     }),
   });
   g.setState(worn);
   const rows = statusRows(g);
   const bands = rows.stats.children.map((s) => s.className);
   assert.ok(bands[1].includes('status__item--low'), 'hunger 30 is low');
-  assert.ok(bands[4].includes('status__item--critical'), 'warmth 10 is critical');
+  assert.ok(bands[4].includes('status__item--critical'), 'exposure 5 is critical (freezing)');
   assert.ok(!bands[0].includes('status__item--low'), 'health 100 is not banded');
   assert.equal(rows.notes.length, 2, 'one note per stat that is not ok');
   assert.match(rows.notes[0].textContent, /hunger/);
@@ -160,6 +163,16 @@ test('the view model is plain data and matches the render', () => {
   assert.ok(textModel.player, 'renderText exposes the player model');
   assert.deepEqual(
     textModel.player.stats.map((s) => [s.key, s.value, s.band]),
-    [['health', 100, 'ok'], ['hunger', 75, 'ok'], ['thirst', 75, 'ok'], ['energy', 100, 'ok'], ['warmth', 100, 'ok']],
+    [['health', 100, 'ok'], ['hunger', 75, 'ok'], ['thirst', 75, 'ok'], ['energy', 100, 'ok'], ['exposure', 50, 'ok']],
   );
+});
+
+test('the status block carries no inline inset of its own, so the name aligns with the prose', () => {
+  // The prose starts at the pane's padding; if .status ever grows inline
+  // padding again, "You" drifts right of every line below it.
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'styles', 'panels.css'), 'utf8');
+  const rule = css.match(/\.status \{([^}]*)\}/);
+  assert.ok(rule, 'panels.css defines .status');
+  assert.doesNotMatch(rule[1], /padding-inline|padding-left|padding-right|margin-inline/, '.status must not inset its content sideways');
+  assert.doesNotMatch(css, /\.status__line/, 'the side-by-side name-and-vitals line stays gone');
 });
