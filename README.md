@@ -25,6 +25,17 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 14 — exposure replaces warmth; hunger and thirst are gone.** The
+left pane reports three vitals now: health and energy as icon and number, and
+**exposure** as its felt word — *fine* at the centre, *too cold* or *freezing*
+below it, *too hot* or *overheating* above. Cold reads blue, hot reads red, and
+the exact 0–100 value lives in the tooltip. Exposure is a real centred scale:
+the season and weather name an ambient target (summer pulls hot, winter cold),
+night pushes it colder, shelter pulls it back to fine, and a tough constitution
+changes more slowly. The hard ends drain health and slow exposed travel. Hunger
+and thirst are retired: food now restores energy directly, and the trough is
+an examine-only fixture. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 13 — the vitals are icons, the line is aligned.** The left
 pane's condition block reads as a report: the name on the left, and on the
 right five vitals, each its lucide icon and the number (heart, fork-and-

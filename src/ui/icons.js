@@ -8,9 +8,8 @@
  * included) carries straight onto the glyph.
  *
  * Shape data is from lucide (https://lucide.dev, ISC-licensed): user-round,
- * settings and x for the ribbons; heart, utensils, droplet, zap and
- * thermometer for the five vitals — keyed by stat name, so
- * icon(playerModel.stats[i].key) just works.
+ * settings and x for the ribbons; heart, zap and thermometer for the three
+ * vitals — keyed by stat name, so icon(playerModel.stats[i].key) just works.
  */
 Vinland.define('ui/icons', function () {
   'use strict';
@@ -47,21 +46,6 @@ Vinland.define('ui/icons', function () {
         },
       }),
     ]),
-    hunger: Object.freeze([
-      // utensils
-      Object.freeze({ tag: 'path', attrs: { d: 'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2' } }),
-      Object.freeze({ tag: 'path', attrs: { d: 'M7 2v20' } }),
-      Object.freeze({ tag: 'path', attrs: { d: 'M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7' } }),
-    ]),
-    thirst: Object.freeze([
-      // droplet
-      Object.freeze({
-        tag: 'path',
-        attrs: {
-          d: 'M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z',
-        },
-      }),
-    ]),
     energy: Object.freeze([
       // zap
       Object.freeze({
@@ -71,7 +55,7 @@ Vinland.define('ui/icons', function () {
         },
       }),
     ]),
-    warmth: Object.freeze([
+    exposure: Object.freeze([
       // thermometer
       Object.freeze({ tag: 'path', attrs: { d: 'M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z' } }),
     ]),

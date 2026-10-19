@@ -62,7 +62,6 @@ Vinland.define('core/actions', function (require) {
       case 'talk': return 'You speak to ' + name + '. They do not answer yet.';
       case 'approach': return 'You approach the ' + name + ' cautiously.';
       case 'eat': return 'You eat the ' + name + '.';
-      case 'drink': return 'You drink from the ' + name + '.';
       case 'rest': return 'You rest on the ' + name + '.';
       default: return 'You ' + action + ' the ' + name + '.';
     }
@@ -294,12 +293,9 @@ Vinland.define('core/actions', function (require) {
       }
     }
 
-    // The body says no: a full stomach, a throat that is not dry.
-    if (action === 'eat' && world.player && world.player.stats.hunger >= playerMod.PLAYER_CONFIG.max) {
+    // The body says no: a full belly has no use for food.
+    if (action === 'eat' && world.player && world.player.stats.energy >= playerMod.PLAYER_CONFIG.max) {
       return failedAttempt(world, interactable, action, 'You are too full to eat the ' + interactable.name + '.', false);
-    }
-    if (action === 'drink' && world.player && world.player.stats.thirst >= playerMod.PLAYER_CONFIG.max) {
-      return failedAttempt(world, interactable, action, 'You are not thirsty enough to drink from the ' + interactable.name + '.', false);
     }
 
     var text = resultTextFor(interactable, action, state);
@@ -317,10 +313,6 @@ Vinland.define('core/actions', function (require) {
       // Consume it from wherever it is reachable, and let it go into you.
       nextWorld = detachItem(world, found, interactableId);
       nextWorld = playerMod.applyFood(nextWorld, interactable.food);
-    } else if (action === 'drink' && interactable.water) {
-      // A water item is consumed; a source (a trough) is not.
-      nextWorld = interactable.type === 'item' ? detachItem(world, found, interactableId) : world;
-      nextWorld = playerMod.applyWater(nextWorld, interactable.water);
     } else if ((action === 'open' || action === 'close') && interactable.type === 'container') {
       var states = Object.assign({}, world.containerStates || {});
       states[interactableId] = action === 'open' ? 'open' : 'closed';

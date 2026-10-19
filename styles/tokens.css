@@ -100,6 +100,8 @@
   --color-status-bright: #ded4c3;
   --color-stat-low: #d9a441;
   --color-stat-critical: #e2705c;
+  --color-stat-cold: #8ecae6;
+  --color-stat-hot: #e2705c;
   --color-status-border: rgba(255, 255, 255, 0.08);
 
   /* Interactables — each type has its own color (plus per-instance color override).

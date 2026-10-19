@@ -34,11 +34,11 @@ Vinland.define('ui/panel-text', function (require) {
    * the left pane carries only the name, condition and prose. The values come
    * from the view model — nothing is computed here.
    *
-   * A stat is its lucide icon (ui/icons, keyed by stat name) and the number —
-   * the WORD is off-screen, in the tooltip and the aria-label: the icon plus
-   * a glancing value is the report; the exact word is one hover away. The
-   * icon strokes currentColor, so the band colour colours glyph and number
-   * alike.
+   * A stat is its lucide icon (ui/icons, keyed by stat name) and the number.
+   * Exposure is the exception: its centre is fine, so it reads as the felt
+   * word (fine, too cold, too hot) and keeps the number in the tooltip and
+   * the aria-label. The icon strokes currentColor, so the band colour colours
+   * glyph and text alike.
    */
   function renderStatus(playerModel) {
     if (!playerModel) return null;
@@ -52,12 +52,16 @@ Vinland.define('ui/panel-text', function (require) {
 
     const stats = el('div', 'status__row status__row--stats');
     for (const st of playerModel.stats) {
-      const item = el('span', 'status__item status__item--' + st.band);
+      const item = el('span', 'status__item status__item--' + st.band
+        + (st.direction ? ' status__item--' + st.direction : ''));
       item.dataset.stat = st.key;
-      item.setAttribute('title', st.key + ': ' + st.value);
-      item.setAttribute('aria-label', st.key[0].toUpperCase() + st.key.slice(1) + ' ' + st.value);
+      const exact = st.label ? ' · ' + st.label : '';
+      item.setAttribute('title', st.key + ': ' + st.value + exact);
+      item.setAttribute('aria-label', st.key[0].toUpperCase() + st.key.slice(1) + ' ' + st.value
+        + (st.label ? ', ' + st.label : ''));
       item.appendChild(iconsMod.icon(st.key, 'status__icon'));
-      item.appendChild(document.createTextNode(String(st.value)));
+      const shown = st.label ? st.label[0].toUpperCase() + st.label.slice(1) : String(st.value);
+      item.appendChild(document.createTextNode(shown));
       stats.appendChild(item);
     }
     line.appendChild(stats);
