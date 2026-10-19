@@ -4,6 +4,21 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 10 (correction 1) — the ribbons actually open
+
+**Asked:** the ribbons do not work in the browser — the first click throws
+`node.parentNode.children.filter is not a function` (src/ui/ribbons.js).
+
+The test stub's `children` is a real Array; a browser's `element.children` is
+an HTMLCollection (index/length, no Array methods), and the browser has
+`removeChild`. `detach` was written to the stub, so the first click threw and
+the ribbons looked dead. The fix prefers `removeChild`, falls back to an index
+walk, and never calls an Array method on `children`. Regression: the ribbons
+suite now simulates both shapes (a collection-shaped `children` and a parent
+with `removeChild`) — **217 tests, 0 failures**.
+
+---
+
 ## Iteration 10 — ribbons on the map pane, vitals in the left
 
 **Asked:** remove everything except the stats from the left pane (the prose

@@ -170,3 +170,48 @@ test('the ribbons survive into the result view, still on the shell', () => {
   ribbon('profile').click();
   assert.ok(openSheet(), 'the sheet opens from the result view too');
 });
+
+/*
+ * Browser-shape regressions: the test stub is MORE permissive than a real
+ * browser (its `children` is an Array with .filter/.find; a browser's
+ * HTMLCollection is index/length only, and the browser has removeChild).
+ * The first live report was exactly this: the first click threw
+ * "children.filter is not a function" and the ribbons appeared dead.
+ */
+
+/** An HTMLCollection look-alike: numeric indices + length, no Array methods. */
+function toCollection(arr) {
+  const col = Object.create(null);
+  for (let i = 0; i < arr.length; i++) col[i] = arr[i];
+  col.length = arr.length;
+  return col;
+}
+
+test('the first click works when children is a browser collection (no .filter)', () => {
+  start();
+  const profileBtn = ribbonsBar().children[0]; // captured while children is an Array
+  const real = doc.shell.children;
+  doc.shell.children = toCollection(real);
+  assert.equal(typeof doc.shell.children.filter, 'undefined', 'the fake has no .filter, like a real browser');
+  profileBtn.click();
+  // detach walked the collection by index and rebuilt the children; the
+  // click opened the sheet instead of throwing.
+  assert.ok(openSheet(), 'the sheet opens on collection-shaped children');
+  assert.equal(findAllByClass(doc.shell, 'ribbon-bar').length, 1, 'the bar was replaced, not doubled');
+  void real;
+});
+
+test('detach uses the parent removeChild when it exists (real DOM)', () => {
+  start();
+  const oldBar = ribbonsBar();
+  let removed = null;
+  doc.shell.removeChild = (node) => {
+    removed = node;
+    doc.shell.replaceChildren(...doc.shell.children.filter((n) => n !== node));
+  };
+  ribbon('profile').click();
+  assert.equal(removed, oldBar, 'the old bar was retired via removeChild');
+  assert.notEqual(ribbonsBar(), oldBar, 'a fresh bar replaced it');
+  assert.equal(findAllByClass(doc.shell, 'ribbon-bar').length, 1);
+  assert.ok(openSheet(), 'the sheet opened through the removeChild path');
+});

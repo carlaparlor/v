@@ -22,12 +22,16 @@ sticking out of the top-right of the right pane — for now.
 npm test
 ```
 
-Expected: **215 tests, 0 failures.** `test/ui-ribbons.test.js` pins the bar on
+Expected: **217 tests, 0 failures.** `test/ui-ribbons.test.js` pins the bar on
 the shell (not inside a pane), the two ribbons with their inlined lucide icons,
 the profile sheet (both tiers, five rows each, plain values), the settings
 placeholder, one sheet at a time, all three ways of closing (X, ribbon,
 Escape), the sheet surviving into the result view, and the sheet following the
-world (a walk trains travel, and the open sheet shows it).
+world (a walk trains travel, and the open sheet shows it). It also pins the
+**browser shape** (correction 1): the first click must work when `children` is
+a collection with no `.filter`, and `removeChild` is used when it exists — the
+test stub is more permissive than a browser, and this is the class of bug
+that shipped dead ribbons.
 `test/ui-status.test.js` now pins the opposite: the left pane carries the five
 vitals and the notes, and NO head, attributes row or skills row.
 `test/theme-contrast.test.js` covers the ribbon and sheet tokens; boot and
