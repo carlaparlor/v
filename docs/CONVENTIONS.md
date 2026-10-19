@@ -122,8 +122,10 @@ never disagree.
 - The profile sheet is **horizontal**: the two tiers sit side by side in
   `.sheet__columns` (one column each), titled with the player's name. Each row
   is metered — name, then the grade letter standing alone at the right end,
-  a full-width meter (`.sheet__meter-fill` width set inline from the view
-  model, track and fill are tokens), and the one-line note. The value
+  five dots (`.sheet__dot-fill` width set inline from the row's value, in
+  half-circle steps; each circle is 20% of the scale, the empty circle is a
+  token), and the one-line note. Dots, not a progress bar: that is the report
+  card's way of showing a level. The value
   (`value / max`, attributes /20, skills /100) is part of the row but quiet:
   hidden until the row is hovered or focused, with the grade's `title`
   ("Strength: 10 / 20") as the reveal for tooltips and non-hover input. Sheet

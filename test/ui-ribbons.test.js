@@ -114,10 +114,19 @@ test('the profile ribbon drops a horizontal sheet with the attributes and skills
     '10 / 20', '10 / 20', '10 / 20', '10 / 20', '10 / 20',
     '0 / 100', '0 / 100', '0 / 100', '0 / 100', '0 / 100',
   ]);
-  const fills = findAllByClass(sheet, 'sheet__meter-fill');
-  assert.equal(fills.length, 10, 'a meter per row');
-  assert.equal(fills[0].style.width, '50%', 'attribute 10 of 20');
-  assert.equal(fills[5].style.width, '0%', 'skill 0 of 100');
+  // Five dots per row, filled in half-circle steps: 10 of 20 reads
+  // full, full, half, empty, empty; an untrained skill is all empty.
+  const dotFills = findAllByClass(sheet, 'sheet__dot-fill');
+  assert.equal(dotFills.length, 50, 'five dots per row, ten rows');
+  assert.deepEqual(
+    dotFills.slice(0, 5).map((d) => d.style.width),
+    ['100%', '100%', '50%', '0%', '0%'], 'attribute 10 of 20',
+  );
+  // The sheet is column-major: the ten skill dots for Travel start at 25.
+  assert.deepEqual(
+    dotFills.slice(25, 30).map((d) => d.style.width),
+    ['0%', '0%', '0%', '0%', '0%'], 'skill 0 of 100',
+  );
   // The report card: the default body is average on attributes, failing
   // on skills.
   const grades = findAllByClass(sheet, 'sheet__grade').map((n) => n.textContent);
@@ -184,6 +193,10 @@ test('an open sheet follows the world: practice shows up in it', () => {
   assert.equal(travelValue(), '2 / 100', 'the walk trained travel, and the sheet says so');
   const grades = findAllByClass(openSheet(), 'sheet__grade').map((n) => n.textContent);
   assert.equal(grades[5], 'F', 'two points of travel is still a failing mark');
+  assert.deepEqual(
+    findAllByClass(openSheet(), 'sheet__dot-fill').slice(25, 30).map((d) => d.style.width),
+    ['0%', '0%', '0%', '0%', '0%'], 'two points of travel still fills no circle',
+  );
   // Stats in the left pane and skills in the sheet read the same world.
   const statsRow = findAllByClass(doc.shell, 'status__row--stats')[0];
   assert.ok(statsRow.children[0].textContent.startsWith('health '), 'the left pane is still the condition block');

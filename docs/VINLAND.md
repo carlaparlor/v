@@ -51,7 +51,8 @@ See `docs/CHANGELOG.md`.
 **Iteration 11** — the player has a name above the vitals in the left pane
 ("You" by default; a content pack can name them via `pack.player.name`), and
 the profile sheet is a proper horizontal character sheet: attributes and
-skills side by side, every row metered against its max, titled with the name.
+skills side by side, every row showing its level as five filled circles,
+titled with the name.
 See `docs/CHANGELOG.md`.
 
 **Iteration 10** — the left pane carries condition and prose: the five vitals
