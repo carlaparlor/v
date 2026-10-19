@@ -3,8 +3,7 @@
  *
  * Two ribbons (profile, settings) stick out of the pane's top edge into the
  * shell's top band; clicking one drops a sheet from the corner. Profile shows
- * who you are (attributes and skills — the two tiers the status block no
- * longer carries); settings is a placeholder for now.
+ * who you are (your attributes); settings is a placeholder for now.
  *
  * Where the sheet's DATA comes from: app/game renders the ribbons on every
  * pass (like it hands world to every panel), and the sheet is part of that
@@ -46,15 +45,6 @@ Vinland.define('ui/ribbons', function (require) {
     intelligence: 'Practice counts for more.',
     dexterity: 'Fine work takes less time.',
     constitution: 'Heat and cold bite less, and you heal faster.',
-  });
-
-  /** One line under each skill name: what the practice buys. */
-  const SKILL_NOTES = Object.freeze({
-    travel: 'moves, doors and crossings',
-    talk: 'conversation',
-    approach: 'moving quietly up to things',
-    craft: 'open, close and work',
-    gather: 'take, eat and drink',
   });
 
   /** Open sheet kind, or null. Chrome state — never world state. */
@@ -227,25 +217,19 @@ Vinland.define('ui/ribbons', function (require) {
     s.appendChild(head);
 
     if (kind === 'profile') {
-      // Horizontal: the two tiers sit side by side, one column each.
+      // The profile sheet contains your attributes.
       const columns = el('div', 'sheet__columns');
       const attrs = el('section', 'sheet__group');
       attrs.appendChild(el('h3', 'sheet__section', 'Attributes'));
-      const skills = el('section', 'sheet__group');
-      skills.appendChild(el('h3', 'sheet__section', 'Skills'));
       if (model) {
         const C = playerMod.PLAYER_CONFIG;
         for (const a of model.attributes) {
           attrs.appendChild(sheetRow(capitalize(a.key), ATTRIBUTE_NOTES[a.key] || '', String(a.value), C.attributeMax, a.grade));
         }
-        for (const sk of model.skills) {
-          skills.appendChild(sheetRow(capitalize(sk.key), SKILL_NOTES[sk.key] || '', String(sk.value), C.max, sk.grade));
-        }
       } else {
         attrs.appendChild(el('p', 'sheet__empty', 'No player in this world.'));
       }
       columns.appendChild(attrs);
-      columns.appendChild(skills);
       s.appendChild(columns);
     } else {
       s.appendChild(el('p', 'sheet__empty', 'There is nothing to configure yet.'));
