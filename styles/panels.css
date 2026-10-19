@@ -672,6 +672,10 @@
 }
 
 .sheet__dot-fill {
+  /* A fill is a <span>: inline elements cannot carry a width in a browser,
+     so it must be a box or the inline width is silently ignored (the "all
+     circles blank" correction — the stub stores width regardless). */
+  display: block;
   block-size: 100%;
   background: var(--color-accent);
 }

@@ -218,6 +218,12 @@ never disagree.
   (SVG in browsers is an object). Shipped code must be written for the browser, and when a
   browser-shape bug is found the fix ships with a regression test that simulates the collection
   shape (see the browser-shape tests in `test/ui-ribbons.test.js`).
+- The CSS side of the same lesson: the stub stores inline styles without layout, so **an inline
+  element (`<span>`) silently ignores `width`/`height` in a browser** even though the test sees
+  them. Any shipped element that carries an inline size must have a display that accepts it
+  (block, inline-block, flex or grid — a flex item is already blockified); guard it with a test
+  that reads the stylesheet, as the dot-fill guard in `test/ui-ribbons.test.js` does, and keep
+  the manual script's step that shows the filled state on screen.
 
 ## Git
 - Commit per iteration: `iter-N: <what it does>`.

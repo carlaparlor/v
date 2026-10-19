@@ -4,6 +4,22 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 12 (correction 3) — the circles actually fill
+
+**Reported:** all the circles are blank.
+
+The dot fill is a `<span>`, and inline elements cannot carry a width in a
+browser: the `style.width` set on every fill was silently ignored, so every
+circle rendered empty regardless of value. The stub stores inline styles
+without layout, so the suite stayed green — this is the CSS-side cousin of
+the HTMLCollection bug, and the manual script's "full, full, half, empty,
+empty" step is the check that should have caught it. Fix: `display: block` on
+`.sheet__dot-fill` (the dot itself was already a box — it is a flex item).
+Guard: the ribbons suite now reads `panels.css` and fails if the fill rule
+lacks a width-accepting display. **220 tests, 0 failures.**
+
+---
+
 ## Iteration 12 (correction 2) — five circles, not a bar
 
 **Asked:** "i dont like those bars — make em 5 circles." The progress bar
