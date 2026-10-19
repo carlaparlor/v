@@ -118,6 +118,11 @@ test('the profile ribbon drops a horizontal sheet with the attributes and skills
   assert.equal(fills.length, 10, 'a meter per row');
   assert.equal(fills[0].style.width, '50%', 'attribute 10 of 20');
   assert.equal(fills[5].style.width, '0%', 'skill 0 of 100');
+  // The report card: the default body is average on attributes, failing
+  // on skills.
+  const grades = findAllByClass(sheet, 'sheet__grade').map((n) => n.textContent);
+  assert.deepEqual(grades, ['B', 'B', 'B', 'B', 'B', 'F', 'F', 'F', 'F', 'F']);
+  assert.ok(findByClass(sheet, 'sheet__grade--B'), 'the grade carries its letter as a class');
   assert.equal(ribbon('profile').getAttribute('aria-expanded'), 'true');
   assert.equal(ribbon('settings').getAttribute('aria-expanded'), 'false');
   assert.ok(findByClass(sheet, 'sheet__close'), 'the sheet has a close button');
@@ -170,6 +175,8 @@ test('an open sheet follows the world: practice shows up in it', () => {
   assert.ok(g.travel('east'), 'a step to the smithy');
   assert.ok(openSheet(), 'the sheet stays open across the step');
   assert.equal(travelValue(), '2 / 100', 'the walk trained travel, and the sheet says so');
+  const grades = findAllByClass(openSheet(), 'sheet__grade').map((n) => n.textContent);
+  assert.equal(grades[5], 'F', 'two points of travel is still a failing mark');
   // Stats in the left pane and skills in the sheet read the same world.
   const statsRow = findAllByClass(doc.shell, 'status__row--stats')[0];
   assert.ok(statsRow.children[0].textContent.startsWith('health '), 'the left pane is still the condition block');

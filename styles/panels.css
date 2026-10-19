@@ -609,11 +609,30 @@
 .sheet__row-head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
+/* The report-card grade leads each row, sized like a mark on a report card.
+   Colours are existing tokens — every one clears WCAG AA on the sheet
+   surface (theme-contrast.test.js pins it). */
+.sheet__grade {
+  inline-size: 1.2em;
+  text-align: center;
+  color: var(--color-text);
+  font-size: var(--font-size-title);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sheet__grade--S { color: var(--color-accent); }
+.sheet__grade--A { color: var(--color-interactable-npc); }
+.sheet__grade--B { color: var(--color-text); }
+.sheet__grade--C { color: var(--color-text-dim); }
+.sheet__grade--D { color: var(--color-interactable-item); }
+.sheet__grade--F { color: var(--color-stat-critical); }
+
 .sheet__name {
+  flex: 1;
   color: var(--color-text);
   font-weight: 600;
   letter-spacing: 0.02em;

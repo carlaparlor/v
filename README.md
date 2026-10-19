@@ -25,6 +25,12 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 12 — the report card.** Every attribute and skill in the profile
+sheet leads with a letter grade, S to F, colored: good at it is an S, bad at
+it is an F. The default body reads B across the attributes and F across the
+skills — and the grades tick over as you practice. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 11 — a name, and a proper character sheet.** The player's name
 sits above the vitals in the left pane ("You" by default; a pack can name them
 via `pack.player.name`). The profile sheet is now horizontal — attributes and

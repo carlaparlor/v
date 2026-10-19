@@ -103,4 +103,17 @@ test('the ribbons and sheets are readable on the surfaces they sit on (WCAG AA)'
     contrast(accent, sheetBg) >= 3,
     `meter fill ${accent} on ${sheetBg} is ${contrast(accent, sheetBg).toFixed(2)}:1, needs >= 3:1`,
   );
+  // The report-card grade letters are text-sized marks: all six grade
+  // colours must clear AA on the sheet surface.
+  for (const name of [
+    '--color-accent',
+    '--color-interactable-npc',
+    '--color-text',
+    '--color-text-dim',
+    '--color-interactable-item',
+    '--color-stat-critical',
+  ]) {
+    const colour = token(name);
+    assert.ok(contrast(colour, sheetBg) >= 4.5, `grade colour ${name} ${colour} on ${sheetBg} needs >= 4.5:1`);
+  }
 });

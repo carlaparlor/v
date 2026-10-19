@@ -347,6 +347,25 @@ test('the status model: bands, short attribute names, and a note for anything no
   assert.equal(player.model(null), null, 'no player, no block');
 });
 
+test('grades: report-card letters on the 1-20 and 0-100 scales', () => {
+  const G = player.PLAYER_CONFIG.grades;
+  // Attribute scale (1-20): the default 10 is a B — average, not good, not bad.
+  assert.equal(player.grade(10, G.attribute), 'B', 'the default is average');
+  for (const [v, letter] of [[16, 'S'], [15, 'A'], [13, 'A'], [12, 'B'], [9, 'C'], [7, 'C'], [6, 'D'], [4, 'D'], [3, 'F'], [1, 'F']]) {
+    assert.equal(player.grade(v, G.attribute), letter, `attribute ${v} is ${letter}`);
+  }
+  // Skill scale (0-100): 0 is an F — you have never done it.
+  assert.equal(player.grade(0, G.skill), 'F', 'untrained is a failing mark');
+  for (const [v, letter] of [[90, 'S'], [89, 'A'], [75, 'A'], [74, 'B'], [50, 'B'], [49, 'C'], [25, 'C'], [24, 'D'], [10, 'D'], [9, 'F']]) {
+    assert.equal(player.grade(v, G.skill), letter, `skill ${v} is ${letter}`);
+  }
+  // The model carries the grade on every row.
+  const m = player.model(withAttrs(fresh(), { strength: 17, charisma: 2 }).player);
+  assert.equal(m.attributes.find((a) => a.key === 'strength').grade, 'S');
+  assert.equal(m.attributes.find((a) => a.key === 'charisma').grade, 'F');
+  assert.equal(m.skills[0].grade, 'F', 'fresh skills are all failing marks');
+});
+
 test('the voice holds: notes are second person, present tense', () => {
   const worn = withStats(fresh(), { health: 10, hunger: 0, thirst: 0, energy: 0, warmth: 0 });
   const notes = player.model(worn.player).notes;

@@ -140,13 +140,17 @@ Vinland.define('ui/ribbons', function (require) {
   }
 
   /**
-   * One metered row: name with its value at the top right, a full-width
-   * meter (the fill's width is the value against the tier's max), and the
-   * one-line note under it.
+   * One metered row: the report-card grade (S–F) leading, the name, the
+   * value against the tier's max at the top right, a full-width meter
+   * (the fill's width is the value against the max), and the one-line note
+   * under it. The grade is view-model data — this module only paints it.
    */
-  function sheetRow(name, note, value, max) {
+  function sheetRow(name, note, value, max, gradeLetter) {
     const row = el('div', 'sheet__row');
     const head = el('div', 'sheet__row-head');
+    const g = el('span', 'sheet__grade sheet__grade--' + gradeLetter, gradeLetter);
+    g.setAttribute('aria-label', 'grade ' + gradeLetter);
+    head.appendChild(g);
     head.appendChild(el('span', 'sheet__name', name));
     head.appendChild(el('span', 'sheet__value', value + ' / ' + max));
     row.appendChild(head);
@@ -212,10 +216,10 @@ Vinland.define('ui/ribbons', function (require) {
       if (model) {
         const C = playerMod.PLAYER_CONFIG;
         for (const a of model.attributes) {
-          attrs.appendChild(sheetRow(capitalize(a.key), ATTRIBUTE_NOTES[a.key] || '', String(a.value), C.attributeMax));
+          attrs.appendChild(sheetRow(capitalize(a.key), ATTRIBUTE_NOTES[a.key] || '', String(a.value), C.attributeMax, a.grade));
         }
         for (const sk of model.skills) {
-          skills.appendChild(sheetRow(capitalize(sk.key), SKILL_NOTES[sk.key] || '', String(sk.value), C.max));
+          skills.appendChild(sheetRow(capitalize(sk.key), SKILL_NOTES[sk.key] || '', String(sk.value), C.max, sk.grade));
         }
       } else {
         attrs.appendChild(el('p', 'sheet__empty', 'No player in this world.'));

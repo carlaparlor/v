@@ -10,6 +10,28 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 12 — the report card: S to F on every attribute and skill
+
+**Asked:** attributes and skills "in letters like S, A, F" — good at it is an
+S, bad at it is an F. A report card.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **219 tests, 0 failures.** core-player pins every boundary on both
+scales (attribute 16→S … 3→F, skill 90→S … 9→F, default 10→B, 0→F) and the
+grade on every model row. The ribbons suite pins the letters on the sheet —
+the default body reads **B B B B B / F F F F F** — and that a walk (travel 2)
+still leaves travel an F. theme-contrast checks all six grade colours on the
+sheet surface (≥ 4.5:1).
+
+### Manual
+
+"Ribbons and sheets" below, step 2.
+
 ## Iteration 11 — a name above the vitals, a horizontal profile sheet
 
 **Asked:** the player's name in the left pane above the stats; the profile
@@ -665,11 +687,14 @@ trained prices alongside the untrained ones.
    ribbons, titled with the player's name (**You**), and lays the character out
    **horizontally** — **Attributes** (Strength, Charisma, Intelligence,
    Dexterity, Constitution) in the left column, **Skills** (Travel, Talk,
-   Approach, Craft, Gather) in the right. Each row: the name with its value
-   against the tier's max at the top right (10 / 20, 0 / 100), a meter under
-   it (half full for an attribute at 10, empty for an untrained skill), and a
-   one-line note. The clicked ribbon lifts and stays lifted while its sheet is
-   open.
+   Approach, Craft, Gather) in the right. Each row leads with its
+   **report-card grade**, colored: the default body reads **B** (gold-green
+   body text) on every attribute and **F** (red) on every skill — you are
+   average at being alive and bad at everything, because you have done
+   nothing yet. After the grade: the name with its value against the tier's
+   max at the top right (10 / 20, 0 / 100), a meter under it (half full for
+   an attribute at 10, empty for an untrained skill), and a one-line note.
+   The clicked ribbon lifts and stays lifted while its sheet is open.
 3. Watch it live: with the profile sheet open, walk one edge of the map. The
    sheet stays open and **Travel** ticks from 0 to 2 — the sheet is rebuilt
    with the new world on the same pass, so it can never show a stale body.
