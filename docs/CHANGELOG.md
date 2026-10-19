@@ -4,6 +4,37 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 11 — a name above the vitals, a horizontal profile sheet
+
+**Asked:** the player's name should show up in the left pane above the stats,
+and the profile sheet should be horizontal and look better.
+
+- **The name is player state.** `world.player.name` (frozen like everything
+  else), defaulting to "You" from `PLAYER_CONFIG.start.name`; a content pack
+  may override it via `pack.player.name` (validated by `validatePack`: a
+  string of 1–32 characters). The view model carries it, so the pane and the
+  sheet can never disagree about who this is.
+- **Left pane:** a small-caps nameplate sits above the five vitals in the
+  condition block, in every view — the first line of the block, from the view
+  model. Nothing else in the left pane changed.
+- **The profile sheet is now a horizontal character sheet.** Both tiers sit
+  side by side in a two-column grid (Attributes | Skills) on a wider sheet
+  (600px), titled with the player's name. Each row is metered: name with its
+  value against the tier's max at the top right (attributes /20, skills /100),
+  a full-width meter (accent fill on a token track) and the one-line note
+  under it. Meters are data — the fill width comes from the view model, so an
+  open sheet still ticks over as you practice.
+- Cost: a config entry, a validation branch, one model field, a nameplate
+  line, and a redrawn sheet. No new modules, no core behaviour changes.
+
+What to test: `npm test` — **218 tests, 0 failures** (name in state/model and
+pack validation in core-player; the status suite pins the nameplate above the
+vitals; the ribbons suite pins the two-column sheet, the title, and the meter
+widths including the live tick; contrast covers the meter fill). Then the
+"Ribbons and sheets" script in `docs/TESTING.md`, step 2.
+
+---
+
 ## Iteration 10 (correction 1) — the ribbons actually open
 
 **Asked:** the ribbons do not work in the browser — the first click throws

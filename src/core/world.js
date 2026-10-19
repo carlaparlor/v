@@ -80,10 +80,15 @@ Vinland.define('core/world', function (require) {
       throw new Error('weatherSeed must be an unsigned 32-bit integer');
     }
 
-    // Optional player overrides: starting attributes only, in the configured range.
+    // Optional player overrides: starting name and attributes, in range.
     if (pack.player !== undefined && pack.player !== null) {
       if (typeof pack.player !== 'object' || Array.isArray(pack.player)) {
         throw new Error('pack.player must be an object');
+      }
+      if (pack.player.name !== undefined && pack.player.name !== null) {
+        if (typeof pack.player.name !== 'string' || pack.player.name.trim().length < playerMod.PLAYER_CONFIG.nameMin || pack.player.name.trim().length > playerMod.PLAYER_CONFIG.nameMax) {
+          throw new Error(`pack.player.name must be a string of ${playerMod.PLAYER_CONFIG.nameMin}–${playerMod.PLAYER_CONFIG.nameMax} characters`);
+        }
       }
       if (pack.player.attributes !== undefined && pack.player.attributes !== null) {
         const attrs = pack.player.attributes;

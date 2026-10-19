@@ -520,3 +520,12 @@ band (the fade gradient paints it, so it is part of the surface, not a header);
 adding a third ribbon is a data edit (`ui/ribbons.js`'s `RIBBONS`) plus one
 sheet branch. The settings sheet is a placeholder on purpose — its content
 arrives with the first real setting, and this ADR does not reserve one.
+
+**Amendment (iteration 11):** the left pane gained a small-caps nameplate
+above the vitals — `world.player.name` (default "You", pack-overridable via
+`pack.player.name`, validated in `validatePack`), rendered from the view
+model like everything else in the block. Decision 1's "nothing else" meant
+no tiers in the pane; a name is not a tier. The profile sheet became
+horizontal (both tiers side by side, metered rows, titled with the name) —
+the sheet's data contract (rebuilt from the world on every pass) is
+unchanged.

@@ -58,6 +58,7 @@ beforeEach(() => {
 function statusRows(g) {
   return {
     box: findByClass(doc.shell, 'status'),
+    name: findByClass(doc.shell, 'status__name'),
     stats: findAllByClass(doc.shell, 'status__row--stats')[0],
     notes: findAllByClass(doc.shell, 'status__note'),
   };
@@ -69,7 +70,11 @@ test('the text pane carries the condition block above the prose, in every view',
   assert.ok(pane, 'the text pane exists');
   const rows = statusRows(g);
   assert.ok(rows.box, 'the condition block is present');
-  // Stats only: the block carries the five vitals and nothing else.
+  // The nameplate sits above the vitals, from the view model.
+  assert.ok(rows.name, 'the name line is present');
+  assert.equal(rows.name.textContent, 'You', 'the default name');
+  assert.equal(rows.box.children[0], rows.name, 'the name is first in the block');
+  // Vitals: the block carries the five stats and the notes, nothing else.
   assert.equal(rows.stats.children.length, 5, 'five stats');
   assert.deepEqual(
     rows.stats.children.map((s) => s.textContent),

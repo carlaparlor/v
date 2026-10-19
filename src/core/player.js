@@ -42,10 +42,13 @@ Vinland.define('core/player', function (require) {
 
   const PLAYER_CONFIG = Object.freeze({
     start: Object.freeze({
+      name: 'You',
       attributes: Object.freeze({ strength: 10, charisma: 10, intelligence: 10, dexterity: 10, constitution: 10 }),
       skills: Object.freeze({ travel: 0, talk: 0, approach: 0, craft: 0, gather: 0 }),
       stats: Object.freeze({ health: 100, hunger: 75, thirst: 75, energy: 100, warmth: 100 }),
     }),
+    nameMin: 1,
+    nameMax: 32,
     attributeMin: 1,
     attributeMax: 20,
     max: 100,
@@ -114,18 +117,26 @@ Vinland.define('core/player', function (require) {
   function clampStat(x) { return round2(clamp(x, 0, PLAYER_CONFIG.max)); }
 
   /**
-   * The player for a fresh world. A content pack may override starting attributes
-   * (`pack.player.attributes`); everything else starts from PLAYER_CONFIG.start.
+   * The player for a fresh world. A content pack may override the starting
+   * name and attributes (`pack.player.name`, `pack.player.attributes`);
+   * everything else starts from PLAYER_CONFIG.start. (validatePack in
+   * core/world enforces the shape.)
    * @param {object} pack
    */
   function initialPlayer(pack) {
     const start = PLAYER_CONFIG.start;
-    const overrides = pack && pack.player && pack.player.attributes;
+    const overrides = pack && pack.player;
     const attributes = {};
     for (const key of ATTRIBUTES) {
-      attributes[key] = overrides && overrides[key] !== undefined ? overrides[key] : start.attributes[key];
+      attributes[key] = overrides && overrides.attributes && overrides.attributes[key] !== undefined
+        ? overrides.attributes[key]
+        : start.attributes[key];
     }
+    const name = overrides && typeof overrides.name === 'string' && overrides.name.trim().length > 0
+      ? overrides.name.trim()
+      : start.name;
     return Object.freeze({
+      name: name,
       attributes: Object.freeze(attributes),
       skills: Object.freeze({ ...start.skills }),
       stats: Object.freeze({ ...start.stats })
@@ -397,6 +408,7 @@ Vinland.define('core/player', function (require) {
       if (stat.band !== 'ok') notes.push(NOTES[stat.key][stat.band]);
     }
     return {
+      name: player.name,
       attributes: ATTRIBUTES.map(function (key) {
         return { key: key, short: ATTRIBUTE_SHORT[key], value: player.attributes[key] };
       }),

@@ -48,8 +48,9 @@ function withSkills(w, skills) {
   return Object.freeze({ ...w, player: Object.freeze({ ...w.player, skills: Object.freeze({ ...w.player.skills, ...skills }) }) });
 }
 
-test('a fresh world carries the full player: five attributes, five skills, five stats', () => {
+test('a fresh world carries the full player: name, five attributes, five skills, five stats', () => {
   const w = fresh();
+  assert.equal(w.player.name, 'You', 'the default name');
   assert.deepEqual(w.player.attributes, { strength: 10, charisma: 10, intelligence: 10, dexterity: 10, constitution: 10 });
   assert.deepEqual(w.player.skills, { travel: 0, talk: 0, approach: 0, craft: 0, gather: 0 });
   assert.deepEqual(w.player.stats, { health: 100, hunger: 75, thirst: 75, energy: 100, warmth: 100 });
@@ -66,6 +67,15 @@ test('a pack may override starting attributes; the world rejects lies', () => {
   assert.throws(() => world.createWorld({ ...pack, player: { attributes: { strength: 99 } } }), /strength/);
   assert.throws(() => world.createWorld({ ...pack, player: { attributes: { speed: 5 } } }), /unknown attribute/);
   assert.throws(() => world.createWorld({ ...pack, player: [] }), /pack\.player must be an object/);
+});
+
+test('a pack may override the player name; the world rejects lies', () => {
+  const w = world.createWorld({ ...pack, player: { name: 'Sigrid' } });
+  assert.equal(w.player.name, 'Sigrid');
+  assert.equal(player.model(w.player).name, 'Sigrid', 'the view model carries the name');
+  assert.throws(() => world.createWorld({ ...pack, player: { name: '  ' } }), /pack\.player\.name/);
+  assert.throws(() => world.createWorld({ ...pack, player: { name: 7 } }), /pack\.player\.name/);
+  assert.throws(() => world.createWorld({ ...pack, player: { name: 'x'.repeat(33) } }), /pack\.player\.name/);
 });
 
 test('data must be honest: verbs need their values, values must be numbers', () => {
@@ -324,6 +334,7 @@ test('the body is data: a JSON round trip changes nothing', () => {
 test('the status model: bands, short attribute names, and a note for anything not ok', () => {
   const w = fresh();
   const m = player.model(w.player);
+  assert.equal(m.name, 'You', 'the model carries the name');
   assert.deepEqual(m.stats.map((s) => s.key), ['health', 'hunger', 'thirst', 'energy', 'warmth']);
   assert.deepEqual(m.stats.map((s) => s.band), ['ok', 'ok', 'ok', 'ok', 'ok']);
   assert.deepEqual(m.attributes.map((a) => a.short), ['str', 'cha', 'int', 'dex', 'con']);

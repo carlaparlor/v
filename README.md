@@ -25,6 +25,12 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 11 — a name, and a proper character sheet.** The player's name
+sits above the vitals in the left pane ("You" by default; a pack can name them
+via `pack.player.name`). The profile sheet is now horizontal — attributes and
+skills side by side, every row metered against its max, titled with the name.
+See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 10 — ribbons on the map pane, vitals in the left.** The left pane
 carries condition and prose only: the five vitals (health, hunger, thirst,
 energy, warmth) with a second-person note for anything that is not ok, above

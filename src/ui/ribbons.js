@@ -139,13 +139,24 @@ Vinland.define('ui/ribbons', function (require) {
     return key.charAt(0).toUpperCase() + key.slice(1);
   }
 
-  function sheetRow(name, note, value) {
+  /**
+   * One metered row: name with its value at the top right, a full-width
+   * meter (the fill's width is the value against the tier's max), and the
+   * one-line note under it.
+   */
+  function sheetRow(name, note, value, max) {
     const row = el('div', 'sheet__row');
-    const label = el('div', 'sheet__label');
-    label.appendChild(el('span', 'sheet__name', name));
-    label.appendChild(el('span', 'sheet__desc', note));
-    row.appendChild(label);
-    row.appendChild(el('span', 'sheet__value', value));
+    const head = el('div', 'sheet__row-head');
+    head.appendChild(el('span', 'sheet__name', name));
+    head.appendChild(el('span', 'sheet__value', value + ' / ' + max));
+    row.appendChild(head);
+    const meter = el('div', 'sheet__meter');
+    const fill = el('div', 'sheet__meter-fill');
+    const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+    fill.style.width = pct + '%';
+    meter.appendChild(fill);
+    row.appendChild(meter);
+    if (note) row.appendChild(el('p', 'sheet__desc', note));
     return row;
   }
 
@@ -174,9 +185,11 @@ Vinland.define('ui/ribbons', function (require) {
     s.dataset.sheet = kind;
     s.setAttribute('role', 'dialog');
     s.setAttribute('aria-label', kind === 'profile' ? 'Profile' : 'Settings');
+    const model = kind === 'profile' ? playerMod.model(world && world.player) : null;
+    const name = model && model.name ? model.name : 'You';
 
     const head = el('div', 'sheet__bar');
-    head.appendChild(el('h2', 'sheet__title', kind === 'profile' ? 'You' : 'Settings'));
+    head.appendChild(el('h2', 'sheet__title', kind === 'profile' ? name : 'Settings'));
     const close = el('button', 'sheet__close');
     close.type = 'button';
     close.dataset.close = 'sheet';
@@ -190,23 +203,26 @@ Vinland.define('ui/ribbons', function (require) {
     s.appendChild(head);
 
     if (kind === 'profile') {
-      const model = playerMod.model(world && world.player);
+      // Horizontal: the two tiers sit side by side, one column each.
+      const columns = el('div', 'sheet__columns');
       const attrs = el('section', 'sheet__group');
       attrs.appendChild(el('h3', 'sheet__section', 'Attributes'));
       const skills = el('section', 'sheet__group');
       skills.appendChild(el('h3', 'sheet__section', 'Skills'));
       if (model) {
+        const C = playerMod.PLAYER_CONFIG;
         for (const a of model.attributes) {
-          attrs.appendChild(sheetRow(capitalize(a.key), ATTRIBUTE_NOTES[a.key] || '', String(a.value)));
+          attrs.appendChild(sheetRow(capitalize(a.key), ATTRIBUTE_NOTES[a.key] || '', String(a.value), C.attributeMax));
         }
         for (const sk of model.skills) {
-          skills.appendChild(sheetRow(capitalize(sk.key), SKILL_NOTES[sk.key] || '', String(sk.value)));
+          skills.appendChild(sheetRow(capitalize(sk.key), SKILL_NOTES[sk.key] || '', String(sk.value), C.max));
         }
       } else {
         attrs.appendChild(el('p', 'sheet__empty', 'No player in this world.'));
       }
-      s.appendChild(attrs);
-      s.appendChild(skills);
+      columns.appendChild(attrs);
+      columns.appendChild(skills);
+      s.appendChild(columns);
     } else {
       s.appendChild(el('p', 'sheet__empty', 'There is nothing to configure yet.'));
     }

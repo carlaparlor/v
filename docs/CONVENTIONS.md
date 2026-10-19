@@ -87,14 +87,21 @@ key). A pack may set `player.attributes` to override starting attributes
 and verbs without their values. All rates live in `PLAYER_CONFIG`
 (`core/player`), next to `COSTS` in `core/time`.
 
-**Display:** the left pane carries **condition and prose only**. The status
-block lives in the LEFT pane, in every view, rendered from
-`core/player.model` via the view model — the pane never computes a value — and
-shows the five STATS (banded: ≥ 50 ok, 25–49 low, < 25 critical) plus one
-second-person note per stat that is not ok. Attributes and skills are not
-displayed in the pane; they live in the profile sheet on the map pane's
-ribbons (below). The block's colours are tokens (`--color-status*`,
-`--color-stat-*`) and must clear WCAG AA on the dark pane (tested).
+**Display:** the left pane carries **the name, condition and prose only**.
+The status block lives in the LEFT pane, in every view, rendered from
+`core/player.model` via the view model — the pane never computes a value —
+and shows the player's name (small-caps nameplate, first line), the five
+STATS (banded: ≥ 50 ok, 25–49 low, < 25 critical) and one second-person note
+per stat that is not ok. Attributes and skills are not displayed in the pane;
+they live in the profile sheet on the map pane's ribbons (below). The block's
+colours are tokens (`--color-status*`, `--color-stat-*`) and must clear WCAG
+AA on the dark pane (tested).
+
+**Name:** `world.player.name` is frozen player state, defaulting to "You"
+(`PLAYER_CONFIG.start.name`); a pack overrides it via `pack.player.name`
+(string, 1–32 characters, enforced by `validatePack`; `initialPlayer` trims).
+The view model carries it, so the nameplate and the profile sheet's title can
+never disagree.
 
 ## Ribbons and sheets (map-pane chrome)
 - The ribbons and their sheets are **shell chrome**: children of the shell,
@@ -112,9 +119,13 @@ ribbons (below). The block's colours are tokens (`--color-status*`,
 - Icons are **inlined lucide** path data (24×24 stroke grid, `stroke:
   currentColor` so the colour is a token). No CDN, no icon font — the game
   must run from `file://` with nothing to fetch.
-- Sheet copy follows the voice rules; section labels are the tier names
-  ("Attributes", "Skills"). The settings sheet is a placeholder until a real
-  setting exists.
+- The profile sheet is **horizontal**: the two tiers sit side by side in
+  `.sheet__columns` (one column each), titled with the player's name. Each row
+  is metered — name + `value / max` (attributes /20, skills /100), a
+  full-width meter (`.sheet__meter-fill` width set inline from the view model,
+  track and fill are tokens), and the one-line note. Sheet copy follows the
+  voice rules; section labels are the tier names ("Attributes", "Skills"). The
+  settings sheet is a placeholder until a real setting exists.
 
 ## Calendar and environment
 - Time is action-driven; never use wall-clock time or `Math.random()` for weather.
