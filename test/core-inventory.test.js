@@ -68,6 +68,17 @@ test('capacity is strength-shaped: 8 + strength', () => {
   assert.equal(inventory.capacityFor(1), 9, 'the weakest back still carries something');
   assert.equal(inventory.capacityFor(20), 28, 'the strongest back carries the most');
   assert.equal(inventory.capacityOf(fresh()), 18);
+
+  // The body matters: the same anvil is takeable at 20 and not at all at 1.
+  const strong = worldMod.createWorld({ ...testPack(), player: { attributes: { strength: 20 } } });
+  assert.equal(inventory.capacityOf(strong), 28);
+  assert.equal(actions.perform(strong, 'anvil', 'take').failed, undefined);
+
+  const weak = worldMod.createWorld({ ...testPack(), player: { attributes: { strength: 1 } } });
+  assert.equal(inventory.capacityOf(weak), 9);
+  const refused = actions.perform(weak, 'anvil', 'take');
+  assert.equal(refused.failed, true);
+  assert.match(refused.result.text, /weighs 17, and you have 9 free of 9/);
 });
 
 test('weight is data, with a default for things that do not declare one', () => {
