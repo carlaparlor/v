@@ -20,8 +20,9 @@ v/
 │  │  ├─ world.js             world state: locations, exits, travel — pure, immutable
 │  │  ├─ time.js              action-driven clock: costs, advance — pure
 │  │  ├─ environment.js       calendar, daylight, weather, exposure — pure
-│  │  ├─ player.js            the person in the world: attributes, skills, stats — pure
+│  │  ├─ player.js            the person in the world: attributes, stats, costs — pure
 │  │  ├─ interactables.js     types, colors, default verbs — pure
+│  │  ├─ inventory.js         the pack: weight, capacity, burden, carried verbs — pure
 │  │  ├─ actions.js           action resolution: perform() -> { nextWorld, result } — pure
 │  │  ├─ render-text.js       world state -> second-person view model — pure
 │  │  └─ render-map.js        world state -> map geometry (nodes + edges) — pure
@@ -32,9 +33,9 @@ v/
 │     ├─ panels.js            panel registry, keyed by pane role
 │     ├─ panel-text.js        paints a text view model into the left pane
 │     ├─ panel-map.js         paints a map view model into the right pane
-│     └─ ribbons.js           the profile/settings ribbons and their sheets (shell chrome)
+│     └─ ribbons.js           the profile/inventory/settings ribbons and their sheets
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (215)
+├─ test/                      node:test unit tests (236)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, vision, architecture, conventions, testing, changelog
 ```
@@ -521,6 +522,12 @@ adding a third ribbon is a data edit (`ui/ribbons.js`'s `RIBBONS`) plus one
 sheet branch. The settings sheet is a placeholder on purpose — its content
 arrives with the first real setting, and this ADR does not reserve one.
 
+**Amendment (iteration 15):** a third ribbon, **inventory**, arrived exactly as
+this ADR predicted — one `RIBBONS` entry, one icon, one sheet branch — and it
+keeps the same rules: shell chrome, one sheet at a time, rebuilt from the
+world on every pass. Its rows dispatch verbs through the prose's
+`vinland:action` seam rather than requiring `app/game`. See ADR-0016.
+
 **Amendment (iteration 11):** the left pane gained a small-caps nameplate
 above the vitals — `world.player.name` (default "You", pack-overridable via
 `pack.player.name`, validated in `validatePack`), rendered from the view
@@ -562,3 +569,60 @@ shipped code is written for the browser, and when the stub lacks a browser
 API, the stub gains it (CONVENTIONS). The status item is `inline-flex`
 with the icon sized in CSS — the same "inline elements cannot carry a
 width" lesson the dot fills taught (iteration 12, correction 3).
+
+### ADR-0016 — the pack is weight, and its rules live in one module
+
+**Context.** Iteration 15 asked for an inventory mechanic with its own ribbon.
+`world.inventory` already existed as a flat list (taking pushed onto it), but
+nothing read it: no limit, no consequence, no view. The obvious alternative —
+a slot grid — would have needed new authoring data per item (`slots`) and new
+UI (a grid of empty boxes) without using the world's own vocabulary, and a
+"carry anything" list would make taking a no-op decision.
+
+**Decision.**
+
+1. **Weight, not slots.** A takeable thing may declare `weight` (validated as
+   a finite non-negative number; default 2). The pack's load is the sum.
+   Capacity is `8 + strength` — strength already existed and already shaped
+   other costs, so it is the natural modifier. The seven takeables on the
+   shore weigh 21 together against a default capacity of 18, so the pack makes
+   a choice rather than a checklist.
+2. **Three-quarters full is heavy.** `core/inventory.burdened` is the single
+   verdict; `player.effectiveCost` takes it as a fifth argument and multiplies
+   effort verbs by 1.25. It never touches talk, eat, drink or fine work, and
+   it is applied before weather, like every other modifier. This keeps the
+   pricing pipeline one-way (world -> player -> step -> environment).
+3. **Rules live in `core/inventory`, not in the UI or the action resolver.**
+   `weightOf`, `capacityFor`, `loadState`, `fitFor`, `actionsFor` and the sheet
+   `model` are pure; `core/actions` asks `fitFor` before a take, and
+   `ui/ribbons` paints `model`. The sheet's bands are view-model data — the
+   same rule the status block and grades follow.
+4. **Drop returns a thing to the world.** `drop` is a carried-only verb:
+   30 seconds, 1 energy, the item leaves `world.inventory` and joins the
+   current location's interactables flagged `dropped: true`.
+   `core/render-text` adds one sentence after the authored passage, naming
+   dropped things with `{id|name}` placeholders so the word is clickable where
+   it lies; taking it back strips the flag. No separate "ground" store —
+   dropped things are ordinary world interactables, so `take`, `examine` and
+   `findInteractable` already work on them.
+5. **The ribbon is chrome, the verbs are the existing seam.** An inventory
+   ribbon (`RIBBONS` + one icon + one sheet branch) shows the meter and rows.
+   A row button carries `data-item`/`data-verb` and dispatches
+   `vinland:action`, exactly like the prose dropdown; `ui/ribbons` still never
+   requires `app/game`.
+
+**Rejected:** a slot grid (new data, new UI, no use of strength); refusing a
+take silently (the player needs the numbers that decided it); an invisible
+carry limit with no consequence (a mechanic you cannot feel is not one);
+storing dropped items in a separate "ground" map (duplicates world state and
+breaks `findInteractable` / `refreshResult`); letting heavy loads slow every
+action (punishes reading the menu and eating, not the choice to carry).
+
+**Consequences.** Taking now has a counter-cost, so the content pack's weights
+are a balance surface (`test/core-inventory.test.js` pins the shore's 21 and
+the default 18). The pack sheet is the one place with a bar (dots remain the
+report card's language). Costs: a pack can be under capacity and still heavy
+from 75% — that is deliberate, but it means capacity alone is not the warning;
+there is no "use from the pack" shortcut beyond the verbs the item already
+declares; and `drop` adds location interactables during play, so any future
+system that enumerates "the room's original things" must respect `dropped`.

@@ -19,9 +19,10 @@ const Vinland = loadScripts([
   'src/core/layout.js',
   'src/core/environment.js',
   'src/core/time.js',
+  'src/core/interactables.js',
+  'src/core/inventory.js',
   'src/core/player.js',
   'src/core/world.js',
-  'src/core/interactables.js',
   'src/core/actions.js',
   'src/core/render-text.js',
   'src/core/render-map.js',
@@ -68,7 +69,7 @@ function openSheet() {
   return findByClass(doc.shell, 'sheet');
 }
 
-test('two ribbons stick out of the shell, each with its lucide icon', () => {
+test('three ribbons stick out of the shell, each with its lucide icon', () => {
   start();
   const bar = ribbonsBar();
   assert.ok(bar, 'the ribbon bar is rendered');
@@ -76,10 +77,11 @@ test('two ribbons stick out of the shell, each with its lucide icon', () => {
   // overflow is hidden and would clip anything sticking out).
   assert.equal(bar.parentNode, doc.shell, 'the bar lives on the shell');
   const items = findAllByClass(doc.shell, 'ribbon');
-  assert.equal(items.length, 2, 'profile and settings, for now');
+  assert.equal(items.length, 3, 'profile, inventory and settings');
   assert.equal(items[0].dataset.sheet, 'profile');
-  assert.equal(items[1].dataset.sheet, 'settings');
-  const labels = { profile: 'Profile', settings: 'Settings' };
+  assert.equal(items[1].dataset.sheet, 'inventory');
+  assert.equal(items[2].dataset.sheet, 'settings');
+  const labels = { profile: 'Profile', inventory: 'Inventory', settings: 'Settings' };
   for (const btn of items) {
     assert.equal(btn.getAttribute('aria-label'), labels[btn.dataset.sheet]);
     assert.equal(btn.getAttribute('aria-expanded'), 'false');
@@ -158,9 +160,101 @@ test('the ribbons survive into the result view, still on the shell', () => {
   const g = start();
   g.performAction('barrel', 'examine');
   assert.equal(ribbonsBar().parentNode, doc.shell, 'the bar is still shell chrome');
-  assert.equal(findAllByClass(doc.shell, 'ribbon').length, 2);
+  assert.equal(findAllByClass(doc.shell, 'ribbon').length, 3);
   ribbon('profile').click();
   assert.ok(openSheet(), 'the sheet opens from the result view too');
+});
+
+test('the inventory ribbon opens the pack: empty, with its capacity named', () => {
+  start();
+  ribbon('inventory').click();
+  const sheet = openSheet();
+  assert.ok(sheet, 'the pack sheet opens');
+  assert.equal(sheet.dataset.sheet, 'inventory');
+  assert.ok(String(sheet.className).includes('sheet--pack'), 'the pack uses the narrower sheet');
+  assert.equal(sheet.getAttribute('aria-label'), 'Inventory');
+  assert.equal(findByClass(sheet, 'sheet__title').textContent, 'The Pack');
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '0 of 18 carried');
+  assert.match(findByClass(sheet, 'sheet__empty').textContent, /pack is empty/i);
+  assert.equal(findAllByClass(sheet, 'pack__row').length, 0);
+  assert.equal(ribbon('inventory').getAttribute('aria-expanded'), 'true');
+  assert.match(findByClass(ribbon('inventory'), 'ribbon__icon').getAttribute('viewBox') || '', /24/);
+});
+
+test('the pack fills row by row as you take things, and the meter follows', () => {
+  const g = start();
+  ribbon('inventory').click();
+  g.performAction('ropes', 'take');
+
+  const sheet = openSheet();
+  assert.ok(sheet, 'taking does not close the pack');
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '3 of 18 carried');
+  const row = findByDataset(sheet, 'item', 'ropes');
+  assert.ok(row, 'ropes has a row');
+  assert.equal(findByClass(row, 'pack__name').textContent, 'ropes');
+  assert.equal(findByClass(row, 'pack__weight').textContent, '3');
+  assert.equal(findByClass(row, 'pack__weight').getAttribute('title'), 'ropes weighs 3');
+  assert.deepEqual(
+    findAllByClass(row, 'pack__action').map((b) => b.dataset.verb),
+    ['examine', 'drop'],
+    'a carried thing is examined or set down, never taken again',
+  );
+  const fill = findByClass(sheet, 'pack__meter-fill');
+  assert.ok(fill, 'the load meter has a fill');
+  assert.equal(fill.style.width, '16.7%', '3 of 18');
+  assert.ok(String(fill.className).includes('pack__meter-fill--ok'));
+
+  // Eating from the pack removes the row: the sheet is data, not a cache.
+  g.performAction('barrel', 'open');
+  g.performAction('herring', 'take');
+  assert.ok(findByDataset(openSheet(), 'item', 'herring'), 'the herring joined the pack');
+  g.returnToPlace();
+  g.performAction('herring', 'eat');
+  assert.equal(findByDataset(openSheet(), 'item', 'herring'), null, 'eaten is gone from the pack');
+});
+
+test('a carried thing is examined and set down from its own row', () => {
+  const g = start();
+  g.performAction('ropes', 'take');
+  ribbon('inventory').click();
+  let row = findByDataset(openSheet(), 'item', 'ropes');
+
+  findByDataset(row, 'verb', 'examine').click();
+  assert.equal(g.getMode(), 'action', 'examine is a view');
+  assert.equal(g.getResult().title, 'ropes');
+
+  g.back();
+  row = findByDataset(openSheet(), 'item', 'ropes');
+  findByDataset(row, 'verb', 'drop').click();
+  assert.equal(g.getMode(), 'place', 'drop is not a view');
+  assert.equal(g.getToast(), 'You set down the ropes.');
+  assert.equal(g.getState().inventory.length, 0);
+  assert.equal(findAllByClass(openSheet(), 'pack__row').length, 0, 'the row left the open sheet');
+  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '0 of 18 carried');
+
+  const left = [...doc.shell.children].find((p) => p.dataset && p.dataset.panel === 'text');
+  assert.ok(
+    findAllByClass(left, 'text__body').some((p) => p.textContent.includes('You have set down your')),
+    'the place prose says where it lies',
+  );
+  assert.ok(findByDataset(left, 'interactableId', 'ropes'), 'the dropped word stays clickable');
+});
+
+test('the pack warns when it rides heavy', () => {
+  const g = start();
+  // Load 15 of 18: the bloom-iron, the driftwood and the ropes.
+  g.performAction('bloom-iron', 'take');
+  g.performAction('driftwood', 'take');
+  g.performAction('ropes', 'take');
+  ribbon('inventory').click();
+  const sheet = openSheet();
+  const model = Vinland.require('core/inventory').model(g.getState());
+  assert.equal(model.band, 'heavy');
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '15 of 18 carried');
+  assert.match(findByClass(sheet, 'pack__note').textContent, /rides heavy/i);
+  const fill = findByClass(sheet, 'pack__meter-fill');
+  assert.ok(String(fill.className).includes('pack__meter-fill--heavy'));
+  assert.equal(fill.style.width, '83.3%');
 });
 
 /*

@@ -141,4 +141,9 @@
   --dot-size: 11px;
   --dot-gap: 5px;
   --sheet-width: 600px;
+  /* The pack sheet is narrower than the report card: a list of carried
+     things, not a two-column character sheet. The load meter's height is a
+     token like the dots', so a retheme can weigh it differently. */
+  --pack-sheet-width: 460px;
+  --pack-meter-height: 6px;
 }

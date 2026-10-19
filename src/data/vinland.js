@@ -14,6 +14,10 @@
  * Interactables: each location may list `interactables` — bolded colored words that are
  * clickable and show a dropdown of actions. Passages mark them with {id} or {id|Display}.
  * See core/interactables.js for types and default actions.
+ *
+ * Items may declare `weight`: what they add to the pack if taken (core/inventory;
+ * the default is 2). The shore's seven takeable things add up to 21 (the linen bundle is
+ * examine-only), more than a default back can carry (18), so which ones you take is a choice.
  */
 Vinland.define('data/vinland', function () {
   'use strict';
@@ -126,11 +130,11 @@ Vinland.define('data/vinland', function () {
         interactables: [
           { id: 'knorr', name: 'knorr', type: 'object', examine: 'You look at the knorr. Clinker-built, tar dark, ropes stowed with care. It could take you across the water if the water agreed to be crossed.' },
           { id: 'cargo', name: 'cargo', type: 'container', examine: 'You eye the cargo lashed to the low-riding knorr. Canvas, barrel shapes beneath. Someone meant to hide what it is.', examineOpen: 'You look over the open cargo. Canvas thrown back, rope slack. A {salt-fish} glints beneath, and a {linen-bundle} lies under it in plain sight.', open: 'You pull at the canvas on the cargo. Rope groans. You work the canvas back and leave it open. A {salt-fish} glints beneath, and a {linen-bundle} lies under it.', close: 'You retie the canvas over the cargo. The harbour wind tugs at it as if impatient.', contains: [
-            { id: 'salt-fish', name: 'salt-fish', type: 'item', food: { hunger: 25, thirst: -10, energy: 5 }, actions: ['examine', 'take', 'eat'],
+            { id: 'salt-fish', name: 'salt-fish', type: 'item', weight: 2, food: { hunger: 25, thirst: -10, energy: 5 }, actions: ['examine', 'take', 'eat'],
               examine: 'You turn a salt-fish over in your hands. Stiff as a plank, white with brine. It will keep longer than most promises.',
               take: 'You take a salt-fish from the cargo. It leaves brine on your fingers.',
               eat: 'You eat the salt-fish. Brine dries on your lips and something in you turns over in to the sea. It is not as much as you would have liked to want.' },
-            { id: 'linen-bundle', name: 'linen-bundle', type: 'item', actions: ['examine'], examine: 'You lift the linen-bundle without unwrapping it. It is heavier at one end, and somebody tied it with more knots than linen needs. You leave the knots alone.' },
+            { id: 'linen-bundle', name: 'linen-bundle', type: 'item', weight: 1, actions: ['examine'], examine: 'You lift the linen-bundle without unwrapping it. It is heavier at one end, and somebody tied it with more knots than linen needs. You leave the knots alone.' },
           ] },
           { id: 'gull', name: 'gull', type: 'wildlife', color: '#f9c74f', examine: 'You follow the gull with your eyes. It wheels, crying, as if it knows something about tomorrow that you do not.', approach: 'You approach the gull\u2019s shadow on the planks. The bird itself stays high, circling. You are not worth descending for.' },
         ],
@@ -147,12 +151,12 @@ Vinland.define('data/vinland', function () {
             drink: 'You drink from the trough. The water is cold and it goes down like a decision finally made.' },
           { id: 'grindstone', name: 'grindstone', type: 'fixture', color: '#e76f51', examine: 'You kneel at the grindstone. Its wheel is dished from years of iron meeting stone. You see dark water in the trough beside it, holding a last reflection of the sky.', use: 'You work the grindstone. The wheel turns, slow, then keen. Sparks are not made here — patience is.' },
           { id: 'barrel', name: 'barrel', type: 'container', examine: 'You rap the barrel with your knuckles. It answers dull — half full. Brine, or something kept from flies.', examineOpen: 'You look into the open barrel. Brine catches the light, and a {herring} shifts below it.', open: 'You pry the lid from the barrel and set it aside, leaving the barrel open. Salt, water, and a {herring} stares up at you.', close: 'You press the lid back onto the barrel. The wood sighs.', contains: [
-            { id: 'herring', name: 'herring', type: 'item', food: { hunger: 30, thirst: -5, energy: 5 }, actions: ['examine', 'take', 'eat'],
+            { id: 'herring', name: 'herring', type: 'item', weight: 1, food: { hunger: 30, thirst: -5, energy: 5 }, actions: ['examine', 'take', 'eat'],
               examine: 'You look at the herring. Silver gone dull in the brine, eyes clouded. It has waited in the dark without complaint.',
               take: 'You fish out a herring. Brine runs down your wrist and you do not mind as much as you expected.',
               eat: 'You eat the herring. It is salt and smoke and it goes down hard, and your stomach says it understands.' },
           ] },
-          { id: 'ropes', name: 'ropes', type: 'item', examine: 'You lift the ropes. Hemp, tarred in places, frayed in others. They have held heavier things than you.', take: 'You coil the ropes and take them. They are heavier than they looked, and they smell of the harbour.' },
+          { id: 'ropes', name: 'ropes', type: 'item', weight: 3, examine: 'You lift the ropes. Hemp, tarred in places, frayed in others. They have held heavier things than you.', take: 'You coil the ropes and take them. They are heavier than they looked, and they smell of the harbour.' },
         ],
       },
       {
@@ -163,9 +167,9 @@ Vinland.define('data/vinland', function () {
           'You feel the smithy before you reach it: coal-heat leaning out of the doorway. {bloom-iron} waits in the corner unworked, and the {quench-barrel} wears a skin of ash. The {anvil} is still ticking as it cools.',
         interactables: [
           { id: 'anvil', name: 'anvil', type: 'fixture', examine: 'You lay a hand near the anvil. It ticks as it cools, a small clock counting down to cold. You feel the dents of a thousand hammers.', use: 'You tap the anvil with your palm. It rings — a clear note that carries out into the yard. No one comes running.' },
-          { id: 'bloom-iron', name: 'bloom-iron', type: 'item', examine: 'You look at the bloom-iron. Pitted, dark, not yet anything that could be called a tool. You see what it could become if someone had the day for it.', take: 'You heave the bloom-iron. It is stubborn and comes with you only reluctantly. You have it now.' },
+          { id: 'bloom-iron', name: 'bloom-iron', type: 'item', weight: 8, examine: 'You look at the bloom-iron. Pitted, dark, not yet anything that could be called a tool. You see what it could become if someone had the day for it.', take: 'You heave the bloom-iron. It is stubborn and comes with you only reluctantly. You have it now.' },
           { id: 'quench-barrel', name: 'quench-barrel', type: 'container', color: '#c9a8ff', examine: 'You peer at the quench-barrel. Its lid sits fast. Whatever the water holds, it holds it in the dark.', examineOpen: 'You look into the open quench-barrel. The water is black with coal dust. A skin of ash drifts, broken now, over a {cold-slag} sunk below.', open: 'You push the lid aside on the quench-barrel and leave it open. Steam that is not steam rises — hot metal remembered in water, and a {cold-slag} sits black below it.', close: 'You settle the lid back on the quench-barrel. The water stills.', contains: [
-            { id: 'cold-slag', name: 'cold-slag', type: 'item', examine: 'You look at the cold-slag. Black, bubbled, drowned before it could become anything. The smith threw it in and thought no more of it.', take: 'You reach into the cold water and fish out the cold-slag. It drips black onto the smithy floor.' },
+            { id: 'cold-slag', name: 'cold-slag', type: 'item', weight: 2, examine: 'You look at the cold-slag. Black, bubbled, drowned before it could become anything. The smith threw it in and thought no more of it.', take: 'You reach into the cold water and fish out the cold-slag. It drips black onto the smithy floor.' },
           ] },
         ],
       },
@@ -177,7 +181,7 @@ Vinland.define('data/vinland', function () {
           'You walk out onto the beach, where grey sand keeps the shape of everything ever dragged across it. Kelp, {driftwood}, and a {whale-rib} planted upright as a marker by someone with more strength than sense. A {crab} works its way across the sand and the tide is going out and leaving you room.',
         interactables: [
           { id: 'whale-rib', name: 'whale-rib', type: 'object', examine: 'You touch the whale-rib. It is vast, white-grey, set upright like a doorframe with no door. You can see the marks of the saw that freed it.' },
-          { id: 'driftwood', name: 'driftwood', type: 'item', examine: 'You nudge the driftwood with your boot. Sun-bleached, salt-smoothed, light enough to carry if you wanted wood that the sea has already shaped.', take: 'You take the driftwood. The sea has done most of the work; you will do the rest if you find a reason.' },
+          { id: 'driftwood', name: 'driftwood', type: 'item', weight: 4, examine: 'You nudge the driftwood with your boot. Sun-bleached, salt-smoothed, light enough to carry if you wanted wood that the sea has already shaped.', take: 'You take the driftwood. The sea has done most of the work; you will do the rest if you find a reason.' },
           { id: 'crab', name: 'crab', type: 'wildlife', examine: 'You watch the crab. It moves sideways, as if it has considered going forwards and rejected the idea.', approach: 'You approach the crab. It freezes, then darts for a puddle. You leave it to its tide.' },
         ],
       },
@@ -188,7 +192,7 @@ Vinland.define('data/vinland', function () {
         passage:
           'You step into the grove and the wind loses interest in you. Hazel and rowan, cut back on a cycle somebody keeps in their head rather than on a tally stick. There are chips on the trunks, and they are not decoration. A {tally-stick} leans against a stump where the {woodcutter} once worked, and the {hazel} itself rustles above you.',
         interactables: [
-          { id: 'tally-stick', name: 'tally-stick', type: 'item', color: '#f4a261', examine: 'You pick up the tally-stick. Notches, crossed and grouped. Someone is counting here, twice, and not writing it down for you.', take: 'You take the tally-stick. The notches mean nothing to you yet, but you feel their weight.' },
+          { id: 'tally-stick', name: 'tally-stick', type: 'item', weight: 1, color: '#f4a261', examine: 'You pick up the tally-stick. Notches, crossed and grouped. Someone is counting here, twice, and not writing it down for you.', take: 'You take the tally-stick. The notches mean nothing to you yet, but you feel their weight.' },
           { id: 'woodcutter', name: 'woodcutter', type: 'npc', examine: 'You see where the woodcutter was: boot prints, a dropped axe-handle, bark shavings still fresh. They are not here now.', talk: 'You call for the woodcutter. No answer, only hazel leaves shifting. You talk to their absence and the grove keeps its count.' },
           { id: 'hazel', name: 'hazel', type: 'object', examine: 'You look at the hazel. Coppiced, patient, cut and regrowing on a rhythm you do not know. You are standing in someone\u2019s future firewood.' },
         ],

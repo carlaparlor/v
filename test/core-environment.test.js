@@ -2,8 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScripts } from '../tools/load-scripts.js';
 const V = loadScripts(['src/kernel.js', 'src/core/environment.js', 'src/core/time.js',
+  'src/core/interactables.js',
+  'src/core/inventory.js',
   'src/core/player.js',
-  'src/core/world.js', 'src/core/interactables.js', 'src/core/actions.js',
+  'src/core/world.js', 'src/core/actions.js',
   'src/core/render-text.js', 'src/core/render-map.js', 'src/data/vinland.js']);
 const env = V.require('core/environment');
 const time = V.require('core/time');

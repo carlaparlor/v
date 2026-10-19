@@ -1,9 +1,12 @@
 /**
  * Ribbons and sheets — the bookmarks on the map pane's top-right corner.
  *
- * Two ribbons (profile, settings) stick out of the pane's top edge into the
- * shell's top band; clicking one drops a sheet from the corner. Profile shows
- * who you are (your attributes); settings is a placeholder for now.
+ * Three ribbons (profile, inventory, settings) stick out of the pane's top
+ * edge into the shell's top band; clicking one drops a sheet from the corner.
+ * Profile shows who you are (your attributes); inventory shows the pack —
+ * what you carry, what it weighs, and what you can do with it; settings is a
+ * placeholder for now. The pack's numbers are core/inventory's view model;
+ * this module only paints them and sends the row verbs on as actions.
  *
  * Where the sheet's DATA comes from: app/game renders the ribbons on every
  * pass (like it hands world to every panel), and the sheet is part of that
@@ -25,18 +28,28 @@ Vinland.define('ui/ribbons', function (require) {
   'use strict';
 
   const playerMod = require('core/player');
+  const inventoryMod = require('core/inventory');
   const iconsMod = require('ui/icons');
 
   /** Ribbon kind → icon name in ui/icons. */
   const RIBBON_ICONS = Object.freeze({
     profile: 'user-round',
+    inventory: 'backpack',
     settings: 'settings',
   });
 
   const RIBBONS = Object.freeze([
     Object.freeze({ kind: 'profile', label: 'Profile' }),
+    Object.freeze({ kind: 'inventory', label: 'Inventory' }),
     Object.freeze({ kind: 'settings', label: 'Settings' }),
   ]);
+
+  /** Sheet heading and close-button noun per ribbon. */
+  const SHEET_LABELS = Object.freeze({
+    profile: 'Profile',
+    inventory: 'Inventory',
+    settings: 'Settings',
+  });
 
   /** One line under each attribute name in the profile sheet. */
   const ATTRIBUTE_NOTES = Object.freeze({
@@ -174,6 +187,92 @@ Vinland.define('ui/ribbons', function (require) {
     return row;
   }
 
+  /**
+   * A pack row's verb goes through the same event seam the prose's dropdown
+   * uses: this module never requires app/game (which would be a cycle), and
+   * the composition root decides what a verb means. The button carries no
+   * `data-action`/`data-interactable-id`, so the shell's delegated click
+   * fallback cannot fire the action twice.
+   */
+  function dispatchAction(interactableId, action) {
+    if (typeof document === 'undefined' || !document.dispatchEvent) return;
+    const detail = { interactableId: interactableId, action: action };
+    let ev;
+    if (typeof CustomEvent === 'function') {
+      ev = new CustomEvent('vinland:action', { detail: detail, bubbles: true });
+    } else {
+      ev = { type: 'vinland:action', detail: detail };
+    }
+    document.dispatchEvent(ev);
+  }
+
+  /** The load meter: one bar, banded, with the fill width from the model. */
+  function packLoad(model) {
+    const load = el('div', 'pack__load');
+    const head = el('div', 'pack__load-head');
+    head.appendChild(el('span', 'pack__summary', model.summary));
+    load.appendChild(head);
+    const meter = el('div', 'pack__meter');
+    meter.setAttribute('aria-hidden', 'true');
+    const fill = el('span', 'pack__meter-fill pack__meter-fill--' + model.band);
+    fill.style.width = (Math.round(model.share * 1000) / 10) + '%';
+    meter.appendChild(fill);
+    load.appendChild(meter);
+    if (model.note) load.appendChild(el('p', 'pack__note', model.note));
+    return load;
+  }
+
+  /** One carried thing: its word and weight, then the verbs it offers. */
+  function packRow(item) {
+    const row = el('div', 'pack__row');
+    row.dataset.item = item.id;
+    const head = el('div', 'pack__row-head');
+    const name = el('span', 'pack__name', item.name);
+    name.style.color = item.color;
+    head.appendChild(name);
+    const weight = el('span', 'pack__weight', String(item.weight));
+    weight.setAttribute('title', item.name + ' weighs ' + item.weight);
+    weight.setAttribute('aria-label', item.name + ' weighs ' + item.weight);
+    head.appendChild(weight);
+    row.appendChild(head);
+
+    const actions = el('div', 'pack__actions');
+    for (const verb of item.actions) {
+      const btn = el('button', 'pack__action', verb);
+      btn.type = 'button';
+      btn.dataset.item = item.id;
+      btn.dataset.verb = verb;
+      btn.setAttribute('aria-label', capitalize(verb) + ' ' + item.name);
+      btn.addEventListener('click', function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        dispatchAction(item.id, verb);
+      });
+      actions.appendChild(btn);
+    }
+    row.appendChild(actions);
+    return row;
+  }
+
+  /** The inventory sheet: the pack's weight, then what is in it. */
+  function buildPack(world) {
+    const wrap = el('div', 'pack');
+    const model = inventoryMod.model(world);
+    if (!model) {
+      wrap.appendChild(el('p', 'sheet__empty', 'No pack in this world.'));
+      return wrap;
+    }
+    wrap.appendChild(packLoad(model));
+    if (model.items.length === 0) {
+      wrap.appendChild(el('p', 'sheet__empty', 'Your pack is empty. Whatever you take from the shore will be carried here.'));
+      return wrap;
+    }
+    const list = el('div', 'pack__list');
+    list.setAttribute('role', 'list');
+    for (const item of model.items) list.appendChild(packRow(item));
+    wrap.appendChild(list);
+    return wrap;
+  }
+
   function buildBar() {
     const barEl = el('div', 'ribbon-bar');
     for (const ribbon of RIBBONS) {
@@ -197,17 +296,19 @@ Vinland.define('ui/ribbons', function (require) {
   function buildSheet(kind, world) {
     const s = el('div', 'sheet');
     s.dataset.sheet = kind;
+    if (kind === 'inventory') s.classList.add('sheet--pack');
     s.setAttribute('role', 'dialog');
-    s.setAttribute('aria-label', kind === 'profile' ? 'Profile' : 'Settings');
+    s.setAttribute('aria-label', SHEET_LABELS[kind] || 'Sheet');
     const model = kind === 'profile' ? playerMod.model(world && world.player) : null;
     const name = model && model.name ? model.name : 'You';
 
     const head = el('div', 'sheet__bar');
-    head.appendChild(el('h2', 'sheet__title', kind === 'profile' ? name : 'Settings'));
+    const title = kind === 'profile' ? name : kind === 'inventory' ? 'The Pack' : 'Settings';
+    head.appendChild(el('h2', 'sheet__title', title));
     const close = el('button', 'sheet__close');
     close.type = 'button';
     close.dataset.close = 'sheet';
-    close.setAttribute('aria-label', 'Close ' + (kind === 'profile' ? 'profile' : 'settings'));
+    close.setAttribute('aria-label', 'Close ' + (SHEET_LABELS[kind] || 'sheet').toLowerCase());
     close.appendChild(iconsMod.icon('close', 'sheet__icon'));
     close.addEventListener('click', function (ev) {
       if (ev && ev.stopPropagation) ev.stopPropagation();
@@ -231,6 +332,8 @@ Vinland.define('ui/ribbons', function (require) {
       }
       columns.appendChild(attrs);
       s.appendChild(columns);
+    } else if (kind === 'inventory') {
+      s.appendChild(buildPack(world));
     } else {
       s.appendChild(el('p', 'sheet__empty', 'There is nothing to configure yet.'));
     }
@@ -266,7 +369,7 @@ Vinland.define('ui/ribbons', function (require) {
     detach(sheet);
     bar = buildBar();
     shell.appendChild(bar);
-    if (openKind === 'profile' && !(world && world.player)) openKind = null;
+    if ((openKind === 'profile' || openKind === 'inventory') && !(world && world.player)) openKind = null;
     if (openKind) {
       sheet = buildSheet(openKind, world);
       shell.appendChild(sheet);

@@ -33,6 +33,11 @@ Vinland.define('core/world', function (require) {
     if (inter.examine !== undefined && inter.examine !== null && typeof inter.examine !== 'string') throw new Error(`interactable "${inter.id}" examine must be a string`);
     if (inter.examineOpen !== undefined && inter.examineOpen !== null && typeof inter.examineOpen !== 'string') throw new Error(`interactable "${inter.id}" examineOpen must be a string`);
     if (inter.color !== undefined && inter.color !== null && typeof inter.color !== 'string') throw new Error(`interactable "${inter.id}" color must be a string`);
+    if (inter.weight !== undefined && inter.weight !== null) {
+      if (typeof inter.weight !== 'number' || !Number.isFinite(inter.weight) || inter.weight < 0) {
+        throw new Error(`interactable "${inter.id}" weight must be a non-negative number`);
+      }
+    }
     if (inter.actions !== undefined && inter.actions !== null) {
       if (!Array.isArray(inter.actions)) throw new Error(`interactable "${inter.id}" actions must be an array`);
       for (const verb of inter.actions) {

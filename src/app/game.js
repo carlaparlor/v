@@ -497,9 +497,23 @@ Vinland.define('app/game', function (require) {
         // stack. You stay exactly where you are — the current view simply
         // re-renders (which un-highlights the word: it is yours now, not a
         // thing in the world to click) — and the popup says what happened.
-        if (action === 'take' && !outcome.failed) {
+        if (action === 'take' && !outcome.failed && outcome.result.kind !== 'collapse') {
           settleAfterTake(interactableId);
           showToast('You have taken ' + outcome.result.title);
+          return outcome;
+        }
+        // Setting something down is not a view either: it leaves the pack for
+        // the ground here. The place prose names it (core/render-text), the
+        // open pack sheet loses its row on this pass, and the popup confirms.
+        if (action === 'drop' && !outcome.failed && outcome.result.kind !== 'collapse') {
+          cancelPendingTake();
+          if (mode.kind === 'action' && pendingResult) {
+            pendingResult = Vinland.require('core/actions').refreshResult(state, pendingResult);
+            renderResult(pendingResult);
+          } else {
+            renderPlace();
+          }
+          showToast('You set down the ' + outcome.result.title + '.');
           return outcome;
         }
         // Crossing a doorway — or a floor, by the stairs — is travel, not a

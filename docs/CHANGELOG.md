@@ -3,6 +3,58 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 15 — the pack: weight, a limit, and a ribbon of its own
+
+**Asked:** "design and create an inventory mechanic. give it it's own ribbon."
+
+Taking already moved a thing into `world.inventory`, but nothing read the
+pack: it was a list you could only see from the console. Now it is a
+mechanic. **The pack is weight, not a grid of slots.** Every takeable thing
+adds its `weight` to one load — an item's own field, defaulting to 2 — and a
+back carries **8 + strength**: 18 at the default 10, so a stronger body
+carries more and a weak one has to choose. The shore's seven takeables weigh
+**21 together**, more than a default back can hold, so what you leave behind
+is a decision.
+
+At **three quarters of capacity the load is heavy**: effort verbs (walk,
+enter, exit, climb, descend, approach) take **25% longer** — a five-minute
+walk is six and a quarter — while talking, eating and the rest are
+unaffected. `take` is refused at the limit with the numbers in the reason
+("it weighs 2, and you have 1 free of 18") and costs the usual half-minute.
+**`drop` is a verb now** — 30 seconds and a sliver of energy — and a dropped
+thing stays where you stand: it leaves the pack for the location's
+interactables, the place prose gains "You have set down your feather here."
+with the word still clickable, and taking it back clears the dropped mark.
+From a pack row a thing offers its own verbs (examine, and eat/drink when it
+has the values) and always drop, never take.
+
+The ribbon is its own, between profile and settings: **inventory**, a lucide
+backpack. It drops **The Pack**: a load meter banded ok/heavy/full, "N of C
+carried", a note when the load rides heavy or is full, and one row per thing
+— its type colour, its weight, and its verbs as buttons. The sheet is shell
+chrome rebuilt from the current world on every pass like the others, so
+eating the herring from the pack empties the row in front of you and taking
+while it is open fills one. Rows send their verbs through the same
+`vinland:action` seam as the prose dropdown, so the ribbon never requires
+app/game.
+
+Rules live in **`core/inventory`** (`PACK_CONFIG`, `weightOf`,
+`capacityFor`, `loadState`, `fitFor`, `actionsFor`, `model`);
+`core/player.effectiveCost` takes the pack's burden verdict as its fifth
+argument, so the clock and the sheet read the same numbers. `validatePack`
+rejects a weight that is not a non-negative number. Data stays data: the
+items declare their weights in `src/data/vinland.js`.
+
+Pinned in the new inventory suite: the capacity curve, the default weight,
+the 75% edge, the heavy/full bands and notes, the take refusal's numbers and
+thirty seconds, drop's place on the ground and in the prose, taking a dropped
+thing back, the 375-second heavy walk (and unaffected talk/eat), the shore's
+21 against 18, and weight validation. The ribbons suite pins the
+three-ribbon bar, the pack sheet's summary/meter/rows/verbs, examining and
+dropping from a row, and the heavy note. **236 tests, 0 failures.**
+
+---
+
 ## Iteration 14 (correction 1) — "You" aligns with the prose; the stats go under it
 
 **Asked:** why isn't "You" aligned with the text below, and the stats

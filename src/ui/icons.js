@@ -8,7 +8,7 @@
  * included) carries straight onto the glyph.
  *
  * Shape data is from lucide (https://lucide.dev, ISC-licensed): user-round,
- * settings and x for the ribbons; heart, utensils, droplet, zap and
+ * backpack, settings and x for the ribbons; heart, utensils, droplet, zap and
  * thermometer (exposure: cold one way, hot the other) for the five vitals — keyed by stat name, so
  * icon(playerModel.stats[i].key) just works.
  */
@@ -23,6 +23,14 @@ Vinland.define('ui/icons', function () {
     'user-round': Object.freeze([
       Object.freeze({ tag: 'circle', attrs: { cx: 12, cy: 8, r: 5 } }),
       Object.freeze({ tag: 'path', attrs: { d: 'M20 21a8 8 0 0 0-16 0' } }),
+    ]),
+    // The pack: a rucksack, for the inventory ribbon.
+    backpack: Object.freeze([
+      Object.freeze({ tag: 'path', attrs: { d: 'M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M8 10h8' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M8 18h8' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M8 22v-6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v6' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2' } }),
     ]),
     settings: Object.freeze([
       Object.freeze({

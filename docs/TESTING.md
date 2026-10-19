@@ -9,6 +9,59 @@ Two kinds of tests, both required every iteration:
 New iterations are added at the top. Older ones stay as the regression suite.
 ---
 
+## Iteration 15 — the pack
+
+**Asked:** "design and create an inventory mechanic. give it it's own ribbon."
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **236 tests, 0 failures.** `core-inventory.test.js` (new) pins the
+capacity curve (8 + strength: 9 / 18 / 28), the default weight, the 75%
+heavy edge, the heavy/full bands and their notes, the carried-thing verb
+list (never take, always drop, eat/drink by data), the capacity refusal's
+numbers and its half-minute, drop's place on the ground and its prose, taking
+a dropped thing back, the heavy walk at 375 seconds while talk and eat stay
+unpriced, the shore's 21 weight against a default back of 18, and weight
+validation. `ui-ribbons.test.js` pins the three-ribbon bar, the pack sheet
+(empty state, summary, meter fill width and band, rows, weights, verbs),
+examining and dropping from a row, and the heavy warning. `theme-contrast`
+pins the meter/note colours on the sheet surface.
+
+### Manual
+
+1. Refresh the preview. At the map pane's top-right there are now **three**
+   ribbons: profile (person), **inventory (backpack)** and settings (gear).
+2. Click the backpack. A narrower dark sheet drops: **The Pack**, "0 of 18
+   carried", an empty meter, and "Your pack is empty. Whatever you take from
+   the shore will be carried here."
+3. Take the ropes in the yard. The popup confirms; the open sheet gains a row
+   — `ropes` in the item colour, `3` at the right (tooltip "ropes weighs 3"),
+   and two pill buttons: **examine** and **drop**. The meter fills about a
+   sixth and reads "3 of 18 carried".
+4. Take the bloom-iron at the smithy (8) and the driftwood at the beach (4).
+   The summary reads "15 of 18 carried", the meter turns amber, and the note
+   says the pack rides heavy and every crossing will take longer. Walk one
+   edge: the clock moves **6 minutes 15 seconds** (five minutes × 1.25) in
+   fair weather. Talking and eating are not slowed.
+5. Open the barrel, take the herring, then click **eat** on its pack row: the
+   row and weight disappear and hunger rises. The sheet is live, not a cache.
+6. Click **drop** on the ropes row: the popup says "You set down the ropes.",
+   the row leaves the pack, and the place prose gains "You have set down your
+   ropes here." — with *ropes* still a clickable coloured word. Clicking it
+   offers examine/take; taking it back costs a minute and clears the row from
+   the ground.
+7. Fill the pack to the limit and try one more thing: the result view says
+   "Your pack will not take the … — it weighs N, and you have N free of 18.",
+   the clock advances thirty seconds, and nothing enters the pack.
+8. Close the sheet with the X, the same ribbon, or Escape; open the profile
+   or settings ribbon and confirm only one sheet is ever up.
+
+---
+
 ## Iteration 14 (correction 1) — the name aligns, the stats sit under it
 
 **Asked:** why isn't "You" aligned with the bottom text, and the stats
@@ -766,9 +819,10 @@ trained prices alongside the untrained ones.
 ## Ribbons and sheets
 
 1. Refresh the preview or open index.html directly. At the top-right corner of
-   the map pane, confirm two dark ribbons sticking out of the pane's top edge
-   into the thin band above the panes, each with a V-notched tail: the profile
-   icon (a person) and the settings icon (a gear). The left pane shows ONE
+   the map pane, confirm **three** dark ribbons sticking out of the pane's top
+   edge into the thin band above the panes, each with a V-notched tail: the
+   profile icon (a person), the **inventory** icon (a backpack) and the
+   settings icon (a gear). The left pane shows ONE
    line: the nameplate (**YOU**, small caps) on the left and the five vitals
    on the right, aligned — each vital a lucide icon and a number (heart,
    fork-and-knife, droplet, lightning-bolt, thermometer); hover one and its
@@ -793,18 +847,22 @@ trained prices alongside the untrained ones.
    with the new world on the same pass, so it can never show a stale body.
    Doing things from the left pane (open the barrel, eat the herring) does not
    close it either.
-4. Click the settings ribbon: the sheet swaps — one sheet at a time, never
+4. Click the inventory ribbon: **The Pack** opens — the load summary, the
+   meter, and a row per carried thing with its weight and verbs. See the
+   iteration 15 script above for taking, setting down and the heavy warning.
+5. Click the settings ribbon: the sheet swaps — one sheet at a time, never
    stacked — and says **Settings** / "There is nothing to configure yet."
    Close it three ways: the X in the sheet's corner, clicking the same ribbon
    again, and pressing Escape.
-5. With the profile sheet open, enter a view (examine the barrel): the map
+6. With the profile sheet open, enter a view (examine the barrel): the map
    recedes with its police tape and the sheet stays, still on top of it.
    Coming Back, everything is as you left it.
-6. Keyboard: Tab reaches both ribbons (they are real buttons with labels);
-   Enter opens the sheet; focus lands on the sheet's close button; Escape or
-   the close button returns focus to the ribbon.
+7. Keyboard: Tab reaches all three ribbons (they are real buttons with
+   labels); Enter opens the sheet; focus lands on the sheet's close button;
+   Escape or the close button returns focus to the ribbon.
 
-Automated: ui-ribbons.test.js (bar on the shell, icons, sheet content, one
-sheet at a time, closing, the sheet following the world, the result view),
+Automated: ui-ribbons.test.js (bar on the shell, icons, profile and pack
+sheet content, one sheet at a time, closing, the sheet following the world,
+the result view, examining/dropping from a pack row),
 ui-status.test.js (the left pane carries no head/attributes/skills),
 theme-contrast.test.js (ribbon and sheet tokens on their surfaces).
