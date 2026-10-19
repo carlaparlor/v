@@ -776,6 +776,10 @@
   font-size: var(--font-size-small);
 }
 
+.pack__note--full {
+  color: var(--color-stat-critical);
+}
+
 .pack__list {
   display: flex;
   flex-direction: column;

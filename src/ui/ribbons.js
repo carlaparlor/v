@@ -218,7 +218,7 @@ Vinland.define('ui/ribbons', function (require) {
     fill.style.width = (Math.round(model.share * 1000) / 10) + '%';
     meter.appendChild(fill);
     load.appendChild(meter);
-    if (model.note) load.appendChild(el('p', 'pack__note', model.note));
+    if (model.note) load.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
     return load;
   }
 
