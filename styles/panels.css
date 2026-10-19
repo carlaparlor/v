@@ -654,18 +654,25 @@
   opacity: 1;
 }
 
-/* The meter: value against the tier's max (attributes /20, skills /100).
-   The fill width is set inline from the view model; the track is a token. */
-.sheet__meter {
-  block-size: var(--meter-height);
-  border-radius: calc(var(--meter-height) / 2);
-  background: var(--color-meter-track);
+/* The five dots: value against the tier's max (attributes /20, skills
+   /100), each circle worth 20%, filled in half-circle steps (the fill
+   width is set inline from the row's value; the empty circle is a token).
+   The report card's way of showing a level — not a progress bar. */
+.sheet__dots {
+  display: flex;
+  gap: var(--dot-gap);
+}
+
+.sheet__dot {
+  inline-size: var(--dot-size);
+  block-size: var(--dot-size);
+  border-radius: 50%;
+  background: var(--color-dot-track);
   overflow: hidden;
 }
 
-.sheet__meter-fill {
+.sheet__dot-fill {
   block-size: 100%;
-  border-radius: inherit;
   background: var(--color-accent);
 }
 

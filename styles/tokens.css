@@ -133,10 +133,12 @@
   --ribbon-notch: 9px;
   /* Where the ribbon bar hangs from the shell's top edge (inside the band). */
   --ribbon-top: 6px;
-  /* Profile sheet meters: the fill reuses --color-accent (it clears 3:1 on
-     the sheet surface; theme-contrast.test.js keeps it there). The track is
-     decorative, so it is allowed a bare alpha here in tokens.css. */
-  --color-meter-track: rgba(255, 255, 255, 0.1);
-  --meter-height: 5px;
+  /* Profile sheet dots (five per row, in place of a progress bar): the fill
+     reuses --color-accent (it clears 3:1 on the sheet surface;
+     theme-contrast.test.js keeps it there). The empty circle is decorative,
+     so it is allowed a bare alpha here in tokens.css. */
+  --color-dot-track: rgba(255, 255, 255, 0.1);
+  --dot-size: 11px;
+  --dot-gap: 5px;
   --sheet-width: 600px;
 }

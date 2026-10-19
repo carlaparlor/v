@@ -96,12 +96,12 @@ test('the ribbons and sheets are readable on the surfaces they sit on (WCAG AA)'
   assert.ok(contrast(text, sheetBg) >= 4.5, `sheet body ${text} on ${sheetBg} needs >= 4.5:1`);
   assert.ok(contrast(bright, sheetBg) >= 4.5, `sheet bright ${bright} on ${sheetBg} needs >= 4.5:1`);
   assert.ok(contrast(dim, sheetBg) >= 4.5, `sheet dim ${dim} on ${sheetBg} needs >= 4.5:1`);
-  // The meter fill is a non-text UI component (WCAG 1.4.11: 3:1 on its
+  // The dot fills are non-text UI components (WCAG 1.4.11: 3:1 on their
   // surface), reusing the accent token.
   const accent = token('--color-accent');
   assert.ok(
     contrast(accent, sheetBg) >= 3,
-    `meter fill ${accent} on ${sheetBg} is ${contrast(accent, sheetBg).toFixed(2)}:1, needs >= 3:1`,
+    `dot fill ${accent} on ${sheetBg} is ${contrast(accent, sheetBg).toFixed(2)}:1, needs >= 3:1`,
   );
   // The report-card grade letters are text-sized marks: all six grade
   // colours must clear AA on the sheet surface.

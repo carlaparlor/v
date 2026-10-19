@@ -142,11 +142,14 @@ Vinland.define('ui/ribbons', function (require) {
   /**
    * One metered row: the name, the value (hidden until hover — the numbers
    * do not get to crowd the report card) and the report-card grade (S–F),
-   * which stands alone at the right end, then the meter and the one-line
-   * note. The grade's title carries the numbers as the fallback reveal for
-   * tooltips and non-hover input. The grade is view-model data — this
-   * module only paints it.
+   * which stands alone at the right end, then five dots (filled against the
+   * tier's max in half-circle steps — the report card's way of showing a
+   * level, not a progress bar) and the one-line note. The grade's title
+   * carries the numbers as the fallback reveal for tooltips and non-hover
+   * input. The grade is view-model data — this module only paints it.
    */
+  const DOTS = 5;
+
   function sheetRow(name, note, value, max, gradeLetter) {
     const row = el('div', 'sheet__row');
     const head = el('div', 'sheet__row-head');
@@ -157,12 +160,20 @@ Vinland.define('ui/ribbons', function (require) {
     g.setAttribute('title', name + ': ' + value + ' / ' + max);
     head.appendChild(g);
     row.appendChild(head);
-    const meter = el('div', 'sheet__meter');
-    const fill = el('div', 'sheet__meter-fill');
-    const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
-    fill.style.width = pct + '%';
-    meter.appendChild(fill);
-    row.appendChild(meter);
+    // Five dots, each 20% of the scale, filled in half-circle steps:
+    // an attribute at 10 of 20 reads full, full, half, empty, empty.
+    const units = max > 0 ? Math.max(0, Math.min(DOTS, (value / max) * DOTS)) : 0;
+    const filled = Math.round(units * 2) / 2;
+    const dots = el('div', 'sheet__dots');
+    dots.setAttribute('aria-hidden', 'true'); // the numbers/tooltip carry the info
+    for (let i = 0; i < DOTS; i++) {
+      const dot = el('span', 'sheet__dot');
+      const fill = el('span', 'sheet__dot-fill');
+      fill.style.width = (Math.max(0, Math.min(1, filled - i)) * 100) + '%';
+      dot.appendChild(fill);
+      dots.appendChild(dot);
+    }
+    row.appendChild(dots);
     if (note) row.appendChild(el('p', 'sheet__desc', note));
     return row;
   }

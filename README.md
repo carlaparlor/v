@@ -35,7 +35,8 @@ across the skills, and the grades tick over as you practice. See
 **Iteration 11 — a name, and a proper character sheet.** The player's name
 sits above the vitals in the left pane ("You" by default; a pack can name them
 via `pack.player.name`). The profile sheet is now horizontal — attributes and
-skills side by side, every row metered against its max, titled with the name.
+skills side by side, every row showing its level as five filled circles,
+titled with the name.
 See [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 **Iteration 10 — ribbons on the map pane, vitals in the left.** The left pane

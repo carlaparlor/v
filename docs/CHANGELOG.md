@@ -4,6 +4,27 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 12 (correction 2) — five circles, not a bar
+
+**Asked:** "i dont like those bars — make em 5 circles." The progress bar
+under each row was the one piece of the report card that looked like a
+loading screen, so it is five circles now.
+
+Each row shows its level as **five dots, each worth 20% of the scale, filled
+in half-circle steps** — the default attribute (10 of 20) reads
+`● ● ◐ ○ ○`, an untrained skill `○ ○ ○ ○ ○`, a maxed skill `● ● ● ● ●`.
+The fill widths are set inline from the row's value, so the dots tick over in
+the open sheet exactly like the grade does; the empty circle is a token
+(`--color-dot-track`), the fill reuses the accent (AA-checked as a non-text
+UI component). The dots are `aria-hidden` — the hover-revealed numbers and
+the grade's tooltip carry the exact value.
+
+Pinned in the ribbons suite: fifty dots, the 10-of-20 row reading
+100/100/50/0/0, Travel's circles (the sheet is column-major) all empty at 0
+and still empty at 2. **219 tests, 0 failures.**
+
+---
+
 ## Iteration 12 (correction 1) — the letter stands alone; hover for numbers
 
 **Asked:** why do the numbers show up too? Only the letters should be there,

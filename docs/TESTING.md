@@ -47,9 +47,9 @@ Expected: **218 tests, 0 failures.** core-player pins the name in state and
 the view model, the "You" default, and the pack override validation (string,
 1–32 characters — "  ", 7 and a 33-character name all throw). The status
 suite pins the nameplate as the block's first line; the ribbons suite pins
-the two-column sheet, the name as title, the meter widths (attribute 10 of 20
+the two-column sheet, the name as title, the dot fills (attribute 10 of 20
 → `50%`, skill 0 of 100 → `0%`, and the live tick to `2 / 100` after a walk);
-theme-contrast covers the meter fill (accent on the sheet surface, ≥ 3:1 as a
+theme-contrast covers the dot fill (accent on the sheet surface, ≥ 3:1 as a
 non-text UI component).
 
 ### Manual
@@ -692,9 +692,9 @@ trained prices alongside the untrained ones.
    body text) on every attribute and **F** (red) on every skill — you are
    average at being alive and bad at everything, because you have done
    nothing yet. **Only the letter stands at the right end of each row — the
-   numbers are not on screen.** Under each row sits its meter (half full for
-   an attribute at 10, empty for an untrained skill) and a one-line note,
-   both always visible. Hover a row (or focus it): its numbers fade in beside
+   numbers are not on screen.** Under each row sit its five circles
+   (full, full, half, empty, empty for an attribute at 10; all empty for an
+   untrained skill) and a one-line note, both always visible. Hover a row (or focus it): its numbers fade in beside
    the letter ("Strength … 10 / 20"), and the letter's tooltip says the same.
    The clicked ribbon lifts and stays lifted while its sheet is open.
 3. Watch it live: with the profile sheet open, walk one edge of the map. The
