@@ -123,6 +123,13 @@ test('the profile ribbon drops a horizontal sheet with the attributes and skills
   const grades = findAllByClass(sheet, 'sheet__grade').map((n) => n.textContent);
   assert.deepEqual(grades, ['B', 'B', 'B', 'B', 'B', 'F', 'F', 'F', 'F', 'F']);
   assert.ok(findByClass(sheet, 'sheet__grade--B'), 'the grade carries its letter as a class');
+  // The letter stands alone at the right end of the row; the numbers are
+  // hidden (CSS) and revealed on hover, with the title as the fallback.
+  const firstHead = findAllByClass(sheet, 'sheet__row-head')[0];
+  assert.ok(String(firstHead.children.at(-1).className).includes('sheet__grade'), 'the grade is the last thing in the row');
+  assert.equal(firstHead.children.at(-1).getAttribute('title'), 'Strength: 10 / 20', 'hovering reveals the numbers');
+  const firstRow = findAllByClass(sheet, 'sheet__row')[0];
+  assert.equal(findByClass(firstRow, 'sheet__value').textContent, '10 / 20', 'the numbers are still there, just quiet');
   assert.equal(ribbon('profile').getAttribute('aria-expanded'), 'true');
   assert.equal(ribbon('settings').getAttribute('aria-expanded'), 'false');
   assert.ok(findByClass(sheet, 'sheet__close'), 'the sheet has a close button');

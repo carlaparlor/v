@@ -4,6 +4,23 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 12 (correction 1) — the letter stands alone; hover for numbers
+
+**Asked:** why do the numbers show up too? Only the letters should be there,
+on the right; hovering reveals the numbers.
+
+The `10 / 20` next to every grade crowded the report card. Now the grade
+letter stands alone at the right end of each row, and the value is quiet —
+invisible (reserved in place, so nothing jumps) until the row is hovered or
+focused, where it fades in beside the letter. The grade also carries the
+numbers as a `title` ("Strength: 10 / 20"), so tooltips, touch and
+non-hover input still reach them; the meter is unchanged. No DOM-shape
+change worth renumbering: the row's children are the same, reordered, and the
+correction is pinned in the ribbons suite (grade last in the row, title
+carries the numbers, values still present). **219 tests, 0 failures.**
+
+---
+
 ## Iteration 12 — the report card: S to F on every attribute and skill
 
 **Asked:** skills and attributes "in letters like S, A, F — if you're good at

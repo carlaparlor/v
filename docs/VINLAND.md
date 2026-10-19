@@ -42,7 +42,8 @@ never crash).
 ## Current state
 
 **Iteration 12** — the profile sheet is a report card: every attribute and
-skill row leads with a letter grade, S to F, colored (S gold, F red). The
+skill row ends with a letter grade, S to F, colored (S gold, F red), standing
+alone on the right — the numbers stay hidden until you hover the row. The
 default body is a row of B's for attributes and F's for skills — average at
 being alive, failing at everything, because you have not done anything yet.
 See `docs/CHANGELOG.md`.

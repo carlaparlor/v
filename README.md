@@ -26,9 +26,10 @@ npm test      # run the unit tests (needs Node 18+)
 ## Current state
 
 **Iteration 12 — the report card.** Every attribute and skill in the profile
-sheet leads with a letter grade, S to F, colored: good at it is an S, bad at
-it is an F. The default body reads B across the attributes and F across the
-skills — and the grades tick over as you practice. See
+sheet ends with a letter grade, S to F, colored: good at it is an S, bad at
+it is an F — the letter stands alone on the right, and the numbers only show
+when you hover the row. The default body reads B across the attributes and F
+across the skills, and the grades tick over as you practice. See
 [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 **Iteration 11 — a name, and a proper character sheet.** The player's name
