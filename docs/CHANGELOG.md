@@ -4,6 +4,50 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 14 — exposure replaces warmth; hunger and thirst are retired
+
+**Asked:** "remove the warmth stat and replace it with the exposure. there's a
+middle feeling fine, then too hot or too cold." And: "remove food and thirst
+cause i feel it's redundant w energy."
+
+Warmth was one-directional — full was good, empty was freezing. Exposure is a
+**centred scale**: 0–100 with **50 as fine**. The band is read from the
+distance to that centre: 40–60 fine, 25–39 too cold, below 25 freezing;
+61–75 too hot, above 75 overheating. The status block shows the felt word for
+exposure (the number is in the tooltip, "exposure: 50 · fine"), and the cold
+end reads blue (`--color-stat-cold`) while the hot end reads red
+(`--color-stat-hot`). Health and energy keep the icon-and-number grammar.
+
+It is a real system, not a label. Each season names an ambient target
+(spring 45, summer 76, autumn 42, winter 28), the weather shifts it colder
+(cloudy −2 … storm −10), night takes another 8, and an exposed body moves
+toward that target at 4 points an hour; shelter pulls back toward 50 at 12 an
+hour. Constitution slows the change in either direction, so a tough body holds
+its temperature. At the hard ends (25 away from fine) health drains — faster
+near 0 or 100 — and exposed travel costs 20% more. Health recovers only when
+sheltered and comfortable. Collapse keeps the exposed value, clamped to 5–95.
+
+Hunger and thirst are removed outright. **Food restores energy** now: the
+herring gives 20 and the salt-fish 15 (eating still takes a minute and trains
+gather), and a full energy bar refuses the plate. The **drink verb and water
+data are gone** with thirst; the trough remains an examine-only fixture. Stats
+are `health`, `energy`, `exposure`; the icons are heart, zap, thermometer, and
+the fork and droplet are deleted from `ui/icons` rather than left as dead
+paths. Validation accepts `food: { energy }` only.
+
+Pinned in core-player: the seasonal targets, weather and night ordering,
+constitution's slow-down, health drain at both ends, recovery only sheltered
+and comfortable, the exposure band boundaries (40/60 fine, 25/75 critical,
+with `too cold`/`too hot` labels and both note voices), food-as-energy, the
+full-energy refusal, the trough's examine-only menu, and collapse. The status
+suite pins the three-item line (`100`, `100`, `Fine`), the exact tooltips,
+cold/hot classes and narrated ends. theme-contrast checks both new tokens.
+**221 tests, 0 failures.**
+
+What to test: `npm test`, then iteration 14 in `docs/TESTING.md`.
+
+---
+
 ## Iteration 13 — the vitals are icons, the line is aligned
 
 **Asked:** "replace the stat words with lucide icons, and align the name and

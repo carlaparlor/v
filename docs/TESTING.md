@@ -10,6 +10,53 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 14 — exposure replaces warmth; hunger and thirst are retired
+
+**Asked:** replace warmth with exposure — a middle feeling fine, then too hot
+or too cold — and remove food and thirst as redundant with energy.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **221 tests, 0 failures.** `test/core-player.test.js` pins the
+centred scale (50 fine, 40 and 60 still fine, 39 too cold, 61 too hot, 24
+freezing, 76 overheating), both note voices, the seasonal targets (45 / 76 /
+42 / 28), weather and night pushing colder, constitution slowing the change,
+health draining at both dangerous ends and recovering only sheltered and
+comfortable, food restoring energy, the full-energy refusal, the trough's
+examine-only menu, and collapse keeping exposure clamped to 5–95.
+`test/ui-status.test.js` pins the three-item line (`100`, `100`, `Fine`), the
+tooltips (`exposure: 50 · fine`), the blue cold and red hot classes, and the
+narrated notes. `test/theme-contrast.test.js` covers both new tokens.
+
+### Manual
+
+1. Double-click `index.html`. The left pane's line reads **heart 100 · zap 100
+   · thermometer Fine**. Hover the thermometer: the tooltip is
+   `exposure: 50 · fine`.
+2. Drag the thermometer to its cold end from the console:
+   ```js
+   const g = Vinland.require('app/game').getGame();
+   const w = g.getState();
+   g.setState({ ...w, player: { ...w.player, stats: { ...w.player.stats, exposure: 10 } } });
+   ```
+   The item reads **Freezing** in blue, and one italic note appears: "You are
+   freezing; your fingers have gone numb."
+3. Set `exposure: 80` the same way: **Overheating** in red, and "You are
+   overheating; your head swims and your skin prickles."
+4. Set `exposure: 30` and `exposure: 70`: **Too cold** / **Too hot** in the
+   low band, each with its own note.
+5. Set `energy: 30`: the zap item is amber, with "You feel your strength
+   draining." The exposure item is unaffected.
+6. With energy below 100, open the barrel and eat the herring: the zap number
+   rises toward full. At energy 100, eating is refused for thirty seconds
+   with "You are too full to eat the herring."
+7. Open the trough's menu: it offers **Examine** only. There is no Drink
+   anywhere, and no fork or droplet in the line.
+
 ## Iteration 13 — the vitals are icons, the line is aligned
 
 **Asked:** "replace the stat words with lucide icons, and align the name and

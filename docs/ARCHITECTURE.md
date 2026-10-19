@@ -462,9 +462,9 @@ modding rule that content is data.
    in the place view model and `ui/panel-text` renders it in every view of the
    left pane — place and result. Nothing in the block is computed at render
    time, and the note lines follow the second-person/present-tense convention.
-5. **Data is data.** Food (`food`), water (`water`) and rest (`rest` +
-   `restText` prose) live on interactables in the content pack; a pack may
-   override starting attributes via `pack.player.attributes` (validated in
+5. **Data is data.** Food (`food: { energy }`) and rest (`rest` + `restText`
+   prose) live on interactables in the content pack; a pack may override
+   starting attributes via `pack.player.attributes` (validated in
    `validatePack`, which also rejects verbs without their values). All rates
    live in `PLAYER_CONFIG` in core/player, next to `COSTS` in core/time.
 
@@ -550,10 +550,11 @@ plumbing a second time.
    right, aligned, wrapping only when the pane is narrow. The block's
    structure below the line (the notes) is unchanged.
 3. **Icon path data lives in `ui/icons`** — the single source of truth,
-   keyed by name (`health`, `hunger`, …, `user-round`, `settings`,
+   keyed by name (`health`, `energy`, `exposure`, `user-round`, `settings`,
    `close`), 24×24 stroke grid, `stroke: currentColor`, throwing on an
    unknown name. The ribbons pull their icons from it, so `ui/ribbons.js`
-   no longer carries path data.
+   no longer carries path data. (The stat list here has since narrowed to
+   three — see ADR-0016.)
 
 **Consequences.** Adding a stat's icon is a PATHS entry (the key is the
 stat name, so `icon(st.key)` just works); a new ribbon icon is the same
@@ -562,3 +563,40 @@ shipped code is written for the browser, and when the stub lacks a browser
 API, the stub gains it (CONVENTIONS). The status item is `inline-flex`
 with the icon sized in CSS — the same "inline elements cannot carry a
 width" lesson the dot fills taught (iteration 12, correction 3).
+
+### ADR-0016 — exposure is centred; hunger and thirst are retired
+
+**Context.** Warmth was one-directional: 100 was good, 0 was freezing, and the
+only way to read it was "how full is it". The ask was the opposite shape — a
+stat that is fine in the middle and bad at either end ("too hot or too cold")
+— and hunger and thirst were doing work energy already did.
+
+**Decision.**
+1. **Stats are `health`, `energy`, `exposure`.** Exposure is 0–100 with **50
+   as fine**; the band is the distance from that centre (< 10 fine, < 25 too
+   cold/too hot, beyond that freezing/overheating), not a fill level.
+2. **The world names a target, the body moves toward it.** Each season has an
+   ambient target (spring 45, summer 76, autumn 42, winter 28); weather shifts
+   it colder (clear 0 … storm −10), night −8; an exposed body moves 4 points an
+   hour toward it, shelter pulls back to 50 at 12 an hour. Constitution slows
+   the movement in either direction — a tough body holds its temperature.
+3. **Both ends have teeth, symmetrically.** Health drains while exposure is 25
+   away from fine (faster below 5 / above 95) and recovers only when sheltered
+   and comfortable; exposed effort costs +20% at either end. Collapse keeps the
+   drifted value, clamped to 5–95.
+4. **The model carries direction and word.** `core/player.model` adds
+   `direction` (`cold` / `hot` / null) and `label` (fine / too cold / too hot /
+   freezing / overheating) for exposure. The pane paints cold blue and hot red
+   from tokens; the exact number stays in the tooltip and aria-label.
+5. **Hunger and thirst are gone, not hidden.** Food applies `energy` only
+   (`applyFood`), `eat` refuses at full energy, and the `drink` verb and
+   `water` data are removed with their validation. The trough is an ordinary
+   examine-only fixture. Old worlds carrying hunger/thirst keys are ignored by
+   the drift and band code.
+
+**Consequences.** A save-shaped player with extra stats still renders: `STATS`
+is the list the model reports, and drift only writes the three. A mod that
+replaces `core/player` keeps the same `model` contract if it wants the pane to
+work. Exposure's two extra model fields are optional for other stats, so
+`panel-text` may read `st.direction` and `st.label` without special-casing the
+others.

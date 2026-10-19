@@ -50,26 +50,32 @@ The player is world state (`world.player`) — plain frozen data created by
 
 - **Attributes** (`strength, charisma, intelligence, dexterity, constitution`):
   innate and fixed for the run. They never change; they modify the rules:
-  strength → energy cost of effort (`±2%`/point), constitution → cold decay and
-  health recovery (`±3%`/point), dexterity → time of fine work
-  (`take, open, close, use, eat, drink`, `±3%`/point), intelligence → skill gain
-  (`±5%`/point), charisma → talk time (`±3%`/point). At 10 every factor is 1.
+  strength → energy cost of effort (`±2%`/point), constitution → how fast
+  exposure changes and health recovery (`±3%`/point), dexterity → time of
+  fine work (`take, open, close, use, eat`, `±3%`/point), intelligence →
+  skill gain (`±5%`/point), charisma → talk time (`±3%`/point). At 10 every
+  factor is 1.
 - **Skills** (`travel, talk, approach, craft, gather`): grown by practice. Each
   paid action trains its category (`PLAYER_CONFIG.category`) by
   `2 × (1 − level/100) × (1 + (int − 10) × 0.05)` — diminishing, never reaching
   100 in a bounded number of uses. A trained category works faster:
   time cost × `(1 − 0.25 × level/100)`.
-- **Stats** (`health, hunger, thirst, energy, warmth`, 0–100): current
-  condition. They drift with the world in `driftStats` (priced at departure):
-  hunger −1/3600s, thirst −1/1800s; exposed warmth decays by
-  season × weather × night × constitution, sheltered warmth/energy/health come
-  back; health drains when hunger/thirst/warmth are below 25 (faster at zero)
-  and recovers only sheltered, fed, warm and watered. Consequences: energy
-  below 25 → all costs × 1.5; warmth below 25 → exposed travel × 1.2; energy 0
-  → the open ground refuses (indoor steps stay). Health 0 → **collapse**: the
-  action still happens, +2h unconscious (still drifting), wake at
-  health 25 / energy 20 / the others −10 (min 5), `lastEvent: {kind:'collapse'}`.
-  There is no death and no reset — the sandbox endures.
+- **Stats** (`health, energy, exposure`): current condition, 0–100.
+  Health and energy are one-directional (full is good); **exposure is centred**:
+  50 is fine, below is too cold, above is too hot. They drift with the world in
+  `driftStats` (priced at departure): an exposed body moves 4 points an hour
+  toward a season target (spring 45, summer 76, autumn 42, winter 28) shifted
+  colder by weather and night; shelter pulls exposure back to 50 at 12 points an
+  hour and restores energy. The bands are read from the distance to 50:
+  within 10 fine, within 25 too cold/too hot, beyond that freezing/overheating.
+  Constitution slows the change in either direction. Health drains at the hard
+  ends (faster near 0 or 100) and recovers only sheltered and comfortable.
+  Consequences: energy below 25 → all costs × 1.5; exposure 25 away from 50 on
+  an exposed effort → travel × 1.2; energy 0 → the open ground refuses (indoor
+  steps stay). Health 0 → **collapse**: the action still happens, +2h
+  unconscious (still drifting), wake at health 25 / energy 20 / exposure clamped
+  to 5–95, `lastEvent: {kind:'collapse'}`. There is no death and no reset — the
+  sandbox endures.
 
 The cost pipeline is fixed and one-directional (ADR-0013): base (core/time) →
 attributes → skill → condition (core/player, `effectiveCost`) → weather
@@ -77,12 +83,11 @@ attributes → skill → condition (core/player, `effectiveCost`) → weather
 the seam, and a free action (cost 0) returns the world untouched — examining
 stays free.
 
-**Data (content packs):** an interactable may declare `food: { hunger, thirst,
-energy }` (the `eat` verb requires it), `water: { thirst }` (`drink`), and
-`rest: { minutes, energy }` (restored on a `rest` verb, or on `use` when the
-interactable has no rest-of-its-own meaning — sitting a bench). The rest verb's
-prose is `restText` (the `rest` field holds the spec, so they cannot share a
-key). A pack may set `player.attributes` to override starting attributes
+**Data (content packs):** an interactable may declare `food: { energy }` (the
+`eat` verb requires it) and `rest: { minutes, energy }` (restored on a `rest`
+verb, or on `use` when the interactable has no rest-of-its-own meaning — sitting
+a bench). The rest verb's prose is `restText` (the `rest` field holds the spec,
+so they cannot share a key). A pack may set `player.attributes` to override starting attributes
 (integers 1–20); `validatePack` rejects unknown attributes, out-of-range values
 and verbs without their values. All rates live in `PLAYER_CONFIG`
 (`core/player`), next to `COSTS` in `core/time`.
@@ -90,13 +95,17 @@ and verbs without their values. All rates live in `PLAYER_CONFIG`
 **Display:** the left pane carries **the name, condition and prose only**.
 The status block lives in the LEFT pane, in every view, rendered from
 `core/player.model` via the view model — the pane never computes a value —
-and shows the name and the five STATS on ONE line (`.status__line`: name
-left, vitals right, aligned, wrapping when the pane is narrow). Each stat is
-its lucide icon (from `ui/icons`, keyed by stat name — heart, utensils,
-droplet, zap, thermometer) and the number; the WORD is off-screen, in the
-tooltip and the aria-label. The band (≥ 50 ok, 25–49 low, < 25 critical)
-colours icon and number alike, because the icon strokes `currentColor`, and
-there is one second-person note per stat that is not ok. Attributes and
+and shows the name and the three STATS on ONE line (`.status__line`: name
+left, vitals right, aligned, wrapping when the pane is narrow). Health and
+energy are their lucide icon (from `ui/icons`, keyed by stat name — heart and
+zap) and the number, with the word off-screen in the tooltip and the
+aria-label. Exposure is the exception: it reads as its felt word — *Fine*,
+*Too cold*, *Too hot*, *Freezing*, *Overheating* — with the exact 0–100 value
+in the tooltip. The band (≥ 50 ok, 25–49 low, < 25 critical for health and
+energy; distance from 50 for exposure) colours icon and text alike, because the
+icon strokes `currentColor`; cold uses `--color-stat-cold`, hot uses
+`--color-stat-hot`, and there is one second-person note per stat that is not
+ok. Attributes and
 skills are not displayed in the pane; they live in the profile sheet on the
 map pane's ribbons (below). The block's colours are tokens
 (`--color-status*`, `--color-stat-*`) and must clear WCAG AA on the dark

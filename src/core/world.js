@@ -37,22 +37,15 @@ Vinland.define('core/world', function (require) {
       if (!Array.isArray(inter.actions)) throw new Error(`interactable "${inter.id}" actions must be an array`);
       for (const verb of inter.actions) {
         if (verb === 'eat' && inter.food === undefined) throw new Error(`interactable "${inter.id}" offers eat but declares no food values`);
-        if (verb === 'drink' && inter.water === undefined) throw new Error(`interactable "${inter.id}" offers drink but declares no water values`);
         if (verb === 'rest' && inter.rest === undefined) throw new Error(`interactable "${inter.id}" offers rest but declares no rest values`);
       }
     }
     if (inter.food !== undefined && inter.food !== null) {
       if (typeof inter.food !== 'object' || Array.isArray(inter.food)) throw new Error(`interactable "${inter.id}" food must be an object`);
-      for (const key of ['hunger', 'thirst', 'energy']) {
+      for (const key of ['energy']) {
         if (inter.food[key] !== undefined && (typeof inter.food[key] !== 'number' || !Number.isFinite(inter.food[key]))) {
           throw new Error(`interactable "${inter.id}" food.${key} must be a number`);
         }
-      }
-    }
-    if (inter.water !== undefined && inter.water !== null) {
-      if (typeof inter.water !== 'object' || Array.isArray(inter.water)) throw new Error(`interactable "${inter.id}" water must be an object`);
-      if (inter.water.thirst !== undefined && (typeof inter.water.thirst !== 'number' || !Number.isFinite(inter.water.thirst))) {
-        throw new Error(`interactable "${inter.id}" water.thirst must be a number`);
       }
     }
     if (inter.rest !== undefined && inter.rest !== null) {

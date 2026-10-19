@@ -79,24 +79,24 @@ test('the text pane carries the condition block above the prose, in every view',
   assert.equal(rows.name.textContent, 'You', 'the default name');
   assert.equal(rows.line.children[0], rows.name, 'the name is first in the line');
   assert.equal(rows.line.children[1], rows.stats, 'the vitals sit on the same line, after the name');
-  // Vitals: five stats, each its icon and the number; the word is off-screen.
-  assert.equal(rows.stats.children.length, 5, 'five stats');
+  // Vitals: health and energy as icon + number, exposure as its felt word.
+  assert.equal(rows.stats.children.length, 3, 'three stats');
   assert.deepEqual(
     rows.stats.children.map((s) => s.textContent),
-    ['100', '75', '75', '100', '100'],
+    ['100', '100', 'Fine'],
   );
   assert.deepEqual(
     rows.stats.children.map((s) => s.getAttribute('title')),
-    ['health: 100', 'hunger: 75', 'thirst: 75', 'energy: 100', 'warmth: 100'],
-    'the word survives in the tooltip',
+    ['health: 100', 'energy: 100', 'exposure: 50 · fine'],
+    'the exact values survive in the tooltips',
   );
   assert.deepEqual(
     rows.stats.children.map((s) => s.dataset.stat),
-    ['health', 'hunger', 'thirst', 'energy', 'warmth'],
+    ['health', 'energy', 'exposure'],
   );
   assert.deepEqual(
     rows.stats.children.map((s) => s.children[0].className),
-    ['status__icon', 'status__icon', 'status__icon', 'status__icon', 'status__icon'],
+    ['status__icon', 'status__icon', 'status__icon'],
     'each stat leads with its lucide icon',
   );
   assert.equal(rows.notes.length, 0, 'a fresh body has no notes');
@@ -118,36 +118,58 @@ test('the text pane carries the condition block above the prose, in every view',
 
 test('the block updates with the world after an action', () => {
   const g = start();
+  const w = g.getState();
+  g.setState(Object.freeze({
+    ...w,
+    player: Object.freeze({
+      ...w.player,
+      stats: Object.freeze({ ...w.player.stats, energy: 40 }),
+    }),
+  }));
   const before = statusRows(g).stats.children.map((s) => s.textContent);
-  // Open the barrel and eat the herring: hunger must move in the block.
+  assert.equal(before[1], '40', 'the body starts tired');
+  // Open the barrel and eat the herring: energy must move in the block.
   g.performAction('barrel', 'open');
   g.returnToPlace();
   g.performAction('herring', 'eat');
   const afterItems = statusRows(g).stats.children;
   assert.notDeepEqual(before, afterItems.map((s) => s.textContent), 'the block follows the world');
-  const hunger = () => Number(afterItems.find((s) => s.dataset.stat === 'hunger').textContent);
-  assert.ok(hunger() > 75, 'eating shows in the block');
+  const energy = () => Number(afterItems.find((s) => s.dataset.stat === 'energy').textContent);
+  assert.ok(energy() > 40, 'eating shows in the block');
 });
 
-test('a low or critical stat is banded and narrated', () => {
+test('a low or critical stat is banded and narrated, cold and hot read apart', () => {
   const g = start();
   const w = g.getState();
-  const worn = Object.freeze({
-    ...w,
-    player: Object.freeze({
-      ...w.player,
-      stats: Object.freeze({ ...w.player.stats, hunger: 30, warmth: 10 }),
-    }),
-  });
-  g.setState(worn);
-  const rows = statusRows(g);
-  const bands = rows.stats.children.map((s) => s.className);
-  assert.ok(bands[1].includes('status__item--low'), 'hunger 30 is low');
-  assert.ok(bands[4].includes('status__item--critical'), 'warmth 10 is critical');
-  assert.ok(!bands[0].includes('status__item--low'), 'health 100 is not banded');
-  assert.equal(rows.notes.length, 2, 'one note per stat that is not ok');
-  assert.match(rows.notes[0].textContent, /hunger/);
-  assert.match(rows.notes[1].textContent, /freezing/);
+  const setStats = (stats) => {
+    g.setState(Object.freeze({
+      ...w,
+      player: Object.freeze({
+        ...w.player,
+        stats: Object.freeze({ ...w.player.stats, ...stats }),
+      }),
+    }));
+    return statusRows(g);
+  };
+
+  const coldRows = setStats({ energy: 30, exposure: 10 });
+  const coldBands = coldRows.stats.children.map((s) => s.className);
+  assert.ok(coldBands[1].includes('status__item--low'), 'energy 30 is low');
+  assert.ok(coldBands[2].includes('status__item--critical'), 'exposure 10 is critical');
+  assert.ok(coldBands[2].includes('status__item--cold'), 'exposure 10 reads cold');
+  assert.ok(!coldBands[0].includes('status__item--low'), 'health 100 is not banded');
+  assert.equal(coldRows.notes.length, 2, 'one note per stat that is not ok');
+  assert.match(coldRows.notes[0].textContent, /strength draining/);
+  assert.match(coldRows.notes[1].textContent, /freezing/);
+  assert.equal(coldRows.stats.children[2].textContent, 'Freezing', 'the cold end says so');
+
+  const hotRows = setStats({ exposure: 80 });
+  const hotBands = hotRows.stats.children.map((s) => s.className);
+  assert.ok(hotBands[2].includes('status__item--critical'), 'exposure 80 is critical');
+  assert.ok(hotBands[2].includes('status__item--hot'), 'exposure 80 reads hot');
+  assert.equal(hotRows.notes.length, 1);
+  assert.match(hotRows.notes[0].textContent, /overheating/);
+  assert.equal(hotRows.stats.children[2].textContent, 'Overheating');
   void playerMod;
 });
 
@@ -160,6 +182,6 @@ test('the view model is plain data and matches the render', () => {
   assert.ok(textModel.player, 'renderText exposes the player model');
   assert.deepEqual(
     textModel.player.stats.map((s) => [s.key, s.value, s.band]),
-    [['health', 100, 'ok'], ['hunger', 75, 'ok'], ['thirst', 75, 'ok'], ['energy', 100, 'ok'], ['warmth', 100, 'ok']],
+    [['health', 100, 'ok'], ['energy', 100, 'ok'], ['exposure', 50, 'ok']],
   );
 });

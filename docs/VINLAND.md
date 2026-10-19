@@ -41,6 +41,14 @@ never crash).
 
 ## Current state
 
+**Iteration 14** — exposure replaces warmth. The condition block carries three
+vitals: health and energy as icon and number, exposure as its felt word —
+*fine* in the middle, *too cold* below, *too hot* above (with *freezing* and
+*overheating* at the hard ends, blue and red). Exposure is a centred 0–100
+scale driven by season, weather, night and shelter; the dangerous ends drain
+health and slow exposed travel. Hunger and thirst are gone: food restores
+energy directly, and the trough is examine-only. See `docs/CHANGELOG.md`.
+
 **Iteration 13** — the left pane's condition block reads as a report: the
 name on the left, and on the right the five vitals, each its lucide icon and
 the number (heart, utensils, droplet, zap, thermometer) — the word lives in

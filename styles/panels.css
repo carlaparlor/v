@@ -96,6 +96,16 @@
   font-weight: 600;
 }
 
+/* Exposure is directional: cold reads blue, hot reads red, whichever side of
+   fine it is on. The band still decides the weight. */
+.status__item--cold {
+  color: var(--color-stat-cold);
+}
+
+.status__item--hot {
+  color: var(--color-stat-hot);
+}
+
 .status__note {
   margin: 0;
   color: var(--color-text);

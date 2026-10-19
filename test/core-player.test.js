@@ -20,6 +20,7 @@ const env = V.require('core/environment');
 const player = V.require('core/player');
 const world = V.require('core/world');
 const { perform } = V.require('core/actions');
+const interactables = V.require('core/interactables');
 const pack = V.require('data/vinland');
 
 const fresh = () => world.createWorld(pack);
@@ -48,12 +49,12 @@ function withSkills(w, skills) {
   return Object.freeze({ ...w, player: Object.freeze({ ...w.player, skills: Object.freeze({ ...w.player.skills, ...skills }) }) });
 }
 
-test('a fresh world carries the full player: name, five attributes, five skills, five stats', () => {
+test('a fresh world carries the full player: name, five attributes, five skills, three stats', () => {
   const w = fresh();
   assert.equal(w.player.name, 'You', 'the default name');
   assert.deepEqual(w.player.attributes, { strength: 10, charisma: 10, intelligence: 10, dexterity: 10, constitution: 10 });
   assert.deepEqual(w.player.skills, { travel: 0, talk: 0, approach: 0, craft: 0, gather: 0 });
-  assert.deepEqual(w.player.stats, { health: 100, hunger: 75, thirst: 75, energy: 100, warmth: 100 });
+  assert.deepEqual(w.player.stats, { health: 100, energy: 100, exposure: 50 });
   assert.equal(w.lastEvent, null);
   assert.ok(Object.isFrozen(w.player), 'the player is frozen like the rest of the world');
 });
@@ -93,57 +94,73 @@ test('data must be honest: verbs need their values, values must be numbers', () 
   assert.throws(() => world.createWorld(badRest), /rest\.minutes/);
 });
 
-test('drift: hunger and thirst fall as the clock moves, nothing else moves with them', () => {
+test('drift: exposure is centred — summer pulls it hot, winter cold, mild seasons stay near fine', () => {
   const w = at(1, 12, 'clear');
-  const body = withStats(w, { hunger: 60, thirst: 60, warmth: 60, energy: 50, health: 80 }).player;
-  // A clean two-hour indoor slice, straight from the drift function.
-  const ctx = { exposed: false, season: env.calendar(w).season, weather: 'clear', phase: env.phase(w) };
-  const after = player.driftStats(body, 2 * 3600, ctx);
-  assert.ok(after.hunger < 60, 'hunger falls');
-  assert.ok(after.thirst < 60, 'thirst falls');
-  assert.ok(after.thirst < after.hunger, 'thirst falls twice as fast');
-  assert.ok(after.warmth > 60, 'warmth comes back indoors');
-  assert.ok(after.energy > 50, 'sheltered energy comes back');
-  assert.ok(after.health > 80, 'sheltered and fed, health recovers');
+  const body = withStats(w, { exposure: 50, energy: 50, health: 80 }).player;
+  const ctx = (season) => ({ exposed: true, season, weather: 'clear', phase: 'day' });
+  const after = (season) => player.driftStats(body, 24 * 3600, ctx(season)).exposure;
+
+  const spring = after('spring');
+  const summer = after('summer');
+  const autumn = after('autumn');
+  const winter = after('winter');
+  assert.equal(spring, 45, 'spring settles just below fine');
+  assert.equal(autumn, 42, 'autumn settles a little colder');
+  assert.equal(summer, 76, 'summer reaches too hot');
+  assert.equal(winter, 28, 'winter reaches too cold');
+  assert.ok(summer > spring && spring > autumn && autumn > winter, 'the seasons order from hot to cold');
+
+  // Shelter pulls any body back toward fine, and energy comes back.
+  const cold = player.driftStats(withStats(w, { exposure: 10, energy: 50 }).player, 2 * 3600,
+    { ...ctx('winter'), exposed: false });
+  assert.ok(cold.exposure > 10, 'indoors, the cold leaves you');
+  assert.ok(cold.energy > 50, 'sheltered energy comes back');
+  const hot = player.driftStats(withStats(w, { exposure: 90 }).player, 2 * 3600,
+    { ...ctx('summer'), exposed: false });
+  assert.ok(hot.exposure < 90, 'indoors, the heat leaves you');
 });
 
-test('drift: exposure costs warmth by season, weather and night; constitution slows it', () => {
-  const springMid = at(1, 12, 'clear');
-  const summerMid = at(31, 12, 'clear');
-  const winterMid = at(91, 12, 'clear');
-  const winterStorm = at(91, 7, 'storm');
-  const ctx = (w) => ({ exposed: true, season: env.calendar(w).season, weather: env.weather(w), phase: env.phase(w) });
-  const loss = (w) => w.player.stats.warmth - player.driftStats(w.player, 3600, ctx(w)).warmth;
+test('drift: weather and night push exposure colder; constitution holds its temperature', () => {
+  const w = at(91, 12, 'clear');
+  const ctx = (weather, phase = 'day') => ({ exposed: true, season: 'winter', weather, phase });
+  const settle = (weather, phase) => player.driftStats(withStats(w, { exposure: 50 }).player,
+    24 * 3600, ctx(weather, phase)).exposure;
 
-  const springLoss = loss(springMid);
-  const summerLoss = loss(summerMid);
-  const winterLoss = loss(winterMid);
-  const winterStormLoss = loss(winterStorm);
-  assert.ok(summerLoss < springLoss, 'summer bites less than spring');
-  assert.ok(winterLoss > springLoss, 'winter bites more than spring');
-  assert.ok(winterStormLoss > winterLoss, 'a storm bites more than clear air');
-  assert.ok(summerLoss > 0 && winterStormLoss > 0, 'exposure always costs something');
+  assert.equal(settle('clear', 'day'), 28, 'clear winter settles at its cold target');
+  assert.equal(settle('snow', 'day'), 20, 'snow bites colder');
+  assert.equal(settle('storm', 'night'), 10, 'a storm at night bites hardest');
 
-  const nightLoss = springMid.player.stats.warmth
-    - player.driftStats(springMid.player, 3600, { ...ctx(springMid), phase: 'night' }).warmth;
-  assert.ok(nightLoss > springLoss, 'night bites harder than day');
+  const spring = at(1, 12, 'clear');
+  const springCtx = (phase) => ({ exposed: true, season: 'spring', weather: 'clear', phase });
+  const day = player.driftStats(withStats(spring, { exposure: 50 }).player, 24 * 3600, springCtx('day')).exposure;
+  const night = player.driftStats(withStats(spring, { exposure: 50 }).player, 24 * 3600, springCtx('night')).exposure;
+  assert.ok(night < day, 'night is colder than day');
 
-  // Constitution 15 shrugs off 15% of the decay; 5 feels 15% more.
-  assert.ok(loss(withAttrs(winterMid, { constitution: 15 })) < winterLoss, 'a tougher constitution decays slower');
-  assert.ok(loss(withAttrs(winterMid, { constitution: 5 })) > winterLoss, 'a frailer one decays faster');
+  // Constitution slows the change in either direction: a tough body stays
+  // closer to fine, a frail one reaches the weather sooner.
+  const after = (con) => player.driftStats(withAttrs(w, { constitution: con }).player,
+    3 * 3600, ctx('clear')).exposure;
+  assert.ok(after(15) > after(10), 'a tougher constitution moves toward the cold target more slowly');
+  assert.ok(after(5) < after(10), 'a frailer one moves faster');
 });
 
-test('drift: health drains when hunger, thirst or warmth bottom out, and recovers when they do not', () => {
+test('drift: health drains at exposure extremes, and recovers only when sheltered and comfortable', () => {
   const ctx = { exposed: true, season: 'winter', weather: 'clear', phase: 'day' };
-  const starving = withStats(fresh(), { hunger: 0, thirst: 80, warmth: 80 });
-  const after = player.driftStats(starving.player, 3600, ctx);
-  assert.ok(after.health < 100, 'starvation drains health');
-  const indoors = player.driftStats(withStats(fresh(), { hunger: 40, thirst: 40, warmth: 40, health: 50 }).player, 3600, { ...ctx, exposed: false });
-  assert.ok(indoors.health > 50, 'indoors, fed, warm and watered: health recovers');
-  const exposedAndFine = player.driftStats(withStats(fresh(), { hunger: 40, thirst: 40, warmth: 40, health: 50 }).player, 3600, ctx);
-  assert.ok(exposedAndFine.health <= 50, 'recovery is sheltered only');
-  const starvingIndoors = player.driftStats(withStats(fresh(), { hunger: 10 }).player, 3600, { ...ctx, exposed: false });
-  assert.ok(starvingIndoors.health < 100, 'a starving body cannot recover, even indoors');
+  const freezing = withStats(fresh(), { exposure: 0 });
+  assert.ok(player.driftStats(freezing.player, 3600, ctx).health < 100, 'freezing drains health');
+  const overheating = withStats(fresh(), { exposure: 100 });
+  assert.ok(player.driftStats(overheating.player, 3600, ctx).health < 100, 'overheating drains health');
+  const uncomfortable = withStats(fresh(), { exposure: 30 });
+  assert.equal(player.driftStats(uncomfortable.player, 3600, ctx).health, 100, 'merely too cold costs no health');
+
+  const indoors = player.driftStats(withStats(fresh(), { exposure: 40, health: 50 }).player, 3600,
+    { ...ctx, exposed: false });
+  assert.ok(indoors.health > 50, 'sheltered and comfortable: health recovers');
+  const exposedAndFine = player.driftStats(withStats(fresh(), { exposure: 40, health: 50 }).player, 3600, ctx);
+  assert.equal(exposedAndFine.health, 50, 'recovery is sheltered only');
+  const freezingIndoors = player.driftStats(withStats(fresh(), { exposure: 10, health: 50 }).player, 3600,
+    { ...ctx, exposed: false });
+  assert.ok(freezingIndoors.health < 50, 'a freezing body cannot recover, even indoors');
 });
 
 test('neutral defaults keep the legacy clock: attribute 10, skill 0, full body = the old costs', () => {
@@ -196,15 +213,17 @@ test('skills grow by practice with diminishing returns, and intelligence makes p
   assert.equal(player.effectiveCost(withSkills(w, { travel: 100 }).player, 'take', 60, false), 60, 'travel does not gather');
 });
 
-test('condition matters: exhaustion slows everything, freezing slows exposed travel, zero energy refuses the open ground', () => {
+test('condition matters: exhaustion slows everything, exposure ends slow exposed travel, zero energy refuses the open ground', () => {
   const w = at(1, 12, 'clear');
   const tired = withStats(w, { energy: 24 });
-  const freezing = withStats(w, { warmth: 24 });
+  const freezing = withStats(w, { exposure: 10 });
+  const overheating = withStats(w, { exposure: 90 });
   const done = withStats(w, { energy: 0 });
   assert.equal(player.effectiveCost(tired.player, 'talk', 600, false), 900, 'exhaustion: everything takes 50% longer');
   assert.equal(player.effectiveCost(tired.player, 'walk', 300, true), 450);
   assert.equal(player.effectiveCost(freezing.player, 'walk', 300, true), 360, 'freezing: exposed travel takes 20% longer');
-  assert.equal(player.effectiveCost(freezing.player, 'take', 60, false), 60, 'only travel feels the numbness');
+  assert.equal(player.effectiveCost(overheating.player, 'walk', 300, true), 360, 'overheating slows exposed travel the same way');
+  assert.equal(player.effectiveCost(freezing.player, 'take', 60, false), 60, 'only travel feels the exposure');
   assert.equal(player.travelRefused(w, 'north'), null, 'a fresh body walks anywhere');
   assert.ok(player.travelRefused(done, 'north'), 'an empty body refuses the open ground');
   // The hall's store room is indoors: even an empty body can drag itself there.
@@ -227,20 +246,18 @@ test('walking trains travel and spends energy; the walk still costs five minutes
   assert.equal(next.timeSeconds - w.timeSeconds, 300, 'an untrained walk costs the full five minutes');
   assert.ok(next.player.skills.travel > 0, 'a walk trains travel');
   assert.ok(next.player.stats.energy < w.player.stats.energy, 'a walk spends energy');
-  assert.ok(next.player.stats.hunger < w.player.stats.hunger, 'a walk burns a little food');
   const second = world.travel(next, 'east');
   assert.equal(second.timeSeconds - next.timeSeconds, 298.5, 'the second walk is a shade cheaper — travel 2');
 });
 
 test('eating: the herring goes into you and out of the barrel', () => {
-  const w = at(1, 12, 'clear');
+  const w = withStats(at(1, 12, 'clear'), { energy: 40 });
   const opened = perform(w, 'barrel', 'open').nextWorld;
   const stats = opened.player.stats;
   const outcome = perform(opened, 'herring', 'eat');
   const next = outcome.nextWorld;
-  assert.ok(next.player.stats.hunger > stats.hunger, 'hunger is restored');
-  assert.ok(next.player.stats.thirst < stats.thirst, 'brine costs a little thirst');
-  assert.ok(next.player.stats.energy > stats.energy - 1, 'the fish gives back more energy than the eating costs');
+  assert.ok(next.player.stats.energy > stats.energy, 'energy is restored');
+  assert.ok(next.player.stats.energy > stats.energy + 15, 'the fish gives back more energy than the eating costs');
   assert.equal(world.inventory(next).length, 0, 'it is not in your inventory');
   assert.equal(next.locations.yard.interactables.find((i) => i.id === 'barrel').contains.length, 0, 'the barrel no longer holds it');
   assert.equal(next.timeSeconds - opened.timeSeconds, 60, 'eating takes a minute');
@@ -249,35 +266,34 @@ test('eating: the herring goes into you and out of the barrel', () => {
 });
 
 test('eating from the inventory: take, then eat, then the inventory is empty', () => {
-  const w = at(1, 12, 'clear');
+  const w = withStats(at(1, 12, 'clear'), { energy: 40 });
   const opened = perform(w, 'barrel', 'open').nextWorld;
   const taken = perform(opened, 'herring', 'take').nextWorld;
   assert.equal(world.inventory(taken).length, 1);
   const eaten = perform(taken, 'herring', 'eat');
   assert.equal(world.inventory(eaten.nextWorld).length, 0, 'the herring is gone from your pack');
-  assert.ok(eaten.nextWorld.player.stats.hunger > taken.player.stats.hunger, '...and into your stomach');
+  assert.ok(eaten.nextWorld.player.stats.energy > taken.player.stats.energy, '...and into you as energy');
 });
 
 test('a full stomach refuses the plate, for thirty seconds', () => {
   const w = at(1, 12, 'clear');
   const opened = perform(w, 'barrel', 'open').nextWorld;
-  const full = withStats(opened, { hunger: 100 });
+  const full = withStats(opened, { energy: 100 });
   const outcome = perform(full, 'herring', 'eat');
   assert.ok(outcome.failed, 'eating when full is a failed attempt');
   assert.match(outcome.result.text, /too full/);
   assert.equal(outcome.nextWorld.timeSeconds - full.timeSeconds, 30);
-  // The refused attempt still costs thirty seconds of a full stomach's patience.
-  assert.ok(outcome.nextWorld.player.stats.hunger < 100 && outcome.nextWorld.player.stats.hunger > 99.9, 'nothing went in');
+  assert.equal(outcome.nextWorld.player.stats.energy, 99, 'nothing went in, only the attempt was paid');
 });
 
-test('drinking: the trough gives thirst back and is never consumed', () => {
-  const w = withStats(at(1, 12, 'clear'), { thirst: 40 });
-  const outcome = perform(w, 'trough', 'drink');
-  assert.ok(outcome.nextWorld.player.stats.thirst > 40, 'thirst is restored');
-  assert.ok(outcome.nextWorld.locations.yard.interactables.some((i) => i.id === 'trough'), 'the trough is still there');
-  const parched = withStats(at(1, 12, 'clear'), { thirst: 100 });
-  const refused = perform(parched, 'trough', 'drink');
-  assert.ok(refused.failed && /not thirsty/.test(refused.result.text), 'a dry throat is not a thirsty one');
+test('drinking is gone: the trough is a fixture you can only examine', () => {
+  const w = fresh();
+  const trough = w.locations.yard.interactables.find((i) => i.id === 'trough');
+  assert.deepEqual(interactables.actionsFor(trough), ['examine'], 'no drink verb remains');
+  assert.equal(trough.water, undefined, 'the water values went with thirst');
+  const refused = perform(w, 'trough', 'drink');
+  assert.ok(refused.error, 'drink is not an action any more');
+  assert.equal(refused.nextWorld, w, 'a refused verb changes nothing');
 });
 
 test('resting: a bench is twenty minutes, a sleep is two hours, and both give energy back', () => {
@@ -285,25 +301,25 @@ test('resting: a bench is twenty minutes, a sleep is two hours, and both give en
   const sat = perform(w, 'bench', 'use');
   assert.equal(sat.nextWorld.timeSeconds - w.timeSeconds, 20 * 60, 'the bench takes twenty minutes');
   assert.ok(sat.nextWorld.player.stats.energy > 50, 'sitting gives energy back');
-  const loft = withStats(at(1, 12, 'clear', 'longhall-loft'), { energy: 30 });
+  const loft = withStats(at(1, 12, 'clear', 'longhall-loft'), { energy: 30, exposure: 20 });
   const slept = perform(loft, 'wool-blankets', 'rest');
   assert.equal(slept.nextWorld.timeSeconds - loft.timeSeconds, 120 * 60, 'the blankets take two hours');
   assert.ok(slept.nextWorld.player.stats.energy > 30, 'sleeping gives energy back');
-  assert.ok(slept.nextWorld.player.stats.hunger < loft.player.stats.hunger, 'you burn food while you sleep');
+  assert.ok(slept.nextWorld.player.stats.exposure > 20, 'shelter brings exposure back toward fine while you sleep');
 });
 
 test('collapse: health zero ends the day, not the game', () => {
   // Start one step of health away from the edge: a snow-bound winter walk,
-  // frozen solid (warmth 0), so the freeze keeps draining while you walk.
+  // freezing (exposure 0), so the cold keeps draining while you walk.
   let w = at(91, 9, 'snow');
-  w = withStats(w, { health: 0.5, hunger: 80, thirst: 80, warmth: 0 });
+  w = withStats(w, { health: 0.5, exposure: 0 });
   const next = world.travel(w, 'north');
   assert.equal(next.lastEvent && next.lastEvent.kind, 'collapse', 'the walk ends in a collapse');
   // The step: 300 base x 1.2 (numb) + 300 (snow), then two hours of darkness.
   assert.equal(next.timeSeconds - w.timeSeconds, 360 + 300 + 7200, 'the step happens, then two hours of darkness');
   assert.equal(next.player.stats.health, 25, 'you wake at a quarter of your health');
   assert.equal(next.player.stats.energy, 20, '...and a fifth of your strength');
-  assert.ok(next.player.stats.warmth >= 5, 'the conditions that got you down kept running, but you are not zeroed');
+  assert.ok(next.player.stats.exposure >= 5, 'the conditions that got you down kept running, but you are not zeroed');
   // And the world goes on: you can still act after waking, with no repeat collapse.
   const again = world.travel(next, 'south');
   assert.ok(again, 'the world goes on');
@@ -312,8 +328,8 @@ test('collapse: health zero ends the day, not the game', () => {
 
 test('a collapse during an action replaces the action result', () => {
   let w = at(1, 12, 'clear');
-  // Parched and on the edge: twenty minutes on the bench outlast you.
-  w = withStats(w, { health: 0.2, hunger: 80, thirst: 0, warmth: 80, energy: 99 });
+  // Freezing and on the edge: twenty minutes on the bench outlast you.
+  w = withStats(w, { health: 0.2, exposure: 0, energy: 99 });
   w = Object.freeze({ ...w, current: 'longhall-hall' });
   const outcome = perform(w, 'bench', 'use');
   assert.equal(outcome.result.kind, 'collapse', 'the result is the collapse, not the sitting');
@@ -335,16 +351,37 @@ test('the status model: bands, short attribute names, and a note for anything no
   const w = fresh();
   const m = player.model(w.player);
   assert.equal(m.name, 'You', 'the model carries the name');
-  assert.deepEqual(m.stats.map((s) => s.key), ['health', 'hunger', 'thirst', 'energy', 'warmth']);
-  assert.deepEqual(m.stats.map((s) => s.band), ['ok', 'ok', 'ok', 'ok', 'ok']);
+  assert.deepEqual(m.stats.map((s) => s.key), ['health', 'energy', 'exposure']);
+  assert.deepEqual(m.stats.map((s) => s.band), ['ok', 'ok', 'ok']);
+  assert.equal(m.stats[2].label, 'fine', 'the middle of exposure reads as fine');
   assert.deepEqual(m.attributes.map((a) => a.short), ['str', 'cha', 'int', 'dex', 'con']);
   assert.deepEqual(m.skills.map((s) => s.key), ['travel', 'talk', 'approach', 'craft', 'gather']);
   assert.equal(m.notes.length, 0, 'a fresh body needs no notes');
-  const worn = player.model(withStats(w, { hunger: 30, warmth: 10, energy: 60 }).player);
+  const worn = player.model(withStats(w, { energy: 30, exposure: 10 }).player);
   assert.deepEqual(worn.notes.length, 2, 'one note per stat that is not ok');
-  assert.match(worn.notes.join(' '), /hunger is growing/);
+  assert.match(worn.notes.join(' '), /strength draining/);
   assert.match(worn.notes.join(' '), /freezing/);
   assert.equal(player.model(null), null, 'no player, no block');
+});
+
+test('exposure: fine in the middle, too cold below, too hot above', () => {
+  const w = fresh();
+  const feel = (exposure) => player.model(withStats(w, { exposure }).player).stats.find((s) => s.key === 'exposure');
+  assert.deepEqual(feel(50), { key: 'exposure', value: 50, band: 'ok', direction: null, label: 'fine' });
+  assert.equal(feel(40).label, 'fine', 'the fine band reaches 40');
+  assert.equal(feel(60).label, 'fine', 'the fine band reaches 60');
+  assert.equal(feel(39).label, 'too cold');
+  assert.equal(feel(39).direction, 'cold');
+  assert.equal(feel(61).label, 'too hot');
+  assert.equal(feel(61).direction, 'hot');
+  assert.equal(feel(24).band, 'critical');
+  assert.equal(feel(24).label, 'freezing');
+  assert.equal(feel(76).band, 'critical');
+  assert.equal(feel(76).label, 'overheating');
+  // The notes speak for both ends of the scale.
+  assert.match(player.model(withStats(w, { exposure: 30 }).player).notes.join(' '), /cold/);
+  assert.match(player.model(withStats(w, { exposure: 70 }).player).notes.join(' '), /heat/);
+  assert.match(player.model(withStats(w, { exposure: 90 }).player).notes.join(' '), /overheating/);
 });
 
 test('grades: report-card letters on the 1-20 and 0-100 scales', () => {
@@ -367,9 +404,9 @@ test('grades: report-card letters on the 1-20 and 0-100 scales', () => {
 });
 
 test('the voice holds: notes are second person, present tense', () => {
-  const worn = withStats(fresh(), { health: 10, hunger: 0, thirst: 0, energy: 0, warmth: 0 });
+  const worn = withStats(fresh(), { health: 10, energy: 0, exposure: 0 });
   const notes = player.model(worn.player).notes;
-  assert.equal(notes.length, 5);
+  assert.equal(notes.length, 3);
   for (const note of notes) {
     assert.ok(/^(You |Your )/.test(note), `note is second person: "${note}"`);
     assert.doesNotMatch(note, /player/i, 'never "the player"');
