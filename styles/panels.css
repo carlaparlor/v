@@ -42,6 +42,16 @@
 }
 
 /* The nameplate: who this is, above the vitals. From the view model. */
+/* One line, aligned: the name on the left, the vitals on the right.
+   Wraps when the pane is narrow; the two never fight for the edge. */
+.status__line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
 .status__name {
   color: var(--color-status-bright);
   font-size: var(--font-size-small);
@@ -53,14 +63,28 @@
 .status__row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-1) var(--space-3);
   font-size: var(--font-size-small);
   color: var(--color-status);
 }
 
+/* A stat is its icon and the number; the word lives in the tooltip and the
+   aria-label. inline-flex is what aligns glyph and digits. */
 .status__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+/* Sized here, not inline: an icon is a box in CSS, and it strokes
+   currentColor, so the band colour below reaches glyph and number alike. */
+.status__icon {
+  inline-size: 14px;
+  block-size: 14px;
+  flex: none;
 }
 
 .status__item--low {

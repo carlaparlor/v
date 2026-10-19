@@ -28,6 +28,7 @@ const Vinland = loadScripts([
   'src/data/vinland.js',
   'src/ui/shell.js',
   'src/ui/panels.js',
+  'src/ui/icons.js',
   'src/ui/panel-text.js',
   'src/ui/panel-map.js',
   'src/ui/ribbons.js',
@@ -201,7 +202,7 @@ test('an open sheet follows the world: practice shows up in it', () => {
   );
   // Stats in the left pane and skills in the sheet read the same world.
   const statsRow = findAllByClass(doc.shell, 'status__row--stats')[0];
-  assert.ok(statsRow.children[0].textContent.startsWith('health '), 'the left pane is still the condition block');
+  assert.ok(statsRow.children[0].dataset.stat === 'health', 'the left pane is still the condition block');
 });
 
 test('the ribbons survive into the result view, still on the shell', () => {

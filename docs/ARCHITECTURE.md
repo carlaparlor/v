@@ -529,3 +529,36 @@ no tiers in the pane; a name is not a tier. The profile sheet became
 horizontal (both tiers side by side, metered rows, titled with the name) —
 the sheet's data contract (rebuilt from the world on every pass) is
 unchanged.
+
+### ADR-0015 — condition is icon and number; every icon ships from one place
+
+**Context.** The left pane's status block showed each stat as word plus
+number ("health 100"). Five words spend their width on every glance, and
+the report card (iteration 12) had already set the grammar: the symbol
+leads, the number follows, the word is on demand (tooltip, aria). The
+ribbon icons also lived inside `ui/ribbons.js`, so giving the five vitals
+their own icons in `ui/panel-text.js` would have duplicated the SVG
+plumbing a second time.
+
+**Decision.**
+1. **A stat is its lucide icon and the number.** The word is off-screen, in
+   the item's `title` and `aria-label` (the item keeps `data-stat` for
+   tests and tooling). The icon strokes `currentColor`, so the band colour
+   (ok / low / critical) reaches glyph and number with one token — no
+   per-band icon colours.
+2. **Name and vitals share one line** (`.status__line`): name left, vitals
+   right, aligned, wrapping only when the pane is narrow. The block's
+   structure below the line (the notes) is unchanged.
+3. **Icon path data lives in `ui/icons`** — the single source of truth,
+   keyed by name (`health`, `hunger`, …, `user-round`, `settings`,
+   `close`), 24×24 stroke grid, `stroke: currentColor`, throwing on an
+   unknown name. The ribbons pull their icons from it, so `ui/ribbons.js`
+   no longer carries path data.
+
+**Consequences.** Adding a stat's icon is a PATHS entry (the key is the
+stat name, so `icon(st.key)` just works); a new ribbon icon is the same
+entry plus one reference. The test stub gained `createTextNode` — the
+shipped code is written for the browser, and when the stub lacks a browser
+API, the stub gains it (CONVENTIONS). The status item is `inline-flex`
+with the icon sized in CSS — the same "inline elements cannot carry a
+width" lesson the dot fills taught (iteration 12, correction 3).

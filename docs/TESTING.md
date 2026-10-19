@@ -10,6 +10,30 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 13 — the vitals are icons, the line is aligned
+
+**Asked:** "replace the stat words with lucide icons, and align the name and
+stuff."
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **220 tests, 0 failures.** The status suite pins the new shape:
+the name and the vitals share one line (`status__line`, name first), each of
+the five stats is icon + number only ("100", "75", …), the tooltip carries
+the word ("health: 100" …), and `data-stat` names each item (health, hunger,
+thirst, energy, warmth) — the bands still land on the right items.
+`ui/icons` is loaded in `index.html` and in every test loader before its
+dependents (setup-is-trivial). The ribbons suite pins that the left pane's
+first item is still the health stat.
+
+### Manual
+
+"Ribbons and sheets" below, step 1 — the left pane line and the tooltips.
+
 ## Iteration 12 — the report card: S to F on every attribute and skill
 
 **Asked:** attributes and skills "in letters like S, A, F" — good at it is an
@@ -679,10 +703,12 @@ trained prices alongside the untrained ones.
 1. Refresh the preview or open index.html directly. At the top-right corner of
    the map pane, confirm two dark ribbons sticking out of the pane's top edge
    into the thin band above the panes, each with a V-notched tail: the profile
-   icon (a person) and the settings icon (a gear). The left pane shows the
-   nameplate (**YOU**, small caps) above the five vitals
-   (health, hunger, thirst, energy, warmth) and the prose — no attribute or
-   skill rows.
+   icon (a person) and the settings icon (a gear). The left pane shows ONE
+   line: the nameplate (**YOU**, small caps) on the left and the five vitals
+   on the right, aligned — each vital a lucide icon and a number (heart,
+   fork-and-knife, droplet, lightning-bolt, thermometer); hover one and its
+   word appears in the tooltip ("hunger: 75"). Below: the prose — no
+   attribute or skill rows.
 2. Click the profile ribbon: a wide dark sheet drops from the corner under the
    ribbons, titled with the player's name (**You**), and lays the character out
    **horizontally** — **Attributes** (Strength, Charisma, Intelligence,

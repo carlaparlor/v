@@ -22,6 +22,7 @@ const Vinland = loadScripts([
   'src/data/vinland.js',
   'src/ui/shell.js',
   'src/ui/panels.js',
+  'src/ui/icons.js',
   'src/ui/panel-text.js',
   'src/ui/panel-map.js',
   'src/ui/ribbons.js',

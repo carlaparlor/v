@@ -29,6 +29,7 @@ const Vinland = loadScripts([
   'src/data/vinland.js',
   'src/ui/shell.js',
   'src/ui/panels.js',
+  'src/ui/icons.js',
   'src/ui/panel-text.js',
   'src/ui/panel-map.js',
   'src/ui/ribbons.js',
@@ -58,6 +59,7 @@ beforeEach(() => {
 function statusRows(g) {
   return {
     box: findByClass(doc.shell, 'status'),
+    line: findByClass(doc.shell, 'status__line'),
     name: findByClass(doc.shell, 'status__name'),
     stats: findAllByClass(doc.shell, 'status__row--stats')[0],
     notes: findAllByClass(doc.shell, 'status__note'),
@@ -70,15 +72,32 @@ test('the text pane carries the condition block above the prose, in every view',
   assert.ok(pane, 'the text pane exists');
   const rows = statusRows(g);
   assert.ok(rows.box, 'the condition block is present');
-  // The nameplate sits above the vitals, from the view model.
-  assert.ok(rows.name, 'the name line is present');
+  // The name and the vitals share one line: name left, stats right.
+  assert.ok(rows.line, 'the name-and-vitals line is present');
+  assert.equal(rows.box.children[0], rows.line, 'the line is first in the block');
+  assert.ok(rows.name, 'the name is present');
   assert.equal(rows.name.textContent, 'You', 'the default name');
-  assert.equal(rows.box.children[0], rows.name, 'the name is first in the block');
-  // Vitals: the block carries the five stats and the notes, nothing else.
+  assert.equal(rows.line.children[0], rows.name, 'the name is first in the line');
+  assert.equal(rows.line.children[1], rows.stats, 'the vitals sit on the same line, after the name');
+  // Vitals: five stats, each its icon and the number; the word is off-screen.
   assert.equal(rows.stats.children.length, 5, 'five stats');
   assert.deepEqual(
     rows.stats.children.map((s) => s.textContent),
-    ['health 100', 'hunger 75', 'thirst 75', 'energy 100', 'warmth 100'],
+    ['100', '75', '75', '100', '100'],
+  );
+  assert.deepEqual(
+    rows.stats.children.map((s) => s.getAttribute('title')),
+    ['health: 100', 'hunger: 75', 'thirst: 75', 'energy: 100', 'warmth: 100'],
+    'the word survives in the tooltip',
+  );
+  assert.deepEqual(
+    rows.stats.children.map((s) => s.dataset.stat),
+    ['health', 'hunger', 'thirst', 'energy', 'warmth'],
+  );
+  assert.deepEqual(
+    rows.stats.children.map((s) => s.children[0].className),
+    ['status__icon', 'status__icon', 'status__icon', 'status__icon', 'status__icon'],
+    'each stat leads with its lucide icon',
   );
   assert.equal(rows.notes.length, 0, 'a fresh body has no notes');
   // Attributes and skills are gone from the left pane (they live in the
@@ -104,9 +123,9 @@ test('the block updates with the world after an action', () => {
   g.performAction('barrel', 'open');
   g.returnToPlace();
   g.performAction('herring', 'eat');
-  const after = statusRows(g).stats.children.map((s) => s.textContent);
-  assert.notDeepEqual(before, after, 'the block follows the world');
-  const hunger = () => Number(after.find((s) => s.startsWith('hunger ')).split(' ')[1]);
+  const afterItems = statusRows(g).stats.children;
+  assert.notDeepEqual(before, afterItems.map((s) => s.textContent), 'the block follows the world');
+  const hunger = () => Number(afterItems.find((s) => s.dataset.stat === 'hunger').textContent);
   assert.ok(hunger() > 75, 'eating shows in the block');
 });
 
