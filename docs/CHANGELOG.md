@@ -4,6 +4,33 @@ One entry per iteration. Newest first. Format: what was asked, what was built, w
 
 ---
 
+## Iteration 13 — the vitals are icons, the line is aligned
+
+**Asked:** "replace the stat words with lucide icons, and align the name and
+stuff."
+
+The condition block read `health 100 · hunger 75 · …` — five words spending
+their width every glance. Now each stat is **its lucide icon and the
+number**: heart, fork-and-knife, droplet, lightning-bolt, thermometer. The
+word is off-screen, in the tooltip ("hunger: 75") and the aria-label. The
+icon strokes `currentColor`, so a low or critical band colours glyph and
+number alike. And the name no longer sits alone on its line: **the name and
+the five vitals share one line** — name left, vitals right, aligned,
+wrapping only when the pane gets narrow.
+
+The icon path data moved into its own module, **`ui/icons`** — the single
+source of truth for every icon in the game (the ribbons now pull user-round,
+the gear and the X from it too), keyed by name, throwing on an unknown one.
+The test stub gained `createTextNode` (it lacked a browser API the shipped
+code needed — the stub catches up, the code does not bend).
+
+Pinned in the status suite: the name-and-vitals line, five items of
+icon+number only, the tooltip words, the `data-stat` keys and the bands;
+setup-is-trivial loads `ui/icons` in `index.html` before its dependents.
+**220 tests, 0 failures.**
+
+---
+
 ## Iteration 12 (correction 3) — the circles actually fill
 
 **Reported:** all the circles are blank.

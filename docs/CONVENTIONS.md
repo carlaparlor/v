@@ -90,12 +90,19 @@ and verbs without their values. All rates live in `PLAYER_CONFIG`
 **Display:** the left pane carries **the name, condition and prose only**.
 The status block lives in the LEFT pane, in every view, rendered from
 `core/player.model` via the view model — the pane never computes a value —
-and shows the player's name (small-caps nameplate, first line), the five
-STATS (banded: ≥ 50 ok, 25–49 low, < 25 critical) and one second-person note
-per stat that is not ok. Attributes and skills are not displayed in the pane;
-they live in the profile sheet on the map pane's ribbons (below). The block's
-colours are tokens (`--color-status*`, `--color-stat-*`) and must clear WCAG
-AA on the dark pane (tested).
+and shows the name and the five STATS on ONE line (`.status__line`: name
+left, vitals right, aligned, wrapping when the pane is narrow). Each stat is
+its lucide icon (from `ui/icons`, keyed by stat name — heart, utensils,
+droplet, zap, thermometer) and the number; the WORD is off-screen, in the
+tooltip and the aria-label. The band (≥ 50 ok, 25–49 low, < 25 critical)
+colours icon and number alike, because the icon strokes `currentColor`, and
+there is one second-person note per stat that is not ok. Attributes and
+skills are not displayed in the pane; they live in the profile sheet on the
+map pane's ribbons (below). The block's colours are tokens
+(`--color-status*`, `--color-stat-*`) and must clear WCAG AA on the dark
+pane (tested). Every icon in the game — vitals and ribbons — ships as path
+data from `ui/icons` (lucide's 24×24 stroke grid, `stroke: currentColor`);
+a new icon is a PATHS entry, and an unknown icon name throws.
 
 **Name:** `world.player.name` is frozen player state, defaulting to "You"
 (`PLAYER_CONFIG.start.name`); a pack overrides it via `pack.player.name`
@@ -217,7 +224,9 @@ never disagree.
   expose an HTMLCollection — index/length only, no `.filter`/`.find`) and `className` is a string
   (SVG in browsers is an object). Shipped code must be written for the browser, and when a
   browser-shape bug is found the fix ships with a regression test that simulates the collection
-  shape (see the browser-shape tests in `test/ui-ribbons.test.js`).
+  shape (see the browser-shape tests in `test/ui-ribbons.test.js`). The reverse happens too: when
+  the stub LACKS a browser API the shipped code needs (`createTextNode` arrived in iteration 13),
+  the stub gains the API — the code is never bent around the stub.
 - The CSS side of the same lesson: the stub stores inline styles without layout, so **an inline
   element (`<span>`) silently ignores `width`/`height` in a browser** even though the test sees
   them. Any shipped element that carries an inline size must have a display that accepts it

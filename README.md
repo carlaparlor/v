@@ -25,6 +25,14 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 13 — the vitals are icons, the line is aligned.** The left
+pane's condition block reads as a report: the name on the left, and on the
+right five vitals, each its lucide icon and the number (heart, fork-and-
+knife, droplet, lightning-bolt, thermometer) — the word is in the tooltip,
+and a low or critical band colours icon and number alike. The icon path data
+lives in one place, `src/ui/icons.js` (the ribbons pull theirs from it too).
+See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 12 — the report card.** Every attribute and skill in the profile
 sheet ends with a letter grade, S to F, colored: good at it is an S, bad at
 it is an F — the letter stands alone on the right, and the numbers only show

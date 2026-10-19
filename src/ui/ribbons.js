@@ -19,14 +19,20 @@
  * the top band the ribbons hang from.
  *
  * Icons are lucide (see https://lucide.dev), inlined — no CDN: the game must
- * run from file:// with nothing to fetch. Only the path data ships.
+ * run from file:// with nothing to fetch. The path data lives in ui/icons,
+ * the one source of truth for every icon in the game.
  */
 Vinland.define('ui/ribbons', function (require) {
   'use strict';
 
   const playerMod = require('core/player');
+  const iconsMod = require('ui/icons');
 
-  const SVG_NS = 'http://www.w3.org/2000/svg';
+  /** Ribbon kind → icon name in ui/icons. */
+  const RIBBON_ICONS = Object.freeze({
+    profile: 'user-round',
+    settings: 'settings',
+  });
 
   const RIBBONS = Object.freeze([
     Object.freeze({ kind: 'profile', label: 'Profile' }),
@@ -188,7 +194,7 @@ Vinland.define('ui/ribbons', function (require) {
       btn.setAttribute('title', ribbon.label);
       btn.setAttribute('aria-expanded', openKind === ribbon.kind ? 'true' : 'false');
       if (openKind === ribbon.kind) btn.classList.add('ribbon--open');
-      btn.appendChild(icon(ribbon.kind, 'ribbon__icon'));
+      btn.appendChild(iconsMod.icon(RIBBON_ICONS[ribbon.kind], 'ribbon__icon'));
       btn.addEventListener('click', function (ev) {
         if (ev && ev.stopPropagation) ev.stopPropagation();
         toggle(ribbon.kind);
@@ -212,7 +218,7 @@ Vinland.define('ui/ribbons', function (require) {
     close.type = 'button';
     close.dataset.close = 'sheet';
     close.setAttribute('aria-label', 'Close ' + (kind === 'profile' ? 'profile' : 'settings'));
-    close.appendChild(icon('close', 'sheet__icon'));
+    close.appendChild(iconsMod.icon('close', 'sheet__icon'));
     close.addEventListener('click', function (ev) {
       if (ev && ev.stopPropagation) ev.stopPropagation();
       closeSheet();

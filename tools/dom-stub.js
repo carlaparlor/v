@@ -1,12 +1,16 @@
 /**
  * Minimal DOM stub for tests. Dev-only: never referenced by index.html.
  *
- * Just enough of the DOM for Vinland's ui layer — createElement, replaceChildren,
- * appendChild, dataset, style, textContent. If a module needs more than this, that is a
- * signal it is doing too much in the DOM layer.
+ * Just enough of the DOM for Vinland's ui layer — createElement, createTextNode,
+ * replaceChildren, appendChild, dataset, style, textContent. If a module needs more
+ * than this, that is a signal it is doing too much in the DOM layer.
  *
  * Upgraded for click-based interactables: adds classList, setAttribute, event listeners,
  * and click simulation helper.
+ *
+ * A text node is a plain { nodeType: 3, textContent } object: it joins an
+ * element's children and contributes its text to the parent's textContent,
+ * exactly as a browser's does.
  */
 export function makeElement(tagName = 'DIV') {
   const el = {
@@ -126,6 +130,7 @@ export function makeDocument() {
     getElementById: (id) => (id === 'shell' ? shell : null),
     createElement: makeElement,
     createElementNS: (_namespace, tagName) => makeElement(tagName),
+    createTextNode: (text) => ({ nodeType: 3, parentNode: null, textContent: String(text ?? '') }),
     addEventListener(type, fn) {
       if (!doc._listeners[type]) doc._listeners[type] = [];
       doc._listeners[type].push(fn);

@@ -41,6 +41,13 @@ never crash).
 
 ## Current state
 
+**Iteration 13** — the left pane's condition block reads as a report: the
+name on the left, and on the right the five vitals, each its lucide icon and
+the number (heart, utensils, droplet, zap, thermometer) — the word lives in
+the tooltip, and a low or critical band colours icon and number alike. Every
+icon in the game ships as path data from `src/ui/icons.js` (the ribbons pull
+theirs from there too). See `docs/CHANGELOG.md`.
+
 **Iteration 12** — the profile sheet is a report card: every attribute and
 skill row ends with a letter grade, S to F, colored (S gold, F red), standing
 alone on the right — the numbers stay hidden until you hover the row. The

@@ -16,6 +16,7 @@ Vinland.define('ui/panel-text', function (require) {
   const { renderText } = require('core/render-text');
   const playerMod = require('core/player');
   const panels = require('ui/panels');
+  const iconsMod = require('ui/icons');
 
   let activeMenu = null;
 
@@ -27,11 +28,17 @@ Vinland.define('ui/panel-text', function (require) {
   }
 
   /**
-   * The always-on condition block: who this is (name), how they are (stats)
-   * and a second-person note for anything that is not ok. The attributes and
-   * skills live in the profile sheet on the map pane — the left pane carries
-   * only the name, condition and prose. The values come from the view model —
-   * nothing is computed here.
+   * The always-on condition block: who this is (name) and how they are
+   * (stats), on one line, plus a second-person note for anything that is not
+   * ok. The attributes and skills live in the profile sheet on the map pane —
+   * the left pane carries only the name, condition and prose. The values come
+   * from the view model — nothing is computed here.
+   *
+   * A stat is its lucide icon (ui/icons, keyed by stat name) and the number —
+   * the WORD is off-screen, in the tooltip and the aria-label: the icon plus
+   * a glancing value is the report; the exact word is one hover away. The
+   * icon strokes currentColor, so the band colour colours glyph and number
+   * alike.
    */
   function renderStatus(playerModel) {
     if (!playerModel) return null;
@@ -39,13 +46,22 @@ Vinland.define('ui/panel-text', function (require) {
     box.setAttribute('role', 'status');
     box.setAttribute('aria-label', playerModel.name + ', your condition');
 
-    box.appendChild(el('div', 'status__name', playerModel.name));
+    // One line: the name on the left, the vitals on the right, aligned.
+    const line = el('div', 'status__line');
+    line.appendChild(el('div', 'status__name', playerModel.name));
 
     const stats = el('div', 'status__row status__row--stats');
     for (const st of playerModel.stats) {
-      stats.appendChild(el('span', 'status__item status__item--' + st.band, st.key + ' ' + st.value));
+      const item = el('span', 'status__item status__item--' + st.band);
+      item.dataset.stat = st.key;
+      item.setAttribute('title', st.key + ': ' + st.value);
+      item.setAttribute('aria-label', st.key[0].toUpperCase() + st.key.slice(1) + ' ' + st.value);
+      item.appendChild(iconsMod.icon(st.key, 'status__icon'));
+      item.appendChild(document.createTextNode(String(st.value)));
+      stats.appendChild(item);
     }
-    box.appendChild(stats);
+    line.appendChild(stats);
+    box.appendChild(line);
 
     for (const note of playerModel.notes) box.appendChild(el('p', 'status__note', note));
     return box;
