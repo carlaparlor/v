@@ -41,6 +41,12 @@ never crash).
 
 ## Current state
 
+**Iteration 11** — the player has a name above the vitals in the left pane
+("You" by default; a content pack can name them via `pack.player.name`), and
+the profile sheet is a proper horizontal character sheet: attributes and
+skills side by side, every row metered against its max, titled with the name.
+See `docs/CHANGELOG.md`.
+
 **Iteration 10** — the left pane carries condition and prose: the five vitals
 (health, hunger, thirst, energy, warmth) with their notes, above the words.
 Who you are and what you have learned moved to the map pane: two ribbons stick

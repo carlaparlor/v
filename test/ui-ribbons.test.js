@@ -89,22 +89,35 @@ test('two ribbons stick out of the shell, each with its lucide icon', () => {
   assert.equal(ribbons.open(), null);
 });
 
-test('the profile ribbon drops a sheet with the attributes and skills', () => {
+test('the profile ribbon drops a horizontal sheet with the attributes and skills', () => {
   const g = start();
   ribbon('profile').click();
   const sheet = openSheet();
   assert.ok(sheet, 'the sheet opens');
   assert.equal(sheet.dataset.sheet, 'profile');
   assert.equal(sheet.getAttribute('role'), 'dialog');
-  assert.equal(findByClass(sheet, 'sheet__title').textContent, 'You');
-  // Both tiers, five rows each, plain values.
+  assert.equal(findByClass(sheet, 'sheet__title').textContent, 'You', 'the title is the player name');
+  // Horizontal: both tiers sit side by side in one two-column grid.
+  const columns = findByClass(sheet, 'sheet__columns');
+  assert.ok(columns, 'the sheet lays the tiers out in columns');
+  assert.equal(columns.children.length, 2, 'one column per tier');
+  assert.equal(findByClass(columns.children[0], 'sheet__section').textContent, 'Attributes');
+  assert.equal(findByClass(columns.children[1], 'sheet__section').textContent, 'Skills');
+  // Both tiers, five rows each, metered against the tier max.
   const names = findAllByClass(sheet, 'sheet__name').map((n) => n.textContent);
   assert.deepEqual(names, [
     'Strength', 'Charisma', 'Intelligence', 'Dexterity', 'Constitution',
     'Travel', 'Talk', 'Approach', 'Craft', 'Gather',
   ]);
   const values = findAllByClass(sheet, 'sheet__value').map((v) => v.textContent);
-  assert.deepEqual(values, ['10', '10', '10', '10', '10', '0', '0', '0', '0', '0']);
+  assert.deepEqual(values, [
+    '10 / 20', '10 / 20', '10 / 20', '10 / 20', '10 / 20',
+    '0 / 100', '0 / 100', '0 / 100', '0 / 100', '0 / 100',
+  ]);
+  const fills = findAllByClass(sheet, 'sheet__meter-fill');
+  assert.equal(fills.length, 10, 'a meter per row');
+  assert.equal(fills[0].style.width, '50%', 'attribute 10 of 20');
+  assert.equal(fills[5].style.width, '0%', 'skill 0 of 100');
   assert.equal(ribbon('profile').getAttribute('aria-expanded'), 'true');
   assert.equal(ribbon('settings').getAttribute('aria-expanded'), 'false');
   assert.ok(findByClass(sheet, 'sheet__close'), 'the sheet has a close button');
@@ -151,12 +164,12 @@ test('an open sheet follows the world: practice shows up in it', () => {
     const i = names.findIndex((n) => n.textContent === 'Travel');
     return values[i].textContent;
   };
-  assert.equal(travelValue(), '0');
+  assert.equal(travelValue(), '0 / 100');
   // A walk is travel practice: the sheet is rebuilt with the new skill on
   // the next pass, no re-click needed.
   assert.ok(g.travel('east'), 'a step to the smithy');
   assert.ok(openSheet(), 'the sheet stays open across the step');
-  assert.equal(travelValue(), '2', 'the walk trained travel, and the sheet says so');
+  assert.equal(travelValue(), '2 / 100', 'the walk trained travel, and the sheet says so');
   // Stats in the left pane and skills in the sheet read the same world.
   const statsRow = findAllByClass(doc.shell, 'status__row--stats')[0];
   assert.ok(statsRow.children[0].textContent.startsWith('health '), 'the left pane is still the condition block');

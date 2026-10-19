@@ -27,17 +27,19 @@ Vinland.define('ui/panel-text', function (require) {
   }
 
   /**
-   * The always-on condition block: how you are (stats) and a second-person note
-   * for anything that is not ok. Who you are and what you have learned
-   * (attributes, skills) live in the profile sheet on the map pane — the left
-   * pane carries only condition and prose. The values come from the view model
-   * — nothing is computed here.
+   * The always-on condition block: who this is (name), how they are (stats)
+   * and a second-person note for anything that is not ok. The attributes and
+   * skills live in the profile sheet on the map pane — the left pane carries
+   * only the name, condition and prose. The values come from the view model —
+   * nothing is computed here.
    */
   function renderStatus(playerModel) {
     if (!playerModel) return null;
     const box = el('div', 'status');
     box.setAttribute('role', 'status');
-    box.setAttribute('aria-label', 'Your condition');
+    box.setAttribute('aria-label', playerModel.name + ', your condition');
+
+    box.appendChild(el('div', 'status__name', playerModel.name));
 
     const stats = el('div', 'status__row status__row--stats');
     for (const st of playerModel.stats) {

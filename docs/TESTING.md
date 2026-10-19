@@ -10,6 +10,30 @@ New iterations are added at the top. Older ones stay as the regression suite.
 
 ---
 
+## Iteration 11 — a name above the vitals, a horizontal profile sheet
+
+**Asked:** the player's name in the left pane above the stats; the profile
+sheet horizontal and better-looking.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **218 tests, 0 failures.** core-player pins the name in state and
+the view model, the "You" default, and the pack override validation (string,
+1–32 characters — "  ", 7 and a 33-character name all throw). The status
+suite pins the nameplate as the block's first line; the ribbons suite pins
+the two-column sheet, the name as title, the meter widths (attribute 10 of 20
+→ `50%`, skill 0 of 100 → `0%`, and the live tick to `2 / 100` after a walk);
+theme-contrast covers the meter fill (accent on the sheet surface, ≥ 3:1 as a
+non-text UI component).
+
+### Manual
+
+"Ribbons and sheets" below, steps 1 and 2.
+
 ## Iteration 10 — ribbons on the map pane, vitals in the left
 
 **Asked:** remove everything except the stats from the left pane (prose stays
@@ -633,14 +657,19 @@ trained prices alongside the untrained ones.
 1. Refresh the preview or open index.html directly. At the top-right corner of
    the map pane, confirm two dark ribbons sticking out of the pane's top edge
    into the thin band above the panes, each with a V-notched tail: the profile
-   icon (a person) and the settings icon (a gear). The left pane now shows only
-   the five vitals (health, hunger, thirst, energy, warmth) and the prose — no
-   "You" head, no attribute or skill rows.
-2. Click the profile ribbon: a dark sheet drops from the corner under the
-   ribbons, titled **You**, with **Attributes** (Strength, Charisma,
-   Intelligence, Dexterity, Constitution — each 10, with a one-line note) and
-   **Skills** (Travel, Talk, Approach, Craft, Gather — each 0, with a one-line
-   note). The clicked ribbon lifts and stays lifted while its sheet is open.
+   icon (a person) and the settings icon (a gear). The left pane shows the
+   nameplate (**YOU**, small caps) above the five vitals
+   (health, hunger, thirst, energy, warmth) and the prose — no attribute or
+   skill rows.
+2. Click the profile ribbon: a wide dark sheet drops from the corner under the
+   ribbons, titled with the player's name (**You**), and lays the character out
+   **horizontally** — **Attributes** (Strength, Charisma, Intelligence,
+   Dexterity, Constitution) in the left column, **Skills** (Travel, Talk,
+   Approach, Craft, Gather) in the right. Each row: the name with its value
+   against the tier's max at the top right (10 / 20, 0 / 100), a meter under
+   it (half full for an attribute at 10, empty for an untrained skill), and a
+   one-line note. The clicked ribbon lifts and stays lifted while its sheet is
+   open.
 3. Watch it live: with the profile sheet open, walk one edge of the map. The
    sheet stays open and **Travel** ticks from 0 to 2 — the sheet is rebuilt
    with the new world on the same pass, so it can never show a stale body.
