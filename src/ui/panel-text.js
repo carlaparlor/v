@@ -19,6 +19,8 @@ Vinland.define('ui/panel-text', function (require) {
   const iconsMod = require('ui/icons');
 
   let activeMenu = null;
+  let activeTrigger = null;
+  let menuDoc = null;
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -27,10 +29,16 @@ Vinland.define('ui/panel-text', function (require) {
     return node;
   }
 
+  function focusNode(node) {
+    if (node && typeof node.focus === 'function') {
+      try { node.focus(); } catch (_) {}
+    }
+  }
+
   /**
    * The always-on condition block: who this is (name) and how they are
    * (stats, directly under the name), plus a second-person note for
-   * anything that is not ok. The attributes and skills live in the profile sheet on the map pane —
+   * anything that is not ok. The attributes live in the profile sheet on the map pane —
    * the left pane carries only the name, condition and prose. The values come
    * from the view model — nothing is computed here.
    *
@@ -65,11 +73,74 @@ Vinland.define('ui/panel-text', function (require) {
     return box;
   }
 
-  function closeActiveMenu() {
+  function closeActiveMenu(restoreFocus) {
+    const trigger = activeTrigger;
     if (activeMenu && activeMenu.parentNode) {
       activeMenu.style.display = 'none';
     }
+    if (trigger && typeof trigger.setAttribute === 'function') {
+      trigger.setAttribute('aria-expanded', 'false');
+    }
     activeMenu = null;
+    activeTrigger = null;
+    if (restoreFocus && trigger) focusNode(trigger);
+  }
+
+  function menuItemsOf(menu) {
+    if (!menu || !menu.children) return [];
+    const items = [];
+    for (let i = 0; i < menu.children.length; i++) {
+      const child = menu.children[i];
+      if (child && child.getAttribute && child.getAttribute('role') === 'menuitem') {
+        items.push(child);
+      }
+    }
+    return items;
+  }
+
+  function alignMenuWithinPane(btn, menu) {
+    if (!btn || !menu || typeof btn.getBoundingClientRect !== 'function') return;
+    let host = btn.parentNode;
+    while (host && host.parentNode && !(host.dataset && host.dataset.role)) {
+      host = host.parentNode;
+    }
+    if (!host || typeof host.getBoundingClientRect !== 'function') return;
+    const btnRect = btn.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+    if (hostRect.width > 0 && hostRect.right - btnRect.left < 190) {
+      if (menu.classList) menu.classList.add('interactable__menu--align-end');
+    } else if (menu.classList) {
+      menu.classList.remove('interactable__menu--align-end');
+    }
+  }
+
+  function ensureDocumentListeners() {
+    if (menuDoc === globalThis.document) return;
+    if (typeof document === 'undefined' || !document.addEventListener) return;
+    document.addEventListener('click', function () {
+      closeActiveMenu(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!activeMenu) return;
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e._vinlandHandled = true;
+        if (e.preventDefault) e.preventDefault();
+        closeActiveMenu(true);
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const items = menuItemsOf(activeMenu);
+        if (items.length === 0) return;
+        if (e.preventDefault) e.preventDefault();
+        const active = document.activeElement;
+        const idx = items.indexOf(active);
+        const next = e.key === 'ArrowDown'
+          ? (idx + 1) % items.length
+          : (idx <= 0 ? items.length - 1 : idx - 1);
+        focusNode(items[next]);
+      }
+    });
+    menuDoc = globalThis.document;
   }
 
   function makeInteractableNode(seg) {
@@ -100,7 +171,7 @@ Vinland.define('ui/panel-text', function (require) {
       item.type = 'button';
       item.addEventListener('click', function (ev) {
         ev.stopPropagation();
-        closeActiveMenu();
+        closeActiveMenu(false);
         // Dispatch for app/game to pick up (decoupled to avoid circular require)
         if (typeof document !== 'undefined' && document.dispatchEvent) {
           const detail = { interactableId: seg.id, action: action };
@@ -120,15 +191,15 @@ Vinland.define('ui/panel-text', function (require) {
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       const isOpen = menu.style.display !== 'none' && activeMenu === menu;
-      if (activeMenu && activeMenu !== menu) closeActiveMenu();
+      if (activeMenu && activeMenu !== menu) closeActiveMenu(false);
       if (isOpen) {
-        menu.style.display = 'none';
-        btn.setAttribute('aria-expanded', 'false');
-        activeMenu = null;
+        closeActiveMenu(false);
       } else {
+        alignMenuWithinPane(btn, menu);
         menu.style.display = 'flex';
         btn.setAttribute('aria-expanded', 'true');
         activeMenu = menu;
+        activeTrigger = btn;
       }
     });
 
@@ -155,10 +226,13 @@ Vinland.define('ui/panel-text', function (require) {
   /** Render the action result view (called by app/game, not directly bound as a panel).
    * The button steps back one view (see app/game's view stack), so it says Back. */
   function renderResult(pane, result, onBack, world) {
+    ensureDocumentListeners();
+    activeMenu = null;
+    activeTrigger = null;
     const body = el('div', 'text text--result');
     const status = world && world.player ? renderStatus(playerMod.model(world.player)) : null;
     if (status) body.appendChild(status);
-    body.appendChild(el('p', 'text__region', 'Straumfjord'));
+    body.appendChild(el('p', 'text__region', (world && world.region) ? world.region : 'Straumfjord'));
     body.appendChild(el('h1', 'text__title', result.title || 'You act'));
     // Contents are highlighted words in the flow of this prose (result.segments),
     // never a list appended after it.
@@ -177,6 +251,10 @@ Vinland.define('ui/panel-text', function (require) {
     });
     body.appendChild(btn);
 
+    body.addEventListener('click', function () {
+      closeActiveMenu(false);
+    });
+
     pane.dataset.place = pane.dataset.place || '';
     pane.dataset.view = 'result';
     pane.replaceChildren(body);
@@ -188,6 +266,9 @@ Vinland.define('ui/panel-text', function (require) {
     model: renderText,
 
     render(pane, model) {
+      ensureDocumentListeners();
+      activeMenu = null;
+      activeTrigger = null;
       const body = el('div', 'text');
       const status = renderStatus(model.player);
       if (status) body.appendChild(status);
@@ -215,7 +296,7 @@ Vinland.define('ui/panel-text', function (require) {
       body.appendChild(el('p', 'text__exits', model.exitsLine));
 
       body.addEventListener('click', function () {
-        closeActiveMenu();
+        closeActiveMenu(false);
       });
 
       pane.dataset.place = model.place;
@@ -227,14 +308,7 @@ Vinland.define('ui/panel-text', function (require) {
     _closeMenu: closeActiveMenu,
   };
 
-  if (typeof document !== 'undefined' && document.addEventListener) {
-    document.addEventListener('click', function () {
-      closeActiveMenu();
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' || e.key === 'Esc') closeActiveMenu();
-    });
-  }
+  ensureDocumentListeners();
 
   return panels.register(panel);
 });

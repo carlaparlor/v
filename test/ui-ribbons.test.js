@@ -316,3 +316,29 @@ test('detach uses the parent removeChild when it exists (real DOM)', () => {
   assert.equal(findAllByClass(doc.shell, 'ribbon-bar').length, 1);
   assert.ok(openSheet(), 'the sheet opened through the removeChild path');
 });
+
+test('the sheet enters once on open without flickering on world updates, and Escape layers cleanly over views', () => {
+  const g = start();
+  g.performAction('barrel', 'open');
+  g.performAction('herring', 'examine');
+  assert.equal(g.getMode(), 'action');
+
+  ribbon('profile').click();
+  assert.ok(openSheet().classList.contains('sheet--entering'), 'opening marks the sheet as entering');
+  g.render();
+  assert.equal(openSheet().classList.contains('sheet--entering'), false, 'live re-renders do not re-trigger the entrance');
+
+  // First Escape closes the open sheet and leaves the underlying view intact;
+  // subsequent Escapes step back through the result stack to the place.
+  doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+  assert.equal(openSheet(), null, 'first Escape closes the sheet');
+  assert.equal(g.getMode(), 'action', 'underlying view stays open');
+  assert.equal(g.getResult().title, 'herring');
+
+  doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+  assert.equal(g.getMode(), 'action');
+  assert.equal(g.getResult().title, 'barrel', 'second Escape pops one view');
+
+  doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+  assert.equal(g.getMode(), 'place', 'third Escape returns to the place');
+});

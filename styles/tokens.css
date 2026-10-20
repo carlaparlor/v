@@ -3,9 +3,67 @@
  * Retheming Vinland (including by a mod) means overriding these, not editing layout.css.
  * See docs/CONVENTIONS.md.
  *
- * These are the PRIMITIVES. The gradient that combines them is composed in layout.css
- * on `.shell`, so a direction change (rows/columns) only has to flip --fade-axis.
+ * Local self-hosted typefaces (SIL Open Font License, zero network requests so
+ * double-clicking index.html over file:// renders identically on every platform):
+ *   - IBM Plex Serif for place and sheet headings (carved literary weight)
+ *   - IBM Plex Mono for prose, vitals, cartography, and controls (tabular + true italic)
  */
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-serif-latin-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Serif';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-serif-latin-600-normal.woff2') format('woff2');
+}
 
 :root {
   /*
@@ -24,27 +82,37 @@
   /* Half-width of the blend, measured from the seam. 4% => tones meet over 8% of the shell. */
   --fade-span: 4%;
 
-  /* Text */
+  /* Text — unbleached linen on peat smoke and driftwood */
   --color-text: #ded4c3;
   --color-text-bright: #f2e9da;
-  --color-text-dim: #8d8377; /* AA on the DARK pane only — never use it on the light pane */
-  --color-accent: #c8873c; /* decorative only: ~3:1 on the light pane, not body-text safe */
+  --color-text-dim: #92877a; /* AA on both the dark pane and sheet surface */
+  --color-accent: #c8873c; /* decorative / large marks: clears AA on dark surfaces */
+  --color-border-subtle: rgba(222, 212, 195, 0.08);
+  --color-surface-inset: rgba(222, 212, 195, 0.045);
 
-  /* Type */
-  --font-ui: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  --font-size-base: 15px;
-  --line-height-base: 1.55;
-  --font-size-title: 19px;
-  --font-size-small: 12px;
-  --letter-spacing-label: 0.14em;
+  /* Type — carved display serif paired with warm editorial monospace */
+  --font-display: 'IBM Plex Serif', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-ui: 'IBM Plex Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-size-base: 14.5px;
+  --line-height-base: 1.65;
+  --line-height-prose: 1.74;
+  --line-height-tight: 1.2;
+  --font-size-title: 24px;
+  --font-size-map-title: 18px;
+  --font-size-sheet-title: 20px;
+  --font-size-small: 12.5px;
+  --font-size-micro: 11.5px;
+  --letter-spacing-label: 0.02em;
+  --letter-spacing-title: -0.01em;
 
   /* Map (custom SVG rendering): node pills, connector lines, player marker. */
-  --map-font-size: 13px;
+  --map-font-size: 12.5px;
   --color-map-node: #3a3128;
   --color-map-node-hover: #4a3b2a;
   --color-map-node-border: #8a7a63;
   --color-map-node-here: #453723;
-  --color-map-edge: #b8a888;
+  --color-map-edge: #a8987e;
+  --color-map-edge-active: #dfd1ba;
   --color-map-marker: #c8873c;
   --color-map-marker-text: #1c1710;
 
@@ -53,15 +121,20 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 11px;
 
   /* Shell + panes */
   --shell-gap: 0px; /* 0 keeps the fade continuous across the seam */
   --shell-padding: 0px; /* edge to edge */
   /* A band above the panes so the map pane's ribbons can stick out of its top
      edge into it — bookmarks on the edge of the page, not clipped by it. */
-  --shell-padding-top: 28px;
-  --pane-padding: var(--space-4);
+  --shell-padding-top: 30px;
+  --pane-padding: clamp(18px, 2.6vw, 32px);
 
   /* Fade transition (ADR-0007) — whole-shell fade for action results */
   --fade-duration: 400ms;
@@ -88,19 +161,19 @@
   /* Police tape over the dimmed map: one diagonal striped strip. */
   --color-tape: #e6c832;
   --color-tape-dark: #181410;
-  --tape-height: 54px;
+  --tape-height: 52px;
   --tape-stripe: 18px;
   --tape-angle: -12deg;
-  --tape-opacity: 0.92;
+  --tape-opacity: 0.9;
 
   /* Player status block — the block lives in the LEFT pane, which is the dark
      pane, so these pair against --color-shell-dark. Values are body-text safe
      there; theme-contrast.test.js keeps it that way. */
-  --color-status: #a99c8c;
+  --color-status: #afa292;
   --color-status-bright: #ded4c3;
   --color-stat-low: #d9a441;
   --color-stat-critical: #e2705c;
-  --color-status-border: rgba(255, 255, 255, 0.08);
+  --color-status-border: rgba(222, 212, 195, 0.09);
 
   /* Interactables — each type has its own color (plus per-instance color override).
      Chosen for visibility on the dark pane (#0b0a08): all clear WCAG AA there. */
@@ -111,14 +184,16 @@
   --color-interactable-npc: #90be6d;
   --color-interactable-wildlife: #f9c74f;
 
-  /* Interactable dropdown */
+  /* Interactable dropdown & floating chrome surfaces */
   --color-dropdown-bg: #1c1a16;
   --color-dropdown-border: #3a352e;
+  --color-dropdown-border-strong: #524b42;
   --color-dropdown-hover: #2a2720;
-  --color-interactable-hover: rgba(255, 255, 255, 0.08);
-  --color-return-hover: rgba(255, 255, 255, 0.06);
-  --color-shadow-strong: rgba(0, 0, 0, 0.45);
-  --color-shadow-soft: rgba(0, 0, 0, 0.3);
+  --color-interactable-hover: rgba(222, 212, 195, 0.09);
+  --color-return-hover: rgba(222, 212, 195, 0.07);
+  --color-shadow-strong: rgba(0, 0, 0, 0.46);
+  --color-shadow-soft: rgba(0, 0, 0, 0.28);
+  --color-shadow-elevated: 0 14px 34px rgba(0, 0, 0, 0.48), 0 2px 8px rgba(0, 0, 0, 0.28);
 
   /* Ribbons and sheets — the bookmarks on the top-right of the map pane.
      The ribbons sit half in the band above the panes and half over the LIGHT
@@ -127,8 +202,9 @@
      dropdown surface tokens: a dark sheet over the light tone. */
   --color-ribbon: #241f18;
   --color-ribbon-hover: #332b20;
+  --color-ribbon-active: #3d3326;
   --color-ribbon-icon: #ded4c3;
-  --ribbon-width: 36px;
+  --ribbon-width: 35px;
   --ribbon-height: 46px;
   --ribbon-notch: 9px;
   /* Where the ribbon bar hangs from the shell's top edge (inside the band). */
@@ -137,13 +213,11 @@
      reuses --color-accent (it clears 3:1 on the sheet surface;
      theme-contrast.test.js keeps it there). The empty circle is decorative,
      so it is allowed a bare alpha here in tokens.css. */
-  --color-dot-track: rgba(255, 255, 255, 0.1);
-  --dot-size: 11px;
-  --dot-gap: 5px;
-  --sheet-width: 600px;
-  /* The pack sheet is narrower than the report card: a list of carried
-     things, not a two-column character sheet. The load meter's height is a
-     token like the dots', so a retheme can weigh it differently. */
-  --pack-sheet-width: 460px;
+  --color-dot-track: rgba(222, 212, 195, 0.11);
+  --dot-size: 10px;
+  --dot-gap: 6px;
+  --sheet-width: 440px;
+  /* Harmonised width across profile and pack sheets; load meter height is a token. */
+  --pack-sheet-width: 440px;
   --pack-meter-height: 6px;
 }

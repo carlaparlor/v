@@ -62,6 +62,7 @@ Vinland.define('ui/ribbons', function (require) {
 
   /** Open sheet kind, or null. Chrome state — never world state. */
   let openKind = null;
+  let entering = false;
   /** The nodes this module last built, so a re-render can retire them. */
   let bar = null;
   let sheet = null;
@@ -76,50 +77,6 @@ Vinland.define('ui/ribbons', function (require) {
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
     return node;
-  }
-
-  /** SVG goes through createElementNS — the test stub supports it. */
-  function svgEl(tag, attrs) {
-    const node =
-      typeof document.createElementNS === 'function'
-        ? document.createElementNS(SVG_NS, tag)
-        : document.createElement(tag);
-    if (attrs) {
-      for (const name of Object.keys(attrs)) node.setAttribute(name, String(attrs[name]));
-    }
-    return node;
-  }
-
-  /**
-   * A lucide icon, 24x24 stroke grid. `kind` is 'profile' (user-round),
-   * 'settings' (the gear) or 'close' (x).
-   */
-  function icon(kind, className) {
-    const svg = svgEl('svg', {
-      'class': className || 'ribbon__icon',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '2',
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-      'aria-hidden': 'true',
-    });
-    if (kind === 'profile') {
-      svg.appendChild(svgEl('circle', { cx: 12, cy: 8, r: 5 }));
-      svg.appendChild(svgEl('path', { d: 'M20 21a8 8 0 0 0-16 0' }));
-    } else if (kind === 'settings') {
-      svg.appendChild(
-        svgEl('path', {
-          d: 'M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915',
-        }),
-      );
-      svg.appendChild(svgEl('circle', { cx: 12, cy: 12, r: 3 }));
-    } else if (kind === 'close') {
-      svg.appendChild(svgEl('path', { d: 'M18 6 6 18' }));
-      svg.appendChild(svgEl('path', { d: 'm6 6 12 12' }));
-    }
-    return svg;
   }
 
   /**
@@ -360,7 +317,11 @@ Vinland.define('ui/ribbons', function (require) {
     // and each test gets a fresh document, so re-attach when it changes.
     if (escapeDoc !== globalThis.document && typeof document !== 'undefined' && document.addEventListener) {
       document.addEventListener('keydown', function (e) {
-        if ((e.key === 'Escape' || e.key === 'Esc') && openKind) closeSheet();
+        if (e._vinlandHandled) return;
+        if ((e.key === 'Escape' || e.key === 'Esc') && openKind) {
+          e._vinlandHandled = true;
+          closeSheet();
+        }
       });
       escapeDoc = document;
     }
@@ -372,7 +333,13 @@ Vinland.define('ui/ribbons', function (require) {
     if ((openKind === 'profile' || openKind === 'inventory') && !(world && world.player)) openKind = null;
     if (openKind) {
       sheet = buildSheet(openKind, world);
+      if (entering) {
+        sheet.classList.add('sheet--entering');
+        entering = false;
+      }
       shell.appendChild(sheet);
+    } else {
+      entering = false;
     }
   }
 
@@ -380,6 +347,7 @@ Vinland.define('ui/ribbons', function (require) {
   function toggle(kind) {
     const wasOpen = openKind === kind;
     openKind = wasOpen ? null : kind;
+    entering = !wasOpen;
     render(lastShell, lastWorld);
     if (wasOpen) {
       if (bar) focusNode(findByDataset(bar, 'sheet', kind));

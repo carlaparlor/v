@@ -206,6 +206,16 @@ Vinland.define('ui/panel-map', function (require) {
       }
       if (node.isHere && typeof g.setAttribute === 'function') g.setAttribute('aria-current', 'true');
     }
+    const lines = findAllByClass(pane, 'map__edge');
+    for (const line of lines) {
+      const touches = line.dataset && (line.dataset.from === model.place || line.dataset.to === model.place);
+      if (line.classList && typeof line.classList.add === 'function' && typeof line.classList.remove === 'function') {
+        if (touches) line.classList.add('map__edge--adjacent');
+        else line.classList.remove('map__edge--adjacent');
+      } else if (typeof line.setAttribute === 'function') {
+        line.setAttribute('class', touches ? 'map__edge map__edge--adjacent' : 'map__edge');
+      }
+    }
     return foundHere;
   }
 
@@ -253,7 +263,10 @@ Vinland.define('ui/panel-map', function (require) {
       // the pills cover its ends, so it meets each place cleanly.
       const edgeLayer = svgEl('g', 'map__edges');
       for (const edge of model.edges || []) {
-        const line = svgEl('line', 'map__edge', {
+        const edgeClass = edge.from === model.place || edge.to === model.place
+          ? 'map__edge map__edge--adjacent'
+          : 'map__edge';
+        const line = svgEl('line', edgeClass, {
           x1: edge.x1,
           y1: edge.y1,
           x2: edge.x2,

@@ -1,9 +1,9 @@
 /*
- * Panel content — what lives INSIDE a pane.
+ * Panel content — what lives INSIDE a pane, plus the floating ribbon sheets.
  *
  * The pane itself stays transparent and borderless (ADR-0004, ADR-0005): the shell paints
  * one surface and the panes are regions of it. Anything that needs to look contained has to
- * draw its own surface, and so far nothing does.
+ * draw its own surface.
  *
  * Left pane (text) sits on the dark tone, right pane (map) on the light tone. Colours are
  * chosen per pane for contrast — see test/theme-contrast.test.js.
@@ -19,114 +19,138 @@
   min-block-size: 0;
   overflow: auto;
   scrollbar-width: thin;
+  scrollbar-color: var(--color-dropdown-border) transparent;
 }
 
 /* ---------------------------------------------------------------- text pane (left) */
 
 .text {
-  gap: var(--space-4);
-  padding-block-end: var(--space-6);
+  gap: var(--space-5);
+  padding-block-end: var(--space-8);
 }
 
 /* Player status block — pinned above the prose in the text pane, in every view.
-   Compact: who you are, what you have learned, how you are. The dark pane owns
-   it, so the dim/band tokens are the ones that clear contrast there. */
+   No inline inset: the name and vitals start flush with the prose below them. */
 .status {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 6px;
   margin-block-end: var(--space-1);
-  padding-block: var(--space-2);
-  /* No inline padding: the name and vitals start exactly where the prose
-     below starts (the pane's own padding is the one shared inset). */
+  padding-block: var(--space-1) 14px;
   border-block-end: 1px solid var(--color-status-border);
+  max-inline-size: 58ch;
 }
 
-/* The nameplate: who this is, above the vitals. From the view model.
-   Stacked, not side by side: the name on its own line, the vitals under
-   it, both flush with the prose that follows the block. */
+/* The nameplate sits directly above the five vitals, sentence-cased for calm voice. */
 .status__name {
   color: var(--color-status-bright);
-  font-size: var(--font-size-small);
+  font-family: var(--font-display);
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
+  line-height: 1.2;
 }
 
 .status__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1) var(--space-3);
+  gap: 6px 18px;
   font-size: var(--font-size-small);
   color: var(--color-status);
 }
 
-/* A stat is its icon and the number; the word lives in the tooltip and the
-   aria-label. inline-flex is what aligns glyph and digits. */
+/* A stat is its icon and the number; the word lives in the tooltip and aria-label. */
 .status__item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  cursor: default;
+  transition: color 140ms ease;
 }
 
-/* Sized here, not inline: an icon is a box in CSS, and it strokes
-   currentColor, so the band colour below reaches glyph and number alike. */
+.status__item:hover {
+  color: var(--color-text-bright);
+}
+
+/* Sized here, not inline: an icon is a box in CSS, and it strokes currentColor,
+   so the band colour below reaches glyph and number alike. */
 .status__icon {
   inline-size: 14px;
   block-size: 14px;
   flex: none;
+  opacity: 0.9;
 }
 
-.status__item--low {
+.status__item--low,
+.status__item--low:hover {
   color: var(--color-stat-low);
 }
 
-.status__item--critical {
+.status__item--critical,
+.status__item--critical:hover {
   color: var(--color-stat-critical);
   font-weight: 600;
 }
 
 .status__note {
-  margin: 0;
+  margin: 2px 0 0;
+  padding-inline-start: 10px;
+  border-inline-start: 2px solid var(--color-stat-low);
   color: var(--color-text);
   font-size: var(--font-size-small);
   font-style: italic;
+  line-height: 1.55;
+  max-inline-size: 56ch;
 }
 
+/* Region sits right on the shoulder of the place title rather than floating apart. */
 .text__region {
-  margin: 0;
+  margin: 0 0 calc(-1 * var(--space-4) + 2px);
   color: var(--color-text-dim);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-micro);
+  font-weight: 500;
   letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
+  line-height: 1.3;
 }
 
 .text__title {
   margin: 0;
   color: var(--color-text-bright);
+  font-family: var(--font-display);
   font-size: var(--font-size-title);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--letter-spacing-title);
+  line-height: var(--line-height-tight);
+  max-inline-size: 46ch;
 }
 
 .text__body {
   margin: 0;
-  max-inline-size: 62ch; /* comfortable measure for prose */
+  max-inline-size: 58ch;
   color: var(--color-text);
+  line-height: var(--line-height-prose);
+}
+
+.text__body + .text__body {
+  margin-block-start: -3px;
 }
 
 .text__exits {
-  margin: 0;
-  max-inline-size: 62ch;
+  margin: var(--space-1) 0 0;
+  max-inline-size: 58ch;
   color: var(--color-text-dim);
   font-size: var(--font-size-small);
-  letter-spacing: 0.02em;
+  line-height: 1.6;
+  padding-block-start: 14px;
+  border-block-start: 1px solid var(--color-status-border);
 }
 
-/* Interactables — bolded, colored words that reveal a dropdown */
+/* Interactables — coloured words in the prose flow that open an action menu */
 .interactable-wrap {
   position: relative;
   display: inline-block;
@@ -136,19 +160,22 @@
   appearance: none;
   background: transparent;
   border: 0;
-  padding: 0 2px;
-  margin: 0;
+  padding: 0 3px;
+  margin: 0 -2px;
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   color: inherit; /* overridden inline per type/color */
   cursor: pointer;
-  text-decoration: none;
-  border-radius: 3px;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-subtle);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  border-radius: 4px;
   transition:
     color var(--duration-take) var(--ease-smooth),
     font-weight var(--duration-take) var(--ease-smooth),
     background 120ms ease,
-    filter 120ms ease;
+    text-decoration-color 120ms ease;
 }
 
 /* Being taken: the word settles — colour drains to body text, weight drops.
@@ -163,16 +190,29 @@
 }
 
 .interactable:hover,
-.interactable:focus-visible {
+.interactable:focus-visible,
+.interactable[aria-expanded='true'] {
   background: var(--color-interactable-hover);
   outline: none;
   text-decoration: underline;
+  text-decoration-color: currentColor;
   text-underline-offset: 3px;
 }
 
 .interactable:focus-visible {
-  outline: 1px solid currentColor;
+  outline: 1.5px solid currentColor;
   outline-offset: 2px;
+}
+
+@keyframes menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .interactable__menu {
@@ -180,51 +220,69 @@
   top: calc(100% + 6px);
   left: 0;
   z-index: 40;
-  min-inline-size: 140px;
-  max-inline-size: 220px;
+  min-inline-size: 152px;
+  max-inline-size: 224px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: var(--space-2);
+  padding: 6px;
   background: var(--color-dropdown-bg);
   border: 1px solid var(--color-dropdown-border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px var(--color-shadow-strong), 0 1px 2px var(--color-shadow-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--color-shadow-elevated);
+  transform-origin: top left;
+  animation: menu-drop 140ms var(--ease-smooth);
+}
+
+.interactable__menu--align-end {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
+}
+
+.interactable__label {
+  font-size: var(--font-size-micro);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-label);
+  color: var(--color-text-dim);
+  padding: 3px 9px 6px;
+  margin-block-end: 2px;
+  border-block-end: 1px solid var(--color-border-subtle);
 }
 
 .interactable__action {
   appearance: none;
   background: transparent;
   border: 0;
-  border-radius: 4px;
-  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  padding: 6px 9px;
   margin: 0;
   width: 100%;
   text-align: left;
   font-family: var(--font-ui);
   font-size: var(--font-size-small);
-  letter-spacing: 0.02em;
+  font-weight: 500;
   color: var(--color-text);
   cursor: pointer;
-  transition: background 100ms ease;
+  transition:
+    background 110ms ease,
+    color 110ms ease;
 }
 
 .interactable__action:hover,
 .interactable__action:focus-visible {
   background: var(--color-dropdown-hover);
+  color: var(--color-text-bright);
   outline: none;
 }
 
-.interactable__action:active {
-  filter: brightness(1.1);
+.interactable__action:focus-visible {
+  outline: 1px solid var(--color-dropdown-border-strong);
+  outline-offset: -1px;
 }
 
-.interactable__label {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-text-dim);
-  padding: 2px 10px 4px;
+.interactable__action:active {
+  filter: brightness(1.08);
 }
 
 /* "You have taken …" popup — sits over the top right, answers to nobody.
@@ -234,15 +292,17 @@
   top: var(--space-4);
   right: var(--space-4);
   z-index: 100;
-  padding: var(--space-2) var(--space-3);
+  max-inline-size: min(360px, calc(100vw - 32px));
+  padding: 9px 14px;
   background: var(--color-dropdown-bg);
   border: 1px solid var(--color-dropdown-border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px var(--color-shadow-strong), 0 1px 2px var(--color-shadow-soft);
+  border-inline-start: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--color-shadow-elevated);
   color: var(--color-text);
   font-family: var(--font-ui);
   font-size: var(--font-size-small);
-  letter-spacing: 0.02em;
+  line-height: 1.45;
   opacity: 0;
   transform: translateY(-8px) scale(0.98);
   pointer-events: none;
@@ -256,47 +316,48 @@
   transform: translateY(0) scale(1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .toast,
-  .interactable,
-  .sheet__value {
-    transition: none;
-  }
-}
-
 /* Action result view — shown in the text pane after an action */
 .text--result {
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 .text__result-body {
   margin: 0;
-  max-inline-size: 62ch;
+  max-inline-size: 58ch;
   color: var(--color-text);
-  line-height: var(--line-height-base);
+  line-height: var(--line-height-prose);
 }
 
 .text__return {
   appearance: none;
   align-self: flex-start;
-  background: transparent;
+  background: var(--color-surface-inset);
   border: 1px solid var(--color-dropdown-border);
-  border-radius: 6px;
-  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  padding: 7px 16px;
   font-family: var(--font-ui);
   font-size: var(--font-size-small);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-label);
   color: var(--color-text);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background 130ms ease,
+    border-color 130ms ease,
+    color 130ms ease;
 }
 
 .text__return:hover,
 .text__return:focus-visible {
   background: var(--color-return-hover);
-  border-color: var(--color-text-dim);
+  border-color: var(--color-dropdown-border-strong);
+  color: var(--color-text-bright);
   outline: none;
+}
+
+.text__return:focus-visible {
+  outline: 1.5px solid var(--color-text-bright);
+  outline-offset: 2px;
 }
 
 /* ----------------------------------------------------------------- map pane (right) — centered */
@@ -308,18 +369,56 @@
   text-align: center;
 }
 
-.map__region,
-.map__legend {
+.map__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  inline-size: min(100%, 560px);
+}
+
+/* Header stack on the map pane: region breadcrumb, clock, and season/weather read
+   as one tight block aligned with the left edge of the SVG map frame. */
+.map__region {
+  align-self: flex-start;
+  text-align: left;
+  margin: 0 0 -8px;
+  color: var(--color-text-bright);
+  font-family: var(--font-display);
+  font-size: var(--font-size-map-title);
+  font-weight: 600;
+  letter-spacing: var(--letter-spacing-title);
+  line-height: 1.25;
+}
+
+.map__clock,
+.map__environment {
+  align-self: flex-start;
+  text-align: left;
   margin: 0;
-  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+
+.map__clock {
+  margin-block-end: -9px;
+  color: var(--color-text-bright);
   font-size: var(--font-size-small);
-  letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.map__environment {
+  margin-block-end: var(--space-2);
+  font-size: var(--font-size-micro);
+  color: var(--color-text);
 }
 
 .map__legend {
-  letter-spacing: 0.04em;
-  text-transform: none;
+  margin: var(--space-1) 0 0;
+  color: var(--color-text);
+  font-size: var(--font-size-micro);
+  letter-spacing: var(--letter-spacing-label);
 }
 
 /*
@@ -329,20 +428,28 @@
  */
 .map__canvas {
   inline-size: 100%;
+  filter: drop-shadow(0 2px 6px var(--color-shadow-soft));
 }
 
 .map__svg {
   display: block;
   inline-size: 100%;
   block-size: auto;
-  /* Visible overflow so the player badge on the top row's pill is not clipped. */
   overflow: visible;
 }
 
 .map__edge {
   stroke: var(--color-map-edge);
-  stroke-width: 2;
+  stroke-width: 1.75;
   stroke-linecap: round;
+  transition:
+    stroke calc(var(--duration-step) * 0.4) var(--ease-step),
+    stroke-width calc(var(--duration-step) * 0.4) var(--ease-step);
+}
+
+.map__edge--adjacent {
+  stroke: var(--color-map-edge-active);
+  stroke-width: 2.25;
 }
 
 .map__node {
@@ -365,7 +472,7 @@
 .map__node--here .map__node-box {
   fill: var(--color-map-node-here);
   stroke: var(--color-map-marker);
-  stroke-width: 2.5;
+  stroke-width: 2.4;
 }
 
 /* A place you can walk to is clickable: pointer, and it answers the mouse. */
@@ -384,6 +491,7 @@
 .map__node--reachable:focus-visible .map__node-box {
   fill: var(--color-map-node-hover);
   stroke: var(--color-text-bright);
+  stroke-width: 2;
 }
 
 .map__node--reachable:focus-visible {
@@ -398,7 +506,7 @@
    (--unreachable): present on the map, but plainly not on offer. */
 .map__node--far,
 .map__node--unreachable {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 .map__node-label {
@@ -406,7 +514,7 @@
   font-family: var(--font-ui);
   font-size: var(--map-font-size);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.015em;
   text-anchor: middle;
   dominant-baseline: central;
 }
@@ -418,44 +526,10 @@
 .map__node-marker-text {
   fill: var(--color-map-marker-text);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
-}
-
-.map__center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  /* The map block's width: capped so the SVG stays a comfortable size, and the
-     region header's left edge lines up with it. The block itself is still
-     centred in the right pane by .map's align-items. */
-  inline-size: min(100%, 580px);
-}
-
-/* Straumfjord header: left-aligned with the map, not centred above it. */
-.map__region {
-  align-self: flex-start;
-  text-align: left;
-}
-
-/* Shared world clock: below the place heading, never driven by wall time. */
-.map__clock,
-.map__environment {
-  align-self: flex-start;
-  text-align: left;
-  margin: 0;
-  color: var(--color-text-bright);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-}
-
-.map__environment {
-  font-size: var(--font-size-small);
-  color: var(--color-text);
 }
 
 /* ------------------------------------------------- ribbons and sheets (map pane) */
@@ -471,7 +545,7 @@
   position: absolute;
   top: var(--ribbon-top);
   right: calc(var(--pane-padding) + 4px);
-  z-index: 70; /* above the sheets and the pane's tape */
+  z-index: 70;
   display: flex;
   gap: var(--space-2);
 }
@@ -480,7 +554,7 @@
   appearance: none;
   width: var(--ribbon-width);
   height: var(--ribbon-height);
-  padding: 6px 0 calc(var(--ribbon-notch) + 5px);
+  padding: 7px 0 calc(var(--ribbon-notch) + 5px);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -488,6 +562,7 @@
   border: 0;
   border-radius: 0 0 2px 2px;
   background: var(--color-ribbon);
+  filter: drop-shadow(0 2px 6px var(--color-shadow-soft));
   clip-path: polygon(
     0 0,
     100% 0,
@@ -497,8 +572,8 @@
   );
   cursor: pointer;
   transition:
-    transform 120ms ease,
-    background 120ms ease;
+    transform 140ms var(--ease-smooth),
+    background 140ms ease;
 }
 
 .ribbon:hover {
@@ -506,7 +581,7 @@
   transform: translateY(-2px);
 }
 
-/* clip-path swallows outlines, so the open/hover state IS the focus hint. */
+/* clip-path swallows outlines, so the open/hover state + bright icon is the focus hint. */
 .ribbon--open,
 .ribbon:focus-visible {
   background: var(--color-ribbon-hover);
@@ -514,38 +589,63 @@
   outline: none;
 }
 
+.ribbon--open .ribbon__icon,
+.ribbon:focus-visible .ribbon__icon {
+  color: var(--color-text-bright);
+}
+
+.ribbon:active {
+  background: var(--color-ribbon-active);
+  transform: translateY(0);
+}
+
 .ribbon__icon {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   color: var(--color-ribbon-icon);
   pointer-events: none;
+  transition: color 120ms ease;
+}
+
+@keyframes sheet-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /*
  * The sheet drops from the top-right of the map pane, just under the ribbons.
- * It is chrome on the shell too (so it can overhang the pane edge), drawn on
- * the dark dropdown surface: a dark sheet over the light tone, like a card laid
- * on the map. One sheet at a time; it is rebuilt with fresh world data on every
- * render pass, so it can never show a stale body.
+ * One sheet at a time; rebuilt with fresh world data on every render pass.
+ * Only opening/switching adds .sheet--entering, so live world updates never flicker.
  */
 .sheet {
   position: absolute;
   top: calc(var(--shell-padding-top) + var(--space-3));
   right: calc(var(--pane-padding) + 4px);
   z-index: 60;
-  width: min(var(--sheet-width), calc(50vw - 32px));
+  width: min(var(--sheet-width), calc(50vw - 24px));
   max-height: calc(100dvh - var(--shell-padding-top) - var(--space-6));
   overflow: auto;
   scrollbar-width: thin;
+  scrollbar-color: var(--color-dropdown-border) transparent;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
+  padding: var(--space-5);
   background: var(--color-dropdown-bg);
   border: 1px solid var(--color-dropdown-border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px var(--color-shadow-strong), 0 1px 2px var(--color-shadow-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--color-shadow-elevated);
   text-align: left;
+}
+
+.sheet--entering {
+  animation: sheet-drop 180ms var(--ease-smooth);
 }
 
 .sheet__bar {
@@ -558,9 +658,11 @@
 .sheet__title {
   margin: 0;
   color: var(--color-text-bright);
-  font-size: var(--font-size-title);
+  font-family: var(--font-display);
+  font-size: var(--font-size-sheet-title);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--letter-spacing-title);
+  line-height: 1.15;
 }
 
 .sheet__close {
@@ -568,10 +670,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-1);
-  margin: 0;
+  padding: 5px;
+  margin: 0 -4px 0 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-dim);
   cursor: pointer;
@@ -587,17 +689,22 @@
   outline: none;
 }
 
+.sheet__close:focus-visible {
+  outline: 1.5px solid var(--color-text-bright);
+  outline-offset: 1px;
+}
+
 .sheet__icon {
   width: 16px;
   height: 16px;
   pointer-events: none;
 }
 
-/* The profile sheet is horizontal: the two tiers sit side by side, one
-   column each, so the sheet reads as a character sheet, not a form. */
+/* Single attributes group spans cleanly without leaving a dead right half;
+   if a mod registers multiple groups, auto-fit flows them into columns. */
 .sheet__columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   column-gap: var(--space-6);
   row-gap: var(--space-4);
 }
@@ -608,20 +715,25 @@
 
 .sheet__section {
   margin: 0 0 var(--space-2);
-  padding-block-end: var(--space-1);
+  padding-block-end: 6px;
   border-block-end: 1px solid var(--color-dropdown-border);
   color: var(--color-text-dim);
-  font-size: var(--font-size-small);
-  font-weight: 600;
+  font-size: var(--font-size-micro);
+  font-weight: 500;
   letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
 }
 
 .sheet__row {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-block: var(--space-1);
+  gap: 5px;
+  padding-block: 10px;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.sheet__row:last-child {
+  border-block-end: 0;
+  padding-block-end: 0;
 }
 
 .sheet__row-head {
@@ -630,14 +742,35 @@
   gap: var(--space-2);
 }
 
-/* The report-card grade leads each row, sized like a mark on a report card.
-   Colours are existing tokens — every one clears WCAG AA on the sheet
-   surface (theme-contrast.test.js pins it). */
-.sheet__grade {
-  inline-size: 1.2em;
-  text-align: center;
+.sheet__name {
+  flex: 1;
   color: var(--color-text);
-  font-size: var(--font-size-title);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.sheet__value {
+  color: var(--color-text-bright);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  /* Numbers stay quiet until the row is hovered or focused, reserved in place. */
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.sheet__row:hover .sheet__value,
+.sheet__row:focus-within .sheet__value {
+  opacity: 1;
+}
+
+/* The report-card grade stands at the right end of each row; every grade token
+   clears WCAG AA on the sheet surface (theme-contrast.test.js pins all six). */
+.sheet__grade {
+  inline-size: 1.25em;
+  text-align: right;
+  color: var(--color-text);
+  font-size: 18px;
   font-weight: 700;
   line-height: 1;
 }
@@ -649,32 +782,7 @@
 .sheet__grade--D { color: var(--color-interactable-item); }
 .sheet__grade--F { color: var(--color-stat-critical); }
 
-.sheet__name {
-  flex: 1;
-  color: var(--color-text);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.sheet__value {
-  color: var(--color-text-bright);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  /* The numbers do not get to crowd the report card: invisible until the
-     row is hovered (or focused), reserved in place so nothing jumps. */
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-
-.sheet__row:hover .sheet__value,
-.sheet__row:focus-within .sheet__value {
-  opacity: 1;
-}
-
-/* The five dots: value against the tier's max (attributes /20, skills
-   /100), each circle worth 20%, filled in half-circle steps (the fill
-   width is set inline from the row's value; the empty circle is a token).
-   The report card's way of showing a level — not a progress bar. */
+/* Five dots, each worth 20% of the scale, filled in half-circle steps. */
 .sheet__dots {
   display: flex;
   gap: var(--dot-gap);
@@ -689,9 +797,7 @@
 }
 
 .sheet__dot-fill {
-  /* A fill is a <span>: inline elements cannot carry a width in a browser,
-     so it must be a box or the inline width is silently ignored (the "all
-     circles blank" correction — the stub stores width regardless). */
+  /* Must be a box so inline percentage widths render in browsers. */
   display: block;
   block-size: 100%;
   background: var(--color-accent);
@@ -700,25 +806,21 @@
 .sheet__desc {
   margin: 0;
   color: var(--color-text-dim);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-micro);
+  line-height: 1.45;
 }
 
 .sheet__empty {
   margin: 0;
   color: var(--color-text);
+  font-size: var(--font-size-small);
+  line-height: 1.6;
 }
 
 /* ------------------------------------------------- the pack (inventory sheet) */
 
-/*
- * The inventory sheet is a narrower card than the report card: a load meter,
- * a note when the pack rides heavy, and one row per carried thing. The meter
- * is the only bar in the chrome — the report card's dots stay dots — because
- * this bar is a weight against a limit, not a level on a scale. Its fill is a
- * box like the dot fill, so the inline width is honoured in a browser.
- */
 .sheet--pack {
-  width: min(var(--pack-sheet-width), calc(50vw - 32px));
+  width: min(var(--pack-sheet-width), calc(50vw - 24px));
 }
 
 .pack {
@@ -731,6 +833,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  padding: 11px var(--space-3);
+  background: var(--color-surface-inset);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
 }
 
 .pack__load-head {
@@ -742,6 +848,7 @@
 
 .pack__summary {
   color: var(--color-text-bright);
+  font-size: var(--font-size-small);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -757,8 +864,9 @@
   display: block;
   block-size: 100%;
   background: var(--color-accent);
+  border-radius: 999px;
   transition:
-    width 200ms var(--ease-smooth),
+    width 220ms var(--ease-smooth),
     background 200ms var(--ease-smooth);
 }
 
@@ -773,7 +881,9 @@
 .pack__note {
   margin: 0;
   color: var(--color-stat-low);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-micro);
+  font-style: italic;
+  line-height: 1.5;
 }
 
 .pack__note--full {
@@ -788,9 +898,9 @@
 .pack__row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding-block: var(--space-2);
-  border-block-end: 1px solid var(--color-dropdown-border);
+  gap: 6px;
+  padding-block: 11px;
+  border-block-end: 1px solid var(--color-border-subtle);
 }
 
 .pack__row:last-child {
@@ -802,45 +912,75 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .pack__name {
   font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 13.5px;
 }
 
 .pack__weight {
   color: var(--color-text-dim);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
 }
 
 .pack__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: 6px;
 }
 
 .pack__action {
   appearance: none;
   margin: 0;
-  padding: 2px var(--space-2);
+  padding: 3px 11px;
   border: 1px solid var(--color-dropdown-border);
   border-radius: 999px;
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-micro);
+  font-weight: 500;
   cursor: pointer;
   transition:
     color 120ms ease,
-    background 120ms ease;
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .pack__action:hover,
 .pack__action:focus-visible {
   color: var(--color-text-bright);
   background: var(--color-dropdown-hover);
+  border-color: var(--color-dropdown-border-strong);
   outline: none;
+}
+
+.pack__action:focus-visible {
+  outline: 1.5px solid var(--color-text-bright);
+  outline-offset: 1px;
+}
+
+@media (max-width: 760px) {
+  .sheet,
+  .sheet--pack {
+    width: min(var(--sheet-width), calc(100vw - 28px));
+    max-height: calc(100dvh - var(--shell-padding-top) - 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .interactable,
+  .interactable__menu,
+  .sheet--entering,
+  .sheet__value,
+  .ribbon,
+  .pack__meter-fill,
+  .map__edge {
+    transition: none;
+    animation: none;
+  }
 }

@@ -559,3 +559,19 @@ test('season and weather sit below the clock and stay synced through sheltered c
   assert.equal(g.getState().timeSeconds - indoorStart, 300);
   assert.equal(label().textContent, 'Winter · snow');
 });
+
+test('interactable dropdown resets aria-expanded on close and result views read pack region', () => {
+  const modded = { ...pack, region: 'Hóp' };
+  const g = start({ pack: modded });
+  const [left] = doc.shell.children;
+  const barrelBtn = findByDataset(left, 'interactableId', 'barrel');
+  assert.equal(barrelBtn.getAttribute('aria-expanded'), 'false');
+
+  barrelBtn.click();
+  assert.equal(barrelBtn.getAttribute('aria-expanded'), 'true');
+  doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+  assert.equal(barrelBtn.getAttribute('aria-expanded'), 'false', 'Escape resets aria-expanded on the word');
+
+  g.performAction('barrel', 'examine');
+  assert.equal(findByClass(left, 'text__region').textContent, 'Hóp', 'result view shows world region, not a hardcoded name');
+});

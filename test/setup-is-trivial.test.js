@@ -127,3 +127,16 @@ test('index.html pulls nothing from a CDN', () => {
     'every asset must be local: Vinland has to work offline, straight off the filesystem',
   );
 });
+
+test('every local font or asset url() in stylesheets exists and pulls nothing from a CDN', () => {
+  for (const sheet of ['styles/tokens.css', ...styleFiles()]) {
+    const css = read(sheet);
+    const urls = [...css.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)].map((m) => m[1]);
+    for (const ref of urls) {
+      assert.equal(/^(?:https?:)?\/\//i.test(ref), false, `${sheet} must not fetch ${ref} over the network`);
+      if (!ref.startsWith('data:')) {
+        assert.ok(existsSync(join(ROOT, 'styles', ref)), `${sheet} references a missing local asset: ${ref}`);
+      }
+    }
+  }
+});
