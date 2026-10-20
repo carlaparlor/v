@@ -3,6 +3,57 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 16 — refined typography, sheet layout, cartographic hierarchy and interaction polish
+
+**Asked:** improve the frontend design without changing the overall vibe.
+
+The two-tone split surface (`#0b0a08` peat-dark left, `#544839` driftwood-light
+right, held solid up to the 8% centre seam), the inline colored words, the
+gliding `@` marker, the dimmed map with its diagonal tape strip, and the three
+hanging leather ribbons stay exactly what they were. What changed is how
+cleanly every element inside that frame is set, spaced and handled:
+
+- **Paired local typefaces (`styles/fonts/`, `styles/tokens.css`):** seven
+  subsetted SIL OFL `.woff2` files ship directly inside `styles/fonts/`
+  (~120 KB total, zero CDN or network requests so `file://` works identically
+  offline across macOS, Windows and Linux). **IBM Plex Serif** sets place
+  titles, the map header and sheet headings; **IBM Plex Mono** sets prose,
+  vitals, clock, weights and controls, with true italic notes and tabular
+  numerals.
+- **Calm sentence-case hierarchy (`styles/panels.css`):** removed tracked-out
+  all-caps transforms on `.status__name`, `.text__region`, `.interactable__label`,
+  `.text__return`, `.map__region` and `.sheet__section`. Region labels sit
+  tightly above their titles; the status divider, prose paragraphs and exits
+  rule share one `58ch` column measure; map region, clock and weather stack as
+  one cohesive block left-aligned with the map frame.
+- **Profile & Pack sheet geometry (`styles/tokens.css`, `styles/panels.css`,
+  `src/ui/ribbons.js`):** fixed `.sheet__columns` from a fixed `1fr 1fr` grid on
+  a 600px card (which left the right half empty once only Attributes remained)
+  to `repeat(auto-fit, minmax(210px, 1fr))` on a harmonised 440px sheet. Sheet
+  opening plays a subtle 180ms settle (`sheet--entering`) once on open without
+  re-triggering during live world re-renders; dead SVG helper code was removed
+  from `src/ui/ribbons.js`.
+- **Map connector hierarchy (`src/ui/panel-map.js`, `styles/panels.css`):**
+  connectors touching your current location carry `map__edge--adjacent` in a
+  brighter warm stroke (`#dfd1ba`) while distant connectors sit quieter
+  (`#a8987e`, still >= 3:1 on `#544839`), and `prepareArrival` transitions
+  connector state mid-glide right alongside node arrival classes.
+- **Dropdown, Escape stacking & responsive layout (`src/ui/panel-text.js`,
+  `src/app/game.js`, `styles/layout.css`):** closing an interactable dropdown
+  now resets `aria-expanded="false"`, supports `ArrowUp`/`ArrowDown` and
+  `Escape` focus restoration, aligns right when near the pane's right edge,
+  reads `world.region` dynamically in result views, steps back through result
+  views on `Escape` when no menu or sheet owns the key, and stacks the two
+  equal panes cleanly on viewports <= 760px with `--fade-axis: to bottom`.
+
+Pinned across `setup-is-trivial`, `theme-contrast`, `step-motion`,
+`ui-ribbons` and `app-game`: local stylesheet `url()` existence, WCAG contrast
+on both distant and active map connectors, mid-glide connector transitions,
+flicker-free sheet updates, layered `Escape` dismissal, `aria-expanded` reset
+and dynamic region headings. **239 tests, 0 failures.**
+
+---
+
 ## Iteration 15 — the pack: weight, a limit, and a ribbon of its own
 
 **Asked:** "design and create an inventory mechanic. give it it's own ribbon."

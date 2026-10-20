@@ -592,6 +592,12 @@ Vinland.define('app/game', function (require) {
           game.travelTo(detail.to);
         }
       });
+      document.addEventListener('keydown', function (e) {
+        if (e._vinlandHandled || ribbons.open()) return;
+        if ((e.key === 'Escape' || e.key === 'Esc') && mode.kind === 'action') {
+          goBack();
+        }
+      });
     }
 
     // Also handle clicks on .interactable__action via bubbling if CustomEvent not available

@@ -25,6 +25,16 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 16 — refined craft, same soul.** Self-hosted **IBM Plex Serif**
+(headings) and **IBM Plex Mono** (prose, vitals, clock and map) ship locally
+under `styles/fonts/` so `file://` renders identically offline on every OS;
+sentence-case hierarchy replaces tracked all-caps chrome; the Profile sheet's
+grid spans cleanly at 440px with zero empty column space; neighbour map
+connectors brighten relative to distant routes and cross-fade mid-glide;
+interactable menus and result views gain full keyboard navigation, layered
+`Escape` dismissal, and narrow-viewport vertical stacking. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 15 — the pack, and its own ribbon.** What you carry is now a
 mechanic: every takeable thing has a **weight**, a back carries **8 +
 strength** (18 at the default 10), and the shore's seven takeables weigh

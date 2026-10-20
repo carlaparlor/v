@@ -9,6 +9,48 @@ Two kinds of tests, both required every iteration:
 New iterations are added at the top. Older ones stay as the regression suite.
 ---
 
+## Iteration 16 — typography, sheet proportion, map hierarchy and polish
+
+**Asked:** improve the frontend design without changing the overall vibe.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **239 tests, 0 failures.** `setup-is-trivial` checks that every
+`url()` in `styles/*.css` resolves to an existing local file with zero CDN
+requests; `theme-contrast` checks distant (`>= 3:1`) and active (`>= 4.5:1`)
+map connectors on the warm right pane alongside all pane, status and sheet
+tokens; `step-motion` checks `map__edge--adjacent` updates mid-glide in
+`prepareArrival`; `ui-ribbons` checks flicker-free sheet re-renders and
+layered `Escape` dismissal over result views; `app-game` checks `aria-expanded`
+reset and dynamic `world.region` rendering in result views.
+
+### Manual
+
+1. Refresh the preview (and verify opening `index.html` directly over `file://`).
+   Confirm the dark-left / warm-right held-seam surface is unchanged while
+   place titles, map breadcrumb and sheet titles render in **IBM Plex Serif**
+   and prose, vitals, clock and map labels render in **IBM Plex Mono** with
+   sentence-case chrome (`You`, `Straumfjord`, `Back`, `Attributes`).
+2. Check the left pane alignment: `You`, the five vital icons/numbers, the
+   status rule, `Straumfjord`, `The Yard`, the prose paragraphs and the exits
+   divider align cleanly down the left edge and share one `58ch` measure.
+3. Click the **Profile** ribbon: a balanced 440px sheet drops smoothly without
+   an empty right half; hover any row to reveal `10 / 20` beside its grade mark.
+4. Take an item while **The Pack** is open: the load meter glides smoothly
+   without re-animating the whole sheet.
+5. On the map, note that the walkable connectors leading out of your current
+   place stand brighter than distant connectors, and step to a neighbour to
+   watch both pills and connectors transition smoothly in flight.
+6. Inspect `barrel`, open `Profile`, and press `Escape` twice: the first press
+   closes `Profile`, the second steps `Back` to `The Yard`. Resize the window
+   below `760px` to verify both equal panes stack cleanly top-to-bottom.
+
+---
+
 ## Iteration 15 — the pack
 
 **Asked:** "design and create an inventory mechanic. give it it's own ribbon."

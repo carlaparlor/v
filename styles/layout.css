@@ -20,6 +20,11 @@ body {
   margin: 0;
 }
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-dropdown-border) transparent;
+}
+
 body {
   /* Fallback colour so any overscroll matches the dark tone. */
   background: var(--color-shell-dark);
@@ -28,6 +33,38 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   overflow: hidden; /* the panes own the viewport; nothing scrolls at page level */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-shell-dark);
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--color-text-bright);
+  outline-offset: 2px;
+}
+
+/* Subtle scrollbar chrome for scrolling panes and sheets */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-dropdown-border);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-dim);
 }
 
 .shell {
@@ -139,10 +176,22 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .shell,
   .pane,
   .pane::after,
   .pane.pane--step-fade {
     transition: none;
+  }
+}
+
+/* Stack cleanly into two equal vertical panes on narrow / mobile viewports:
+   dark prose pane above, warm map pane below, held-stop fade running vertically. */
+@media (max-width: 760px) {
+  .shell {
+    --pane-padding: clamp(16px, 4vw, 22px);
+    --fade-axis: to bottom;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
   }
 }
 

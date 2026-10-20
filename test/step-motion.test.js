@@ -76,6 +76,15 @@ test('the arrival state eases on the map instead of snapping at the landing', ()
   })(pane);
   assert.ok(groups.get('smithy').className.includes('map__node--here'), 'destination lights up mid-glide');
   assert.ok(groups.get('yard').className.includes('map__node--reachable'), 'origin recedes to a neighbour');
+  const edges = [];
+  (function walkEdges(n) {
+    if (n.dataset && n.dataset.from && n.dataset.to) edges.push(n);
+    for (const kid of n.children || []) walkEdges(kid);
+  })(pane);
+  const touchesSmithy = edges.filter((e) => e.dataset.from === 'smithy' || e.dataset.to === 'smithy');
+  const awayFromSmithy = edges.filter((e) => e.dataset.from !== 'smithy' && e.dataset.to !== 'smithy');
+  assert.ok(touchesSmithy.every((e) => String(e.className || e.getAttribute('class')).includes('map__edge--adjacent')));
+  assert.ok(awayFromSmithy.every((e) => !String(e.className || e.getAttribute('class')).includes('map__edge--adjacent')));
 });
 
 test('the @ badge glides from the node you are on to the node you clicked', () => {

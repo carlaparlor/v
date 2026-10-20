@@ -70,6 +70,12 @@ test('body text is readable on the dark tone (WCAG AAA)', () => {
 test('body text is readable on the light tone (WCAG AA)', () => {
   const ratio = contrast(text, light);
   assert.ok(ratio >= 4.5, `text ${text} on ${light} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
+  // Map connectors sit directly on the light pane: distant lines must clear
+  // WCAG 1.4.11 (3:1 non-text UI) and active neighbour lines must stand out cleanly.
+  const edge = token('--color-map-edge');
+  const activeEdge = token('--color-map-edge-active');
+  assert.ok(contrast(edge, light) >= 3, `map edge ${edge} on ${light} is ${contrast(edge, light).toFixed(2)}:1, needs >= 3:1`);
+  assert.ok(contrast(activeEdge, light) >= 4.5, `active map edge ${activeEdge} on ${light} needs >= 4.5:1`);
 });
 
 test('the status block is readable on the dark tone it lives on (WCAG AA)', () => {
