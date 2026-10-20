@@ -116,4 +116,11 @@ test('the ribbons and sheets are readable on the surfaces they sit on (WCAG AA)'
     const colour = token(name);
     assert.ok(contrast(colour, sheetBg) >= 4.5, `grade colour ${name} ${colour} on ${sheetBg} needs >= 4.5:1`);
   }
+  // The pack's meter bands are non-text UI (WCAG 1.4.11: 3:1), and the
+  // heavy note is text at small size, so it needs the full 4.5:1.
+  for (const name of ['--color-stat-low', '--color-stat-critical']) {
+    const colour = token(name);
+    const ratio = contrast(colour, sheetBg);
+    assert.ok(ratio >= 4.5, `pack meter ${name} ${colour} on ${sheetBg} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
+  }
 });

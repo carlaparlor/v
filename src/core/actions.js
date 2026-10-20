@@ -11,6 +11,7 @@ Vinland.define('core/actions', function (require) {
   var time = require('core/time');
   var worldMod = require('core/world');
   var playerMod = require('core/player');
+  var inventoryMod = require('core/inventory');
 
   /**
    * Find the location that contains an interactable id, searching all locations
@@ -52,6 +53,7 @@ Vinland.define('core/actions', function (require) {
     switch (action) {
       case 'examine': return interactable.examine || 'You look at the ' + name + '.';
       case 'take': return 'You take the ' + name + '. It is yours now.';
+      case 'drop': return 'You set down the ' + name + '. It stays here, in case you come back for it.';
       case 'open': return 'You open the ' + name + '.';
       case 'close': return 'You close the ' + name + '.';
       case 'enter': return 'You enter the ' + name + '.';
@@ -76,6 +78,13 @@ Vinland.define('core/actions', function (require) {
    * @returns {string}
    */
   function resultTextFor(interactable, action, containerState) {
+    // Setting something down names it as a word you can pick back up. The
+    // placeholder resolves against the world AFTER the action, where the thing
+    // now lies at your feet — so the prose's own word is the way back to it.
+    if (interactable && action === 'drop' && typeof interactable.drop !== 'string') {
+      return 'You set down the {' + interactable.id + '|' + (interactable.name || interactable.id)
+        + '}. It stays here, in case you come back for it.';
+    }
     // Examining an open container describes it open, if the author wrote that.
     if (interactable && action === 'examine' && containerState === 'open' &&
         typeof interactable.examineOpen === 'string' && interactable.examineOpen.length > 0) {
@@ -232,6 +241,41 @@ Vinland.define('core/actions', function (require) {
     return Object.freeze(newWorld);
   }
 
+  /** The version of a thing that goes into the pack: it is no longer dropped. */
+  function carriedCopy(interactable) {
+    if (interactable.dropped !== true) return interactable;
+    var copy = {};
+    for (var key in interactable) {
+      if (key !== 'dropped') copy[key] = interactable[key];
+    }
+    return Object.freeze(copy);
+  }
+
+  /**
+   * Set a carried thing down where you stand. It leaves the pack and joins
+   * the location's interactables flagged `dropped`; core/render-text names
+   * dropped things in the place prose, so the ground keeps them and the word
+   * stays clickable. Returns NEW frozen state.
+   */
+  function dropItem(world, interactable) {
+    var locId = world.current;
+    var loc = world.locations[locId];
+    var dropped = Object.freeze(Object.assign({}, interactable, { dropped: true }));
+    var locations = Object.assign({}, world.locations);
+    locations[locId] = Object.assign({}, loc, {
+      interactables: Object.freeze((loc.interactables || []).concat([dropped])),
+    });
+    var inventory = [];
+    var held = world.inventory || [];
+    for (var i = 0; i < held.length; i++) {
+      if (held[i].id !== interactable.id) inventory.push(held[i]);
+    }
+    return Object.freeze(Object.assign({}, world, {
+      locations: Object.freeze(locations),
+      inventory: Object.freeze(inventory),
+    }));
+  }
+
   /** Plain text of a segmented result: placeholders resolved to their words. */
   function plainFromSegments(segments) {
     return segments.map(function (s) { return s.type === 'text' ? s.text : (s.display || s.name || s.id); }).join('');
@@ -263,7 +307,11 @@ Vinland.define('core/actions', function (require) {
     }
 
     var state = interactable.type === 'container' ? worldMod.containerState(world, interactableId) : undefined;
-    var validActions = interactablesMod.actionsFor(interactable, state);
+    // What you carry offers the pack's verbs (no take; always drop), not the
+    // room's (a thing on the ground offers take, never drop).
+    var validActions = found.fromInventory
+      ? inventoryMod.actionsFor(interactable)
+      : interactablesMod.actionsFor(interactable, state);
     if (validActions.indexOf(action) === -1) {
       // Still allow if action is defined on interactable explicitly? actionsFor already includes examine guarantee.
       // So this is an invalid action for this type.
@@ -302,6 +350,14 @@ Vinland.define('core/actions', function (require) {
       return failedAttempt(world, interactable, action, 'You are not thirsty enough to drink from the ' + interactable.name + '.', false);
     }
 
+    // The pack says no: it will not close over one more thing.
+    if (action === 'take' && interactable.type === 'item' && !found.fromInventory && found.locationId) {
+      var fit = inventoryMod.fitFor(world, interactable);
+      if (!fit.ok) {
+        return failedAttempt(world, interactable, action, inventoryMod.tooHeavyText(interactable, fit), false);
+      }
+    }
+
     var text = resultTextFor(interactable, action, state);
     var title = interactable.name || interactable.id;
 
@@ -311,8 +367,11 @@ Vinland.define('core/actions', function (require) {
     if (action === 'take' && interactable.type === 'item' && !found.fromInventory && found.locationId) {
       // Detach from the world (location or inside its container), add to inventory.
       nextWorld = Object.freeze(Object.assign({}, detachItem(world, found, interactableId), {
-        inventory: Object.freeze((world.inventory || []).slice().concat([interactable])),
+        inventory: Object.freeze((world.inventory || []).slice().concat([carriedCopy(interactable)])),
       }));
+    } else if (action === 'drop' && found.fromInventory) {
+      // The pack gives it back to the ground at the current place.
+      nextWorld = dropItem(world, interactable);
     } else if (action === 'eat' && interactable.type === 'item' && interactable.food) {
       // Consume it from wherever it is reachable, and let it go into you.
       nextWorld = detachItem(world, found, interactableId);

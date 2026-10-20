@@ -42,6 +42,10 @@
   contents in `open:`/`examineOpen:` with `{id}` placeholders so the word highlights in
   the flow of the prose — never list contents in a sentence after it, and never in the
   location prose.
+- **Items may declare `weight`:** what they add to the pack if taken (default 2).
+  It must be a finite non-negative number; `validatePack` refuses anything else.
+  Weights are balance data — the shore's seven takeables total 21 against a
+  default capacity of 18.
 
 ## Player (attributes, skills, stats)
 
@@ -50,8 +54,9 @@ The player is world state (`world.player`) — plain frozen data created by
 
 - **Attributes** (`strength, charisma, intelligence, dexterity, constitution`):
   innate and fixed for the run. They never change; they modify the rules:
-  strength → energy cost of effort (`±2%`/point), constitution → the push of
-  heat and cold on exposure, and health recovery (`±3%`/point), dexterity → time of fine work
+  strength → energy cost of effort (`±2%`/point) and the pack's capacity
+  (`8 + strength`), constitution → the push of heat and cold on exposure, and
+  health recovery (`±3%`/point), dexterity → time of fine work
   (`take, open, close, use, eat, drink`, `±3%`/point), intelligence → skill gain
   (`±5%`/point), charisma → talk time (`±3%`/point). At 10 every factor is 1.
 - **Skills** (`travel, talk, approach, craft, gather`): grown by practice. Each
@@ -66,8 +71,9 @@ The player is world state (`world.player`) — plain frozen data created by
   exposure is outside its comfort range (faster at either end, 0 or 100)
   and recovers only sheltered, fed, comfortable and watered. Consequences:
   energy below 25 → all costs × 1.5; exposure outside its comfort range →
-  exposed travel × 1.2; energy 0 → the open ground refuses (indoor steps
-  stay). Health 0 → **collapse**: the action still happens, +2h unconscious
+  exposed travel × 1.2; a pack at 75% of capacity → effort verbs × 1.25;
+  energy 0 → the open ground refuses (indoor steps stay). Health 0 →
+  **collapse**: the action still happens, +2h unconscious
   (still drifting), wake at health 25 / energy 20 / hunger and thirst −10
   (min 5) and exposure pushed 10 further from fine, `lastEvent:
   {kind:'collapse'}`. There is no death and no reset — the sandbox endures.
@@ -123,6 +129,37 @@ a new icon is a PATHS entry, and an unknown icon name throws.
 The view model carries it, so the nameplate and the profile sheet's title can
 never disagree.
 
+## Inventory (the pack)
+
+`world.inventory` is a flat frozen list of carried things — world state, like
+locations and the player. The rules that read it live in `core/inventory` and
+nowhere else, so the sheet, the take gate and the clock cannot disagree:
+
+- **Weight, not slots.** A thing's `weight` is its own data field, validated
+  non-negative and defaulting to `PACK_CONFIG.defaultWeight` (2). Capacity is
+  `baseCapacity + strength` — 8 + 10 = 18 for the default body. `loadState`
+  returns load, capacity, free space, the share the meter paints, and the
+  band (`ok` / `heavy` / `full`).
+- **Heavy is 75% of capacity.** From there `player.effectiveCost` multiplies
+  effort verbs (walk, enter, exit, climb, descend, approach) by
+  `PACK_CONFIG.burdenCost` (1.25). Talking, eating and everything else keep
+  their normal price. The burden verdict is the fifth argument to
+  `effectiveCost`; `player.step` reads it from `loadState(world)`.
+- **Take is gated; drop is a verb.** `core/actions.perform` refuses a take
+  whose weight would pass capacity, with the numbers in the reason ("it
+  weighs W, and you have F free of C") and the usual half-minute failure.
+  `drop` costs 30 seconds and 1 energy: the thing leaves the pack and joins
+  the current location's interactables flagged `dropped: true`.
+  `core/render-text` names dropped things in one sentence after the passage,
+  with `{id|name}` placeholders so the word stays clickable; taking it back
+  strips the flag.
+- **Carried verbs.** `inventory.actionsFor(held)` is the type's verbs minus
+  `take` (it is already yours), plus eat/drink when the thing has those
+  values, plus `drop` last. The pack sheet paints those verbs as buttons.
+- **The sheet** is core/inventory's `model(world)`: a load meter (the one bar
+  in the chrome — the report card's dots stay dots), an optional heavy/full
+  note, and one row per thing. No arithmetic and no prose in `ui/ribbons`.
+
 ## Ribbons and sheets (map-pane chrome)
 - The ribbons and their sheets are **shell chrome**: children of the shell,
   rendered by app/game on every pass with the current world (see ADR-0014).
@@ -133,9 +170,16 @@ never disagree.
   never show a stale body. One sheet at a time; close by the X, by the ribbon
   again, or by Escape. `render` never moves focus; open hands focus to the
   close button, close hands it back to the ribbon.
-- Adding a ribbon: one entry in `RIBBONS` in `ui/ribbons.js`, one icon case
-  in `icon()`, one sheet branch in `buildSheet()`, and the sheet's colours
-  must come from tokens and clear WCAG AA (theme-contrast.test.js).
+- The ribbons are **profile** (who you are), **inventory** (the pack) and
+  **settings** (a placeholder), in that order.
+- Adding a ribbon: one entry in `RIBBONS` in `ui/ribbons.js`, one icon entry
+  in `ui/icons.js` plus its reference in `RIBBON_ICONS`, one sheet branch in
+  `buildSheet()`, and the sheet's colours must come from tokens and clear
+  WCAG AA (theme-contrast.test.js).
+- The pack sheet's row verbs are buttons carrying `data-item` / `data-verb`
+  (never `data-action` — the shell's delegated click fallback would fire them
+  twice). They dispatch the same `vinland:action` document event as the prose
+  dropdown, so `ui/ribbons` never requires `app/game`.
 - Icons are **inlined lucide** path data (24×24 stroke grid, `stroke:
   currentColor` so the colour is a token). No CDN, no icon font — the game
   must run from `file://` with nothing to fetch.

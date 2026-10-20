@@ -25,6 +25,19 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 15 — the pack, and its own ribbon.** What you carry is now a
+mechanic: every takeable thing has a **weight**, a back carries **8 +
+strength** (18 at the default 10), and the shore's seven takeables weigh
+**21** together — so taking is a choice. At three-quarters full the load is
+**heavy** and effort verbs take 25% longer; a take past the limit is refused
+with the numbers that decided it. **Drop** is a verb (30 seconds): the thing
+lands where you stand, and the place prose names it with the word still
+clickable. A third ribbon — **inventory**, a backpack — drops **The Pack**:
+a load meter, a heavy/full warning, and one row per thing with its weight and
+verbs (examine, eat/drink, drop). The sheet is rebuilt from the world every
+pass, so eating from it empties the row in front of you. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 14 — warmth is now exposure, and it cuts both ways.** The fifth
 vital is no longer a tank that only empties into the cold. **Exposure** is a
 needle with a comfortable middle: it starts at **50 — feeling fine** — and the

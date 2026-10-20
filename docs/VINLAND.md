@@ -41,6 +41,15 @@ never crash).
 
 ## Current state
 
+**Iteration 15** — what you carry is a mechanic and has its own ribbon. The
+pack is **weight**, not slots: each takeable thing has a weight and a back
+carries **8 + strength** (18 by default); three-quarters full is heavy and
+slows effort verbs by 25%; a take that would pass the limit is refused with
+the numbers that decided it. **Drop** returns a thing to the ground, where
+the place prose names it and the word stays clickable. The **inventory**
+ribbon (a backpack) drops The Pack: a load meter, a heavy/full warning, and
+a row per thing with its weight and verbs. See `docs/CHANGELOG.md`.
+
 **Iteration 14** — the fifth vital is **exposure**, not warmth: a needle
 with a comfortable middle (50 is feeling fine) that the open air pushes
 toward freezing at 0 or overheating at 100, and that shelter settles back.

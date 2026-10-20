@@ -707,3 +707,140 @@
   margin: 0;
   color: var(--color-text);
 }
+
+/* ------------------------------------------------- the pack (inventory sheet) */
+
+/*
+ * The inventory sheet is a narrower card than the report card: a load meter,
+ * a note when the pack rides heavy, and one row per carried thing. The meter
+ * is the only bar in the chrome — the report card's dots stay dots — because
+ * this bar is a weight against a limit, not a level on a scale. Its fill is a
+ * box like the dot fill, so the inline width is honoured in a browser.
+ */
+.sheet--pack {
+  width: min(var(--pack-sheet-width), calc(50vw - 32px));
+}
+
+.pack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pack__load {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pack__load-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pack__summary {
+  color: var(--color-text-bright);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pack__meter {
+  block-size: var(--pack-meter-height);
+  border-radius: 999px;
+  background: var(--color-dot-track);
+  overflow: hidden;
+}
+
+.pack__meter-fill {
+  display: block;
+  block-size: 100%;
+  background: var(--color-accent);
+  transition:
+    width 200ms var(--ease-smooth),
+    background 200ms var(--ease-smooth);
+}
+
+.pack__meter-fill--heavy {
+  background: var(--color-stat-low);
+}
+
+.pack__meter-fill--full {
+  background: var(--color-stat-critical);
+}
+
+.pack__note {
+  margin: 0;
+  color: var(--color-stat-low);
+  font-size: var(--font-size-small);
+}
+
+.pack__note--full {
+  color: var(--color-stat-critical);
+}
+
+.pack__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.pack__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+  border-block-end: 1px solid var(--color-dropdown-border);
+}
+
+.pack__row:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
+}
+
+.pack__row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.pack__name {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pack__weight {
+  color: var(--color-text-dim);
+  font-size: var(--font-size-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.pack__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.pack__action {
+  appearance: none;
+  margin: 0;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-dropdown-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.pack__action:hover,
+.pack__action:focus-visible {
+  color: var(--color-text-bright);
+  background: var(--color-dropdown-hover);
+  outline: none;
+}

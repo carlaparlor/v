@@ -34,6 +34,7 @@ Vinland.define('core/player', function (require) {
 
   const time = require('core/time');
   const environment = require('core/environment');
+  const inventoryMod = require('core/inventory');
 
   const ATTRIBUTES = Object.freeze(['strength', 'charisma', 'intelligence', 'dexterity', 'constitution']);
   const ATTRIBUTE_SHORT = Object.freeze({
@@ -56,7 +57,7 @@ Vinland.define('core/player', function (require) {
     /** Energy spent per action, before strength. Unlisted verbs cost nothing. */
     energyCost: Object.freeze({
       walk: 4, enter: 3, exit: 3, climb: 3, descend: 3,
-      approach: 3, talk: 2, open: 1, close: 1, take: 1, use: 2,
+      approach: 3, talk: 2, open: 1, close: 1, take: 1, drop: 1, use: 2,
       eat: 1, drink: 1, failure: 1
     }),
     /** Effort actions whose energy cost scales with strength. */
@@ -168,11 +169,16 @@ Vinland.define('core/player', function (require) {
 
   /**
    * Effective time cost for an action, before weather: base cost bent by attributes,
-   * then condition. Weather (core/environment) layers on after, in step,
-   * so it always adds its flat minutes to a cost that already reflects you.
-   * Neutral at the defaults: every factor is 1 at attribute 10 and stats >= 50.
+   * then condition, then the load on your back. Weather (core/environment) layers
+   * on after, in step, so it always adds its flat minutes to a cost that already
+   * reflects you. Neutral at the defaults: every factor is 1 at attribute 10,
+   * stats >= 50 and a light pack.
+   *
+   * `burdened` is the pack's verdict (core/inventory.burdened): a heavy load
+   * slows effort verbs only — a heavy pack does not make talking or eating
+   * take longer.
    */
-  function effectiveCost(player, action, base, exposed) {
+  function effectiveCost(player, action, base, exposed, burdened) {
     let cost = base;
     const C = PLAYER_CONFIG;
     const a = player.attributes;
@@ -182,6 +188,9 @@ Vinland.define('core/player', function (require) {
     if (s.energy < C.conditions.criticalBelow) cost *= C.conditions.exhaustedCost;
     if (exposed && C.effort.indexOf(action) !== -1 && exposureStressed(s.exposure)) {
       cost *= C.conditions.strainedTravel;
+    }
+    if (burdened && C.effort.indexOf(action) !== -1) {
+      cost *= inventoryMod.PACK_CONFIG.burdenCost;
     }
     return round2(cost);
   }
@@ -274,7 +283,15 @@ Vinland.define('core/player', function (require) {
       : (time.COSTS[action] !== undefined ? time.COSTS[action] : 60);
     const source = opts.source || world;
     const exposed = isExposed(source, world.current);
-    const cost = environment.duration(source, action, effectiveCost(world.player, action, base, exposed), world.current);
+    // The pack is weighed after the structural effect (a taken thing is in
+    // the pack when the clock is priced), so carry and drop act at once.
+    const load = inventoryMod.loadState(world);
+    const cost = environment.duration(
+      source,
+      action,
+      effectiveCost(world.player, action, base, exposed, load.burdened),
+      world.current,
+    );
     if (!cost) return world;
     // lastEvent names the most recent notable transition: a new action clears
     // the old one, or (in collapse) writes a fresh one.

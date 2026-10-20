@@ -81,6 +81,27 @@ Vinland.define('core/render-text', function (require) {
     }).join('');
   }
 
+  /** "a", "a and b", "a, b and c" — the pack's prose lists things the same way. */
+  function joinAnd(parts) {
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    return parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+  }
+
+  /**
+   * Things you have set down are yours no longer but they are still here:
+   * one sentence of the place's own prose, with {id} placeholders so the
+   * dropped word stays clickable where it lies (core/actions marks them
+   * `dropped`). The authored passage is untouched — this is a paragraph
+   * after it, never a list appended to it.
+   */
+  function droppedLine(dropped) {
+    var words = dropped.map(function (inter) {
+      return 'your {' + inter.id + '|' + inter.name + '}';
+    });
+    return 'You have set down ' + joinAnd(words) + ' here.';
+  }
+
   /**
    * @param {object} world
    * @returns {{ region: string, place: string, title: string, paragraphs: string[],
@@ -102,7 +123,10 @@ Vinland.define('core/render-text', function (require) {
     // A passage could be multiline? Currently single string; treat as one paragraph.
     // If it contains newlines, split.
     const passage = (loc.passages || {})[time.clock(world).phase] || loc.passage;
-    const rawParagraphs = passage.split('\n\n').concat(time.atmosphere(world, !!loc.within), environment.atmosphere(world));
+    const dropped = list.filter(function (inter) { return inter.dropped === true; });
+    const rawParagraphs = passage.split('\n\n');
+    if (dropped.length > 0) rawParagraphs.push(droppedLine(dropped));
+    rawParagraphs.push(time.atmosphere(world, !!loc.within), environment.atmosphere(world));
     const richParagraphs = rawParagraphs.map(function (p) {
       return parseSegments(p, byId, world);
     });

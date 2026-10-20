@@ -6,7 +6,7 @@ Vinland.define('core/time', function (require) {
 
   const START = 6 * 3600;
   const COSTS = Object.freeze({ walk: 300, enter: 300, exit: 300, climb: 300,
-    descend: 300, take: 60, open: 60, close: 60, use: 60, talk: 600,
+    descend: 300, take: 60, drop: 30, open: 60, close: 60, use: 60, talk: 600,
     approach: 300, eat: 60, drink: 60, rest: 60, examine: 0, failure: 30 });
 
   function seconds(world) {
