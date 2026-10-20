@@ -1,10 +1,13 @@
 /**
- * Ribbons and sheets — the bookmarks on the map pane's top-right corner.
+ * Ribbons and sheets — the bookmarks on the map pane's top-right corner, and
+ * the centered modals they open.
  *
  * Three ribbons (profile, inventory, settings) stick out of the pane's top
- * edge into the shell's top band; clicking one drops a sheet from the corner.
- * Profile shows who you are (your attributes); inventory shows the pack —
- * what you carry, what it weighs, and what you can do with it; settings is a
+ * edge into the shell's top band; clicking one opens a MODAL: a dimming
+ * backdrop over the whole game and one centered sheet card. No corner
+ * drop-overs — the sheet is the front door while it is open. Profile shows who
+ * you are (your attributes); inventory shows the rig — what rides in hand and
+ * on your body, what the pack stows, and what all of it weighs; settings is a
  * placeholder for now. The pack's numbers are core/inventory's view model;
  * this module only paints them and sends the row verbs on as actions.
  *
@@ -15,10 +18,10 @@
  * in the world: a sheet is chrome, the way the interactable dropdown is chrome
  * in ui/panel-text. Same decoupling: this module never requires app/game.
  *
- * The ribbons and sheet are children of the SHELL, not of the map pane: the
+ * The ribbons and modal are children of the SHELL, not of the map pane: the
  * pane's overflow is hidden (it clips the police tape), and nothing clipped by
  * a pane may get to stick out of it. The shell is position:relative and owns
- * the top band the ribbons hang from.
+ * the top band the ribbons hang from — and the box the modal covers.
  *
  * Icons are lucide (see https://lucide.dev), inlined — no CDN: the game must
  * run from file:// with nothing to fetch. The path data lives in ui/icons,
@@ -51,6 +54,12 @@ Vinland.define('ui/ribbons', function (require) {
     settings: 'Settings',
   });
 
+  /** The rig's two slots, in the order the sheet paints them. */
+  const RIG_SLOTS = Object.freeze([
+    Object.freeze({ slot: 'hand', label: 'Hand', icon: 'hand' }),
+    Object.freeze({ slot: 'body', label: 'Body', icon: 'shirt' }),
+  ]);
+
   /** One line under each attribute name in the profile sheet. */
   const ATTRIBUTE_NOTES = Object.freeze({
     strength: 'Effort costs less energy.',
@@ -65,7 +74,7 @@ Vinland.define('ui/ribbons', function (require) {
   let entering = false;
   /** The nodes this module last built, so a re-render can retire them. */
   let bar = null;
-  let sheet = null;
+  let modal = null;
   /** The world from the last render pass — the sheet is data, not cache. */
   let lastShell = null;
   let lastWorld = null;
@@ -163,34 +172,72 @@ Vinland.define('ui/ribbons', function (require) {
     document.dispatchEvent(ev);
   }
 
-  /** The load meter: one bar, banded, with the fill width from the model. */
-  function packLoad(model) {
-    const load = el('div', 'pack__load');
-    const head = el('div', 'pack__load-head');
-    head.appendChild(el('span', 'pack__summary', model.summary));
-    load.appendChild(head);
-    const meter = el('div', 'pack__meter');
-    meter.setAttribute('aria-hidden', 'true');
-    const fill = el('span', 'pack__meter-fill pack__meter-fill--' + model.band);
-    fill.style.width = (Math.round(model.share * 1000) / 10) + '%';
-    meter.appendChild(fill);
-    load.appendChild(meter);
-    if (model.note) load.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
-    return load;
+  /**
+   * The strain gauge: one colored segment per stowed thing, sized by its
+   * share of the load, then the free remainder — so the meter shows WHAT is
+   * weighing you down. A tick marks the ¾ line where the pack turns heavy.
+   */
+  function packGauge(model) {
+    const gauge = el('div', 'pack__gauge');
+    gauge.setAttribute('aria-hidden', 'true');
+    for (const seg of model.gauge) {
+      const piece = el('span', seg.kind === 'free' ? 'pack__gauge-free' : 'pack__gauge-segment');
+      piece.style.width = (Math.round(seg.share * 1000) / 10) + '%';
+      if (seg.kind !== 'free' && seg.color) piece.style.background = seg.color;
+      gauge.appendChild(piece);
+    }
+    const tick = el('span', 'pack__gauge-tick');
+    tick.style.left = (inventoryMod.PACK_CONFIG.burdenedAt * 100) + '%';
+    gauge.appendChild(tick);
+    return gauge;
+  }
+
+  /** The load's two meters: what you haul and what you stow, side by side. */
+  function packVitals(model) {
+    const vitals = el('div', 'pack__vitals');
+    const strain = el('div', 'pack__meter');
+    strain.appendChild(el('p', 'pack__summary', model.summary));
+    strain.appendChild(packGauge(model));
+    vitals.appendChild(strain);
+
+    const room = el('div', 'pack__meter pack__meter--room');
+    room.appendChild(el('p', 'pack__room', model.roomSummary));
+    const rack = el('div', 'pack__rack');
+    rack.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < model.slots; i++) {
+      const slot = el('span', 'pack__rack-slot');
+      if (i < model.bulk) slot.classList.add('pack__rack-slot--full');
+      rack.appendChild(slot);
+    }
+    room.appendChild(rack);
+    vitals.appendChild(room);
+
+    if (model.note) vitals.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
+    return vitals;
   }
 
   /** One carried thing: its word and weight, then the verbs it offers. */
-  function packRow(item) {
-    const row = el('div', 'pack__row');
+  function packRow(item, extraClass) {
+    const row = el('div', 'pack__row' + (extraClass ? ' ' + extraClass : ''));
     row.dataset.item = item.id;
     const head = el('div', 'pack__row-head');
+    const swatch = el('span', 'pack__swatch');
+    swatch.style.background = item.color;
+    swatch.setAttribute('aria-hidden', 'true');
+    head.appendChild(swatch);
     const name = el('span', 'pack__name', item.name);
     name.style.color = item.color;
     head.appendChild(name);
+    const badges = el('span', 'pack__badges');
+    const bulk = el('span', 'pack__bulk', '\u25ae' + item.bulk);
+    bulk.setAttribute('title', item.name + ' takes ' + item.bulk + (item.bulk === 1 ? ' slot' : ' slots'));
+    bulk.setAttribute('aria-label', item.name + ' takes ' + item.bulk + (item.bulk === 1 ? ' slot' : ' slots'));
+    badges.appendChild(bulk);
     const weight = el('span', 'pack__weight', String(item.weight));
     weight.setAttribute('title', item.name + ' weighs ' + item.weight);
     weight.setAttribute('aria-label', item.name + ' weighs ' + item.weight);
-    head.appendChild(weight);
+    badges.appendChild(weight);
+    head.appendChild(badges);
     row.appendChild(head);
 
     const actions = el('div', 'pack__actions');
@@ -210,7 +257,23 @@ Vinland.define('ui/ribbons', function (require) {
     return row;
   }
 
-  /** The inventory sheet: the pack's weight, then what is in it. */
+  /** One rig slot: the label, then what rides there (or the empty truth). */
+  function rigSlot(spec, item) {
+    const box = el('div', 'rig-slot rig-slot--' + spec.slot);
+    const head = el('div', 'rig-slot__head');
+    head.appendChild(iconsMod.icon(spec.icon, 'rig-slot__icon'));
+    head.appendChild(el('span', 'rig-slot__label', spec.label));
+    box.appendChild(head);
+    if (item) {
+      box.appendChild(packRow(item, 'pack__row--rig'));
+    } else {
+      box.appendChild(el('p', 'rig-slot__empty',
+        spec.slot === 'body' ? 'Nothing worn.' : 'Nothing in hand.'));
+    }
+    return box;
+  }
+
+  /** The inventory sheet: the meters, the rig, then what is in the pack. */
   function buildPack(world) {
     const wrap = el('div', 'pack');
     const model = inventoryMod.model(world);
@@ -218,15 +281,29 @@ Vinland.define('ui/ribbons', function (require) {
       wrap.appendChild(el('p', 'sheet__empty', 'No pack in this world.'));
       return wrap;
     }
-    wrap.appendChild(packLoad(model));
-    if (model.items.length === 0) {
-      wrap.appendChild(el('p', 'sheet__empty', 'Your pack is empty. Whatever you take from the shore will be carried here.'));
+    wrap.appendChild(packVitals(model));
+
+    const rig = el('div', 'pack__rig');
+    rig.appendChild(el('h3', 'pack__section', 'On you'));
+    const slots = el('div', 'pack__rig-slots');
+    for (const spec of RIG_SLOTS) {
+      slots.appendChild(rigSlot(spec, model[spec.slot === 'hand' ? 'held' : 'worn'][0] || null));
+    }
+    rig.appendChild(slots);
+    wrap.appendChild(rig);
+
+    const stash = el('div', 'pack__stash');
+    stash.appendChild(el('h3', 'pack__section', 'In the pack'));
+    if (model.stowed.length === 0) {
+      stash.appendChild(el('p', 'sheet__empty', 'Your pack is empty. Whatever you take from the shore will be carried here.'));
+      wrap.appendChild(stash);
       return wrap;
     }
     const list = el('div', 'pack__list');
     list.setAttribute('role', 'list');
-    for (const item of model.items) list.appendChild(packRow(item));
-    wrap.appendChild(list);
+    for (const item of model.stowed) list.appendChild(packRow(item));
+    stash.appendChild(list);
+    wrap.appendChild(stash);
     return wrap;
   }
 
@@ -250,11 +327,13 @@ Vinland.define('ui/ribbons', function (require) {
     return barEl;
   }
 
+  /** The sheet card itself (the modal's front door). */
   function buildSheet(kind, world) {
     const s = el('div', 'sheet');
     s.dataset.sheet = kind;
     if (kind === 'inventory') s.classList.add('sheet--pack');
     s.setAttribute('role', 'dialog');
+    s.setAttribute('aria-modal', 'true');
     s.setAttribute('aria-label', SHEET_LABELS[kind] || 'Sheet');
     const model = kind === 'profile' ? playerMod.model(world && world.player) : null;
     const name = model && model.name ? model.name : 'You';
@@ -297,6 +376,26 @@ Vinland.define('ui/ribbons', function (require) {
     return s;
   }
 
+  /**
+   * The modal: a dimming backdrop over the whole game and the sheet card
+   * centered in it. Clicking the backdrop (or the X, or Escape, or the
+   * ribbon again) closes; the card itself never leaks a click through.
+   */
+  function buildModal(kind, world) {
+    const wrap = el('div', 'modal');
+    wrap.dataset.modal = kind;
+    const backdrop = el('div', 'modal__backdrop');
+    backdrop.dataset.close = 'sheet';
+    backdrop.setAttribute('aria-hidden', 'true');
+    backdrop.addEventListener('click', function (ev) {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      closeSheet();
+    });
+    wrap.appendChild(backdrop);
+    wrap.appendChild(buildSheet(kind, world));
+    return wrap;
+  }
+
   function focusNode(node) {
     if (node && typeof node.focus === 'function') {
       try { node.focus(); } catch (_) {}
@@ -304,7 +403,7 @@ Vinland.define('ui/ribbons', function (require) {
   }
 
   /**
-   * Render the ribbon bar (and the open sheet, if any) onto the shell.
+   * Render the ribbon bar (and the open modal, if any) onto the shell.
    * Called by app/game on every pass with the current world, so the sheet
    * never outlives a render with stale data. Pure chrome — it never moves
    * focus, so a render can never yank it away from the player's hands.
@@ -327,18 +426,21 @@ Vinland.define('ui/ribbons', function (require) {
     }
     if (!shell || !shell.appendChild) return;
     detach(bar);
-    detach(sheet);
+    detach(modal);
     bar = buildBar();
     shell.appendChild(bar);
     if ((openKind === 'profile' || openKind === 'inventory') && !(world && world.player)) openKind = null;
     if (openKind) {
-      sheet = buildSheet(openKind, world);
+      modal = buildModal(openKind, world);
+      const sheet = findByDataset(modal, 'sheet', openKind);
       if (entering) {
-        sheet.classList.add('sheet--entering');
+        modal.classList.add('modal--entering');
+        if (sheet) sheet.classList.add('sheet--entering');
         entering = false;
       }
-      shell.appendChild(sheet);
+      shell.appendChild(modal);
     } else {
+      modal = null;
       entering = false;
     }
   }
@@ -351,8 +453,8 @@ Vinland.define('ui/ribbons', function (require) {
     render(lastShell, lastWorld);
     if (wasOpen) {
       if (bar) focusNode(findByDataset(bar, 'sheet', kind));
-    } else if (sheet) {
-      focusNode(findByDataset(sheet, 'close', 'sheet'));
+    } else if (modal) {
+      focusNode(findByDataset(modal, 'close', 'sheet'));
     }
   }
 
@@ -378,7 +480,7 @@ Vinland.define('ui/ribbons', function (require) {
     return null;
   }
 
-  /** For tests: which sheet is open ('profile' | 'settings' | null). */
+  /** For tests: which sheet is open ('profile' | 'inventory' | 'settings' | null). */
   function open() {
     return openKind;
   }

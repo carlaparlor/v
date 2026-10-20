@@ -3,6 +3,55 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 17 — the rig: room and strain, gear you wear, and centered modals
+
+**Asked:** redesign and revamp the inventory system ("rework the rules too"), and
+fix the ribbon modals — "i hate how they're just in the corner like that."
+
+The pack is no longer one number. **It is a rig with two dimensions and three
+places things ride:**
+
+- **Room (bulk):** every thing takes `bulk` slots (its own field, whole
+  numbers, default 1) in a rack of **6 + half of strength** — 11 slots at the
+  default 10. A bloom-iron eats three slots; a herring one. What you can
+  stow is shaped, not just summed.
+- **Strain (weight):** the load a body hauls against **8 + strength** (18 by
+  default), heavy at three-quarters with the same 25% effort surcharge.
+  Take is refused by whichever dimension says no, always with its numbers —
+  "it weighs 2, and you have 1 free of 18" or "it needs 3 slots, and you
+  have 2 free of 11". Unequipping must fit like anything else.
+- **The rig (wear & wield):** an item may declare `equip: 'hand' | 'body'`
+  and ride ON you — zero bulk, zero weight while it rides ("a thing on your
+  body is worn; a thing in the pack is carried"). One thing per slot; a
+  second hand-thing is refused ("Your hand already holds the seax.").
+  `equip`/`unequip` are verbs (30 seconds, fine work like take): the shore
+  ships a **storm-cloak** (body) and a **seax** (hand) to wear and wield.
+  The shore's nine takeables weigh **24** and fill **14 slots** against 18
+  and 11 — so what you take, stow, and wear is all a choice.
+
+**The sheet is a real modal now.** Clicking a ribbon drops a dimming veil
+over the whole game and raises **one centered card** — never a corner
+drop-over. Close by the X, by the backdrop, by the ribbon again, or by
+Escape; the entrance is a 180ms rise, once on open, never on live re-renders.
+
+**The pack sheet is tactile:** the strain gauge is **one colored segment per
+stowed thing** (sized by its weight share, painted in the thing's own colour)
+plus the free remainder, with a tick at the heavy line — it shows WHAT is
+weighing you down. The rack reads as one square per slot, filled ones taken.
+Two chunky rig slots (Hand / Body) hold what rides on you; stowed things get
+rows with a colour swatch, bulk and weight badges, and verb pills
+(examine / eat / drink / equip / unequip / drop). Profile keeps its report
+card inside the new modal.
+
+Pinned across `core-inventory`, `ui-ribbons` and `app-game`: bulk and equip
+validation, the strength-shaped rack, reason-named refusals, one-thing-per-
+slot, equipped things counting against neither meter, the gauge's segment
+widths and colours, modal/backdrop structure and centering, backdrop-click
+dismissal, and pack verbs settling in place (toast, no result view) exactly
+like take and drop. **250 tests, 0 failures.**
+
+---
+
 ## Iteration 16 — refined typography, sheet layout, cartographic hierarchy and interaction polish
 
 **Asked:** improve the frontend design without changing the overall vibe.

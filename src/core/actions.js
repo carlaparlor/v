@@ -66,6 +66,14 @@ Vinland.define('core/actions', function (require) {
       case 'eat': return 'You eat the ' + name + '.';
       case 'drink': return 'You drink from the ' + name + '.';
       case 'rest': return 'You rest on the ' + name + '.';
+      // The rig: the declared slot is `equip` ('hand' | 'body'), so the verb's
+      // prose can never share that key — it lives in equipText / unequipText.
+      case 'equip': return interactable.equip === 'body'
+        ? 'You put on the ' + name + '.'
+        : 'You take the ' + name + ' in hand.';
+      case 'unequip': return interactable.equip === 'body'
+        ? 'You take off the ' + name + ' and stow it in the pack.'
+        : 'You stow the ' + name + ' in the pack.';
       default: return 'You ' + action + ' the ' + name + '.';
     }
   }
@@ -95,6 +103,18 @@ Vinland.define('core/actions', function (require) {
     if (interactable && action === 'rest' &&
         typeof interactable.restText === 'string' && interactable.restText.length > 0) {
       return interactable.restText;
+    }
+    // Same for the rig: `equip` names the slot, so the verbs' prose lives in
+    // equipText / unequipText (and never falls through to the `equip` field).
+    if (interactable && action === 'equip') {
+      return (typeof interactable.equipText === 'string' && interactable.equipText.length > 0)
+        ? interactable.equipText
+        : fallbackText(interactable, action);
+    }
+    if (interactable && action === 'unequip') {
+      return (typeof interactable.unequipText === 'string' && interactable.unequipText.length > 0)
+        ? interactable.unequipText
+        : fallbackText(interactable, action);
     }
     if (interactable && typeof interactable[action] === 'string' && interactable[action].length > 0) {
       return interactable[action];
@@ -241,12 +261,13 @@ Vinland.define('core/actions', function (require) {
     return Object.freeze(newWorld);
   }
 
-  /** The version of a thing that goes into the pack: it is no longer dropped. */
+  /** The version of a thing that goes into the pack: it is no longer dropped,
+   *  and it rides stowed — never still flagged as worn or held. */
   function carriedCopy(interactable) {
-    if (interactable.dropped !== true) return interactable;
+    if (interactable.dropped !== true && interactable.equipped === undefined) return interactable;
     var copy = {};
     for (var key in interactable) {
-      if (key !== 'dropped') copy[key] = interactable[key];
+      if (key !== 'dropped' && key !== 'equipped') copy[key] = interactable[key];
     }
     return Object.freeze(copy);
   }
@@ -260,7 +281,10 @@ Vinland.define('core/actions', function (require) {
   function dropItem(world, interactable) {
     var locId = world.current;
     var loc = world.locations[locId];
-    var dropped = Object.freeze(Object.assign({}, interactable, { dropped: true }));
+    // On the ground a thing is neither worn nor held: the rig flag belongs to
+    // the pack, exactly like the dropped mark belongs to the ground.
+    var grounded = carriedCopy(interactable);
+    var dropped = Object.freeze(Object.assign({}, grounded, { dropped: true }));
     var locations = Object.assign({}, world.locations);
     locations[locId] = Object.assign({}, loc, {
       interactables: Object.freeze((loc.interactables || []).concat([dropped])),
@@ -274,6 +298,21 @@ Vinland.define('core/actions', function (require) {
       locations: Object.freeze(locations),
       inventory: Object.freeze(inventory),
     }));
+  }
+
+  /** Flip the rig flag on a carried thing: 'hand' | 'body' to ride on you,
+   *  null to stow it back in the pack. Returns NEW frozen state. */
+  function setEquipped(world, interactableId, slot) {
+    var inventory = (world.inventory || []).map(function (it) {
+      if (it.id !== interactableId) return it;
+      var copy = {};
+      for (var key in it) {
+        if (key !== 'equipped') copy[key] = it[key];
+      }
+      if (slot) copy.equipped = slot;
+      return Object.freeze(copy);
+    });
+    return Object.freeze(Object.assign({}, world, { inventory: Object.freeze(inventory) }));
   }
 
   /** Plain text of a segmented result: placeholders resolved to their words. */
@@ -350,11 +389,31 @@ Vinland.define('core/actions', function (require) {
       return failedAttempt(world, interactable, action, 'You are not thirsty enough to drink from the ' + interactable.name + '.', false);
     }
 
-    // The pack says no: it will not close over one more thing.
+    // The pack says no: it will not close over one more thing (room first,
+    // then strain — refusalText names whichever dimension refused).
     if (action === 'take' && interactable.type === 'item' && !found.fromInventory && found.locationId) {
       var fit = inventoryMod.fitFor(world, interactable);
       if (!fit.ok) {
-        return failedAttempt(world, interactable, action, inventoryMod.tooHeavyText(interactable, fit), false);
+        return failedAttempt(world, interactable, action, inventoryMod.refusalText(interactable, fit), false);
+      }
+    }
+
+    // The rig says no: a hand or body already has something riding on it.
+    if (action === 'equip' && found.fromInventory) {
+      var slot = inventoryMod.equipSlot(interactable);
+      var occupant = inventoryMod.equippedIn(world, slot);
+      if (occupant && occupant.id !== interactable.id) {
+        var where = slot === 'body' ? 'You already wear the ' : 'Your hand already holds the ';
+        return failedAttempt(world, interactable, action, where + (occupant.name || occupant.id) + '.', false);
+      }
+    }
+
+    // Stowing a worn or held thing back must fit like anything else — the
+    // rack and the load only answer for what the pack actually carries.
+    if (action === 'unequip' && found.fromInventory) {
+      var refit = inventoryMod.fitFor(world, interactable);
+      if (!refit.ok) {
+        return failedAttempt(world, interactable, action, inventoryMod.refusalText(interactable, refit), false);
       }
     }
 
@@ -372,6 +431,12 @@ Vinland.define('core/actions', function (require) {
     } else if (action === 'drop' && found.fromInventory) {
       // The pack gives it back to the ground at the current place.
       nextWorld = dropItem(world, interactable);
+    } else if (action === 'equip' && found.fromInventory && inventoryMod.equipSlot(interactable)) {
+      // Onto the rig: the thing rides on you, off the rack and off your back.
+      nextWorld = setEquipped(world, interactableId, inventoryMod.equipSlot(interactable));
+    } else if (action === 'unequip' && found.fromInventory && inventoryMod.equippedSlot(interactable)) {
+      // Back into the pack (the gate above proved it still fits).
+      nextWorld = setEquipped(world, interactableId, null);
     } else if (action === 'eat' && interactable.type === 'item' && interactable.food) {
       // Consume it from wherever it is reachable, and let it go into you.
       nextWorld = detachItem(world, found, interactableId);

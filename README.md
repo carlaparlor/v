@@ -25,6 +25,19 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 17 — the rig, and modals that mean it.** The pack now has **two
+dimensions**: **room** (bulk slots — a rack of 6 + half of strength, 11 at the
+default 10; a bloom-iron eats three, a herring one) and **strain** (weight —
+8 + strength, heavy at three-quarters, effort +25%). Take is refused by
+whichever dimension says no, always with its numbers. Some things **ride on
+you instead**: `equip: 'hand' | 'body'` gear (the shore ships a storm-cloak
+and a seax) takes zero bulk and zero weight while worn or held — one per
+slot, and stowing it back must fit. The ribbon sheets are **centered modals
+over a dimming backdrop** now — no more corner drop-overs — and the pack
+sheet is tactile: a load gauge built from one colored segment per thing (so
+you see *what* weighs you down), a slot rack, chunky hand/body rig slots, and
+verb pills on every row. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 16 — refined craft, same soul.** Self-hosted **IBM Plex Serif**
 (headings) and **IBM Plex Mono** (prose, vitals, clock and map) ship locally
 under `styles/fonts/` so `file://` renders identically offline on every OS;

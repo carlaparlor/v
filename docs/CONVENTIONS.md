@@ -42,10 +42,13 @@
   contents in `open:`/`examineOpen:` with `{id}` placeholders so the word highlights in
   the flow of the prose — never list contents in a sentence after it, and never in the
   location prose.
-- **Items may declare `weight`:** what they add to the pack if taken (default 2).
-  It must be a finite non-negative number; `validatePack` refuses anything else.
-  Weights are balance data — the shore's seven takeables total 21 against a
-  default capacity of 18.
+- **Items may declare `weight` and `bulk`:** what they add to the pack if
+  taken (core/inventory; defaults 2 and 1). `weight` must be a finite
+  non-negative number and `bulk` a positive integer; `validatePack` refuses
+  anything else. An item may also declare `equip: 'hand' | 'body'` — it can
+  ride on the rig instead of in the pack (see Inventory below). Weights and
+  bulk are balance data — the shore's nine takeables total 24 weight and 14
+  slots against a default 18 and 11.
 
 ## Player (attributes, skills, stats)
 
@@ -129,48 +132,71 @@ a new icon is a PATHS entry, and an unknown icon name throws.
 The view model carries it, so the nameplate and the profile sheet's title can
 never disagree.
 
-## Inventory (the pack)
+## Inventory (the rig)
 
-`world.inventory` is a flat frozen list of carried things — world state, like
-locations and the player. The rules that read it live in `core/inventory` and
-nowhere else, so the sheet, the take gate and the clock cannot disagree:
+`world.inventory` is a flat frozen list of everything ON YOU — world state,
+like locations and the player. An equipped thing carries
+`equipped: 'hand' | 'body'`; everything else is stowed. The rules that read
+it live in `core/inventory` and nowhere else, so the sheet, the take gate and
+the clock cannot disagree:
 
-- **Weight, not slots.** A thing's `weight` is its own data field, validated
-  non-negative and defaulting to `PACK_CONFIG.defaultWeight` (2). Capacity is
-  `baseCapacity + strength` — 8 + 10 = 18 for the default body. `loadState`
-  returns load, capacity, free space, the share the meter paints, and the
-  band (`ok` / `heavy` / `full`).
-- **Heavy is 75% of capacity.** From there `player.effectiveCost` multiplies
-  effort verbs (walk, enter, exit, climb, descend, approach) by
-  `PACK_CONFIG.burdenCost` (1.25). Talking, eating and everything else keep
-  their normal price. The burden verdict is the fifth argument to
-  `effectiveCost`; `player.step` reads it from `loadState(world)`.
+- **Room and strain, both from data.** A thing's `weight` (non-negative
+  number, default `PACK_CONFIG.defaultWeight` = 2) adds to the load a body
+  hauls against `baseCapacity + strength` — 8 + 10 = 18 for the default
+  body. Its `bulk` (positive integer, default `PACK_CONFIG.defaultBulk` = 1)
+  takes slots in a rack of `baseSlots + floor(strength × slotsPerStrength)` —
+  6 + 5 = 11 at strength 10. `loadState` returns both meters: load /
+  capacity / free / share / band (`ok` / `heavy` / `full`) and bulk / slots /
+  slotsFree / slotsShare / slotsBand (`ok` / `tight` / `full`).
+- **Heavy is 75% of strain only.** From there `player.effectiveCost`
+  multiplies effort verbs (walk, enter, exit, climb, descend, approach) by
+  `PACK_CONFIG.burdenCost` (1.25). Room is not drag: a full rack of feathers
+  is not a heavy back. Talking, eating and everything else keep their normal
+  price. The burden verdict is the fifth argument to `effectiveCost`;
+  `player.step` reads it from `loadState(world)`.
+- **The rig: worn and held.** An item may declare `equip: 'hand' | 'body'`
+  (validated: items only, those two values only). While it carries
+  `equipped: 'hand' | 'body'` it rides ON you — zero bulk, zero weight —
+  ("a thing on your body is worn; a thing in the pack is carried"). One
+  thing per slot: a second `equip` for an occupied slot is refused naming
+  the occupant ("Your hand already holds the seax."). `equip` / `unequip`
+  are verbs (30s, fine work like take; `equipText` / `unequipText` hold
+  their prose, since `equip` names the slot — never fall through to the
+  field). Unequipping must fit the rack and load like anything else; a
+  dropped thing always lands stowed (the flag belongs to the pack, exactly
+  as the `dropped` mark belongs to the ground).
 - **Take is gated; drop is a verb.** `core/actions.perform` refuses a take
-  whose weight would pass capacity, with the numbers in the reason ("it
-  weighs W, and you have F free of C") and the usual half-minute failure.
-  `drop` costs 30 seconds and 1 energy: the thing leaves the pack and joins
-  the current location's interactables flagged `dropped: true`.
-  `core/render-text` names dropped things in one sentence after the passage,
-  with `{id|name}` placeholders so the word stays clickable; taking it back
-  strips the flag.
+  that would pass either limit, with the numbers of the dimension that
+  refused ("it weighs W, and you have F free of C" or "it needs B slots, and
+  you have F free of S") and the usual half-minute failure. `drop` costs 30
+  seconds and 1 energy: the thing leaves the pack and joins the current
+  location's interactables flagged `dropped: true`. `core/render-text` names
+  dropped things in one sentence after the passage, with `{id|name}`
+  placeholders so the word stays clickable; taking it back strips the flag.
 - **Carried verbs.** `inventory.actionsFor(held)` is the type's verbs minus
   `take` (it is already yours), plus eat/drink when the thing has those
-  values, plus `drop` last. The pack sheet paints those verbs as buttons.
-- **The sheet** is core/inventory's `model(world)`: a load meter (the one bar
-  in the chrome — the report card's dots stay dots), an optional heavy/full
-  note, and one row per thing. No arithmetic and no prose in `ui/ribbons`.
+  values, plus `equip` or `unequip` when it can ride on you, and always
+  `drop` last. The pack sheet paints those verbs as buttons.
+- **The sheet** is core/inventory's `model(world)`: the two meters (strain
+  gauge — one segment per stowed thing in its own colour, so the meter shows
+  WHAT weighs you down — and the room rack), the notes, the rig's two slots,
+  and one row per stowed thing. No arithmetic and no prose in `ui/ribbons`.
 
 ## Ribbons and sheets (map-pane chrome)
 - The ribbons and their sheets are **shell chrome**: children of the shell,
   rendered by app/game on every pass with the current world (see ADR-0014).
   They are not a panel — they never own a pane. Nothing that must stick out of
   a pane may live inside one (the pane's `overflow: hidden` is load-bearing).
-- Open/closed is module state in `ui/ribbons`, never world state. The open
-  sheet is rebuilt from the current world on every render pass, so it can
-  never show a stale body. One sheet at a time; close by the X, by the ribbon
-  again, or by Escape. `render` never moves focus; open hands focus to the
-  close button, close hands it back to the ribbon.
-- The ribbons are **profile** (who you are), **inventory** (the pack) and
+- **A sheet is a modal:** a `.modal` wrapper over the whole shell — a dimming
+  `.modal__backdrop` (click closes) and one centered `.sheet` card. Never a
+  corner drop-over. Open/closed is module state in `ui/ribbons`, never world
+  state. The open sheet is rebuilt from the current world on every render
+  pass, so it can never show a stale body. One sheet at a time; close by the
+  X, by the backdrop, by the ribbon again, or by Escape. `render` never moves
+  focus; open hands focus to the close button, close hands it back to the
+  ribbon. The entrance (`.modal--entering` / `.sheet--entering`) plays once
+  on open, never on live re-renders.
+- The ribbons are **profile** (who you are), **inventory** (the rig) and
   **settings** (a placeholder), in that order.
 - Adding a ribbon: one entry in `RIBBONS` in `ui/ribbons.js`, one icon entry
   in `ui/icons.js` plus its reference in `RIBBON_ICONS`, one sheet branch in
@@ -179,12 +205,14 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
 - The pack sheet's row verbs are buttons carrying `data-item` / `data-verb`
   (never `data-action` — the shell's delegated click fallback would fire them
   twice). They dispatch the same `vinland:action` document event as the prose
-  dropdown, so `ui/ribbons` never requires `app/game`.
+  dropdown, so `ui/ribbons` never requires `app/game`. Pack verbs (drop,
+  equip, unequip) settle in place in `app/game` — toast, no result view —
+  exactly like take.
 - Icons are **inlined lucide** path data (24×24 stroke grid, `stroke:
   currentColor` so the colour is a token). No CDN, no icon font — the game
   must run from `file://` with nothing to fetch.
-- The profile sheet is **horizontal**: the two tiers sit side by side in
-  `.sheet__columns` (one column each), titled with the player's name. Each row
+- The profile sheet is **horizontal**: the attributes sit in
+  `.sheet__columns`, titled with the player's name. Each row
   is metered — name, then the grade letter standing alone at the right end,
   five dots (`.sheet__dot-fill` width set inline from the row's value, in
   half-circle steps; each circle is 20% of the scale, the empty circle is a

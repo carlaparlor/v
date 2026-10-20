@@ -1,11 +1,14 @@
 /**
- * The pack — the inventory mechanic.
+ * The rig — the inventory mechanic.
  *
- * Weight, not slots: every takeable thing adds its `weight` to one load; a
- * back carries `8 + strength` (18 by default); three-quarters full is heavy
- * and effort verbs take 25% longer. The pack refuses what will not fit, and
- * `drop` gives a thing back to the ground where its word stays clickable.
- * These tests pin the numbers, the gates, and the prose the ground gains.
+ * Room and strain: every takeable thing takes `bulk` slots in a rack of
+ * `6 + floor(strength/2)` (11 by default) and adds its `weight` to one load
+ * a back hauls against `8 + strength` (18 by default); three-quarters full
+ * is heavy and effort verbs take 25% longer. Some things declare
+ * `equip: 'hand' | 'body'` and ride on you instead — zero bulk, zero weight
+ * while equipped. The pack refuses what will not fit (naming the dimension
+ * that refused), and `drop` gives a thing back to the ground where its word
+ * stays clickable. These tests pin the numbers, the gates, and the prose.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -193,10 +196,15 @@ test('the shore holds more than a default back can carry, so taking is a choice'
   const takeables = [
     'salt-fish', 'herring', 'ropes',
     'bloom-iron', 'cold-slag', 'driftwood', 'tally-stick',
+    'storm-cloak', 'seax',
   ];
-  const total = inventory.loadOf(takeables.map((id) => worldMod.findInteractable(world, id)));
-  assert.equal(total, 21, 'the seven takeable things weigh twenty-one');
-  assert.ok(total > inventory.capacityFor(10), 'a default back cannot take them all');
+  const things = takeables.map((id) => worldMod.findInteractable(world, id));
+  const total = inventory.loadOf(things);
+  const room = inventory.roomOf(things);
+  assert.equal(total, 24, 'the nine takeable things weigh twenty-four');
+  assert.equal(room, 14, 'and fill fourteen slots');
+  assert.ok(total > inventory.capacityFor(10), 'a default back cannot haul them all');
+  assert.ok(room > inventory.slotsFor(10), 'and cannot stow them all either');
 });
 
 test('validatePack rejects a weight that is not a non-negative number', () => {
@@ -205,4 +213,153 @@ test('validatePack rejects a weight that is not a non-negative number', () => {
     p.locations[0].interactables[0].weight = bad;
     assert.throws(() => worldMod.validatePack(p), /weight must be a non-negative number/);
   }
+});
+
+test('bulk is data too: whole slots, with a default of one', () => {
+  assert.equal(inventory.bulkOf({ id: 'a', bulk: 3 }), 3);
+  assert.equal(inventory.bulkOf({ id: 'a' }), inventory.PACK_CONFIG.defaultBulk);
+  assert.equal(inventory.bulkOf({ id: 'a', bulk: 1.5 }), 1, 'a slot is a whole slot');
+  assert.equal(inventory.bulkOf({ id: 'a', bulk: 0 }), 1);
+  assert.equal(inventory.roomOf([{ bulk: 3 }, { bulk: 2 }, {}]), 6);
+});
+
+test('validatePack rejects a bulk that is not a positive integer, or equip that is not a rig slot', () => {
+  for (const bad of [0, -1, 1.5, 'big']) {
+    const p = testPack();
+    p.locations[0].interactables[0].bulk = bad;
+    assert.throws(() => worldMod.validatePack(p), /bulk must be a positive integer/);
+  }
+  for (const bad of ['pocket', 'head', true]) {
+    const p = testPack();
+    p.locations[0].interactables[0].equip = bad;
+    assert.throws(() => worldMod.validatePack(p), /equip must be 'hand' or 'body'/);
+  }
+  const nonItem = testPack();
+  nonItem.locations[0].interactables[0].type = 'fixture';
+  nonItem.locations[0].interactables[0].equip = 'hand';
+  assert.throws(() => worldMod.validatePack(nonItem), /equip is for items only/);
+});
+
+test('the rack is strength-shaped too: 6 + half of strength, in whole slots', () => {
+  assert.equal(inventory.slotsFor(10), 11, 'the default back stows eleven slots');
+  assert.equal(inventory.slotsFor(1), 6, 'the weakest back still stows something');
+  assert.equal(inventory.slotsFor(20), 16, 'the strongest back stows the most');
+  assert.equal(inventory.slotsOf(fresh()), 11);
+});
+
+test('a thing that will not fit is refused by the dimension that says no', () => {
+  // Weight refuses first when the load is the limit.
+  let world = fresh();
+  world = actions.perform(world, 'anvil', 'take').nextWorld; // 17 of 18 hauled
+  const heavyRefusal = actions.perform(world, 'stone', 'take');
+  assert.equal(heavyRefusal.failed, true);
+  assert.match(heavyRefusal.result.text, /weighs 2, and you have 1 free of 18/);
+  assert.equal(inventory.fitFor(world, { id: 's', type: 'item', weight: 2 }).reason, 'weight');
+
+  // Bulk refuses when the rack is the limit, and says so in slots.
+  let roomy = worldMod.createWorld({
+    ...testPack(),
+    locations: testPack().locations.map((loc) => loc.id !== 'room' ? loc : {
+      ...loc,
+      interactables: [
+        { id: 'crate', name: 'crate', type: 'item', weight: 1, bulk: 3, actions: ['examine', 'take'], examine: 'You look at the crate.' },
+        { id: 'sack', name: 'sack', type: 'item', weight: 1, bulk: 2, actions: ['examine', 'take'], examine: 'You look at the sack.' },
+      ],
+    }),
+    player: { attributes: { strength: 1 } }, // 6 + 0 = 6 slots
+  });
+  roomy = actions.perform(roomy, 'crate', 'take').nextWorld; // 3 of 6 slots
+  const refused = actions.perform(roomy, 'sack', 'take'); // would need 5... wait 3+2=5 <= 6
+  assert.equal(refused.failed, undefined, 'five of six slots still holds');
+  roomy = actions.perform(roomy, 'sack', 'take').nextWorld;
+  const tight = inventory.fitFor(roomy, { id: 'barrel', type: 'item', bulk: 2, weight: 1 });
+  assert.equal(tight.ok, false);
+  assert.equal(tight.reason, 'slots');
+  assert.equal(inventory.refusalText({ id: 'barrel', name: 'barrel' }, tight),
+    'Your pack will not take the barrel — it needs 2 slots, and you have 1 free of 6.');
+});
+
+test('a thing that rides on you is neither hauled nor stowed', () => {
+  const world = worldMod.createWorld(pack);
+  let loaded = actions.perform(world, 'seax', 'take').nextWorld;
+  assert.equal(inventory.loadState(loaded).load, 1, 'in the pack it drags');
+  assert.equal(inventory.loadState(loaded).bulk, 1, 'and takes a slot');
+
+  const equipped = actions.perform(loaded, 'seax', 'equip').nextWorld;
+  assert.equal(inventory.equippedSlot(equipped.inventory[0]), 'hand');
+  assert.equal(inventory.equippedIn(equipped, 'hand').id, 'seax');
+  const riding = inventory.loadState(equipped);
+  assert.equal(riding.load, 0, 'worn in hand it drags nothing');
+  assert.equal(riding.bulk, 0, 'and the rack is free of it');
+  assert.deepEqual(riding.held.map((i) => i.id), ['seax']);
+  assert.deepEqual(riding.stowed, []);
+
+  // Stowing it back must fit like anything else.
+  const back = actions.perform(equipped, 'seax', 'unequip').nextWorld;
+  assert.equal(inventory.loadState(back).load, 1);
+  assert.equal(inventory.equippedSlot(back.inventory[0]), null, 'stowed again');
+});
+
+test('the rig offers equip and unequip where they belong, and only there', () => {
+  const world = worldMod.createWorld(pack);
+  const seax = worldMod.findInteractable(world, 'seax');
+  assert.deepEqual(inventory.actionsFor(seax), ['examine', 'equip', 'drop']);
+  const worn = { ...seax, equipped: 'hand' };
+  assert.deepEqual(inventory.actionsFor(worn), ['examine', 'unequip', 'drop']);
+  const ropes = worldMod.findInteractable(world, 'ropes');
+  assert.deepEqual(inventory.actionsFor(ropes), ['examine', 'drop'], 'a coil of rope is never worn');
+});
+
+test('one thing per rig slot: the hand already holds what it holds', () => {
+  // A pack with two things that both ride in hand.
+  const p = testPack();
+  p.locations[0].interactables = [
+    { id: 'seax', name: 'seax', type: 'item', weight: 1, bulk: 1, equip: 'hand', actions: ['examine', 'take'], examine: 'You look at the seax.' },
+    { id: 'staff', name: 'staff', type: 'item', weight: 2, bulk: 2, equip: 'hand', actions: ['examine', 'take'], examine: 'You look at the staff.' },
+  ];
+  let world = worldMod.createWorld(p);
+  world = actions.perform(world, 'seax', 'take').nextWorld;
+  world = actions.perform(world, 'seax', 'equip').nextWorld;
+  world = actions.perform(world, 'staff', 'take').nextWorld;
+  const crowded = actions.perform(world, 'staff', 'equip');
+  assert.equal(crowded.failed, true);
+  assert.match(crowded.result.text, /Your hand already holds the seax\./);
+  assert.equal(inventory.equippedIn(crowded.nextWorld, 'hand').id, 'seax', 'the hand is unchanged');
+
+  // Hand and body are different slots: both can ride at once.
+  const body = worldMod.createWorld(pack);
+  let both = actions.perform(body, 'seax', 'take').nextWorld;
+  both = actions.perform(both, 'seax', 'equip').nextWorld;
+  both = actions.perform(both, 'storm-cloak', 'take').nextWorld;
+  const swap = actions.perform(both, 'storm-cloak', 'equip');
+  assert.equal(swap.failed, undefined, 'the cloak rides on the body, not the hand');
+  assert.equal(inventory.equippedIn(swap.nextWorld, 'body').id, 'storm-cloak');
+  assert.equal(inventory.equippedIn(swap.nextWorld, 'hand').id, 'seax');
+});
+
+test('the sheet model is view data: meters, gauge, and the three places things ride', () => {
+  const world = worldMod.createWorld(pack);
+  let loaded = actions.perform(world, 'ropes', 'take').nextWorld;
+  loaded = actions.perform(loaded, 'seax', 'take').nextWorld;
+  loaded = actions.perform(loaded, 'seax', 'equip').nextWorld;
+  const model = inventory.model(loaded);
+
+  assert.equal(model.summary, '3 of 18 carried', 'the seax rides on you and drags nothing');
+  assert.equal(model.roomSummary, '2 of 11 slots taken', 'two slots of rope in the rack');
+  assert.equal(model.slotsFree, 9);
+  assert.deepEqual(model.held.map((i) => i.id), ['seax']);
+  assert.deepEqual(model.stowed.map((i) => i.id), ['ropes']);
+  assert.deepEqual(model.worn, []);
+
+  // The gauge paints one segment per stowed thing (in item colours) and the free rest.
+  assert.deepEqual(model.gauge.map((g) => g.kind), ['item', 'free']);
+  assert.equal(model.gauge[0].id, 'ropes');
+  assert.equal(model.gauge[0].color, '#f4a261');
+  assert.equal(model.gauge[0].weight, 3);
+  assert.ok(Math.abs(model.gauge[0].share - 3 / 18) < 1e-9);
+  assert.ok(Math.abs(model.gauge[1].share - 15 / 18) < 1e-9);
+
+  assert.equal(model.note, null, 'light and roomy: nothing to warn about');
+  assert.equal(model.notes.strain, null);
+  assert.equal(model.notes.room, null);
 });
