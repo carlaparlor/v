@@ -25,6 +25,15 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 19 — circles on the load, and reading that turns the page.** The
+pack's weight now wears the same five-circle row as the attributes (each
+circle a fifth of the haul, half-circle steps, amber when heavy, red when
+full) with the kg lines above and below it. Examining a carried thing flips
+the sheet into a reading card — the prose in the sheet, `‹ The Pack` in the
+bar, Escape turning back before it closes — so the text is never buried
+under the modal it was asked from. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 18 — the body, and weights that mean something.** The inventory
 is two ideas, both plain: **the body** (five slots head to feet — head,
 torso, legs, feet for clothing, hand for the held thing; what you wear

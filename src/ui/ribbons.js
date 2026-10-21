@@ -18,6 +18,10 @@
  * in the world: a sheet is chrome, the way the interactable dropdown is chrome
  * in ui/panel-text. Same decoupling: this module never requires app/game.
  *
+ * Examining something you carry turns the sheet over into a reading card
+ * (prose, with the way back) instead of opening a result view behind the
+ * modal — app/game calls showReading() and this module paints the card.
+ *
  * The ribbons and modal are children of the SHELL, not of the map pane: the
  * pane's overflow is hidden (it clips the police tape), and nothing clipped by
  * a pane may get to stick out of it. The shell is position:relative and owns
@@ -78,6 +82,15 @@ Vinland.define('ui/ribbons', function (require) {
   /** Open sheet kind, or null. Chrome state — never world state. */
   let openKind = null;
   let entering = false;
+  /**
+   * The carried thing being read, or null. Examining from the pack flips the
+   * sheet into a reading card — the prose is never buried under the modal it
+   * was asked from — and this is what the flip paints.
+   */
+  let reading = null;
+  /** Focus to hand out on the next render ('back' | 'pack'), if any. */
+  let focusPending = null;
+  let focusItem = null;
   /** The nodes this module last built, so a re-render can retire them. */
   let bar = null;
   let modal = null;
@@ -178,10 +191,37 @@ Vinland.define('ui/ribbons', function (require) {
     document.dispatchEvent(ev);
   }
 
-  /** The load, said plainly: kg in the pack, kg you can haul, kg of warning. */
+  /**
+   * The load wears the same circles the attributes do: five dots, each worth
+   * a fifth of what the body can haul, filled in half-circle steps — a load
+   * of 15 of 18 kg reads full, full, full, full, half. They are the report
+   * card's way of showing a level, not a bar, and never a bar: the kilogram
+   * line above and the haul line below carry every number.
+   */
+  const LOAD_DOTS = 5;
+
+  function loadDots(model) {
+    const dots = el('div', 'pack__dots pack__dots--' + model.band);
+    dots.setAttribute('aria-hidden', 'true'); // the kg lines carry the info
+    const units = model.capacity > 0
+      ? Math.max(0, Math.min(LOAD_DOTS, (model.load / model.capacity) * LOAD_DOTS))
+      : 0;
+    const filled = Math.round(units * 2) / 2;
+    for (let i = 0; i < LOAD_DOTS; i++) {
+      const dot = el('span', 'pack__dot');
+      const fill = el('span', 'pack__dot-fill');
+      fill.style.width = (Math.max(0, Math.min(1, filled - i)) * 100) + '%';
+      dot.appendChild(fill);
+      dots.appendChild(dot);
+    }
+    return dots;
+  }
+
+  /** The load, said plainly: kg in the pack, the circles, kg you can haul. */
   function packVitals(model) {
     const vitals = el('div', 'pack__vitals');
     vitals.appendChild(el('p', 'pack__summary', model.summary));
+    vitals.appendChild(loadDots(model));
     vitals.appendChild(el('p', 'pack__limit', model.limit));
     if (model.note) vitals.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
     return vitals;
@@ -239,6 +279,26 @@ Vinland.define('ui/ribbons', function (require) {
       line.appendChild(el('p', 'body-slot__empty', spec.empty));
     }
     return line;
+  }
+
+  /**
+   * The reading card: the examine prose dressed as a sheet page, with the way
+   * back. Examining something you carry should not bury its prose under the
+   * modal you asked from — so the modal becomes the page.
+   */
+  function buildReading() {
+    const wrap = el('div', 'reading');
+    wrap.dataset.reading = reading.id || 'item';
+    wrap.appendChild(el('p', 'reading__text', reading.text));
+    const back = el('button', 'reading__back', 'Back to the pack');
+    back.type = 'button';
+    back.dataset.back = 'pack';
+    back.addEventListener('click', function (ev) {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
+      backToPack();
+    });
+    wrap.appendChild(back);
+    return wrap;
   }
 
   /** The inventory sheet: the load in kg, the body, then what is in the pack. */
@@ -302,13 +362,33 @@ Vinland.define('ui/ribbons', function (require) {
     if (kind === 'inventory') s.classList.add('sheet--pack');
     s.setAttribute('role', 'dialog');
     s.setAttribute('aria-modal', 'true');
-    s.setAttribute('aria-label', SHEET_LABELS[kind] || 'Sheet');
+    s.setAttribute('aria-label',
+      kind === 'inventory' && reading ? reading.title : (SHEET_LABELS[kind] || 'Sheet'));
     const model = kind === 'profile' ? playerMod.model(world && world.player) : null;
     const name = model && model.name ? model.name : 'You';
 
     const head = el('div', 'sheet__bar');
-    const title = kind === 'profile' ? name : kind === 'inventory' ? 'The Pack' : 'Settings';
-    head.appendChild(el('h2', 'sheet__title', title));
+    const lead = el('div', 'sheet__head-lead');
+    // Reading a carried thing turns the sheet over: the way back sits where
+    // the eye starts, and the title becomes the thing itself.
+    if (kind === 'inventory' && reading) {
+      const back = el('button', 'sheet__back', '\u2039 The Pack');
+      back.type = 'button';
+      back.dataset.back = 'pack';
+      back.setAttribute('aria-label', 'Back to the pack');
+      back.addEventListener('click', function (ev) {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        backToPack();
+      });
+      lead.appendChild(back);
+    }
+    const title = kind === 'profile'
+      ? name
+      : kind === 'inventory'
+        ? (reading ? reading.title : 'The Pack')
+        : 'Settings';
+    lead.appendChild(el('h2', 'sheet__title', title));
+    head.appendChild(lead);
     const close = el('button', 'sheet__close');
     close.type = 'button';
     close.dataset.close = 'sheet';
@@ -337,7 +417,7 @@ Vinland.define('ui/ribbons', function (require) {
       columns.appendChild(attrs);
       s.appendChild(columns);
     } else if (kind === 'inventory') {
-      s.appendChild(buildPack(world));
+      s.appendChild(reading ? buildReading() : buildPack(world));
     } else {
       s.appendChild(el('p', 'sheet__empty', 'There is nothing to configure yet.'));
     }
@@ -387,7 +467,10 @@ Vinland.define('ui/ribbons', function (require) {
         if (e._vinlandHandled) return;
         if ((e.key === 'Escape' || e.key === 'Esc') && openKind) {
           e._vinlandHandled = true;
-          closeSheet();
+          // A reading card is a page turned over: Escape turns it back
+          // before it closes the sheet.
+          if (reading) backToPack();
+          else closeSheet();
         }
       });
       escapeDoc = document;
@@ -411,6 +494,20 @@ Vinland.define('ui/ribbons', function (require) {
       modal = null;
       entering = false;
     }
+    // Focus moves only when a sheet action asked for it (a flip into the
+    // reading card, a flip back). A plain render never yanks it.
+    if (focusPending && modal) {
+      let target = null;
+      if (focusPending === 'back') {
+        target = findByDataset(modal, 'back', 'pack');
+      } else if (focusItem) {
+        const row = findByDataset(modal, 'item', focusItem);
+        target = findByDataset(row, 'verb', 'examine') || row;
+      }
+      focusNode(target || findByDataset(modal, 'close', 'sheet'));
+    }
+    focusPending = null;
+    focusItem = null;
   }
 
   /** Open or close a sheet, and give focus to the new front door. */
@@ -418,6 +515,7 @@ Vinland.define('ui/ribbons', function (require) {
     const wasOpen = openKind === kind;
     openKind = wasOpen ? null : kind;
     entering = !wasOpen;
+    reading = null;
     render(lastShell, lastWorld);
     if (wasOpen) {
       if (bar) focusNode(findByDataset(bar, 'sheet', kind));
@@ -430,9 +528,36 @@ Vinland.define('ui/ribbons', function (require) {
     if (!openKind) return;
     const kind = openKind;
     openKind = null;
+    reading = null;
     render(lastShell, lastWorld);
     // Hand focus back to the ribbon that owned the sheet.
     if (bar) focusNode(findByDataset(bar, 'sheet', kind));
+  }
+
+  /**
+   * Show a carried thing's prose in the sheet. app/game calls this instead of
+   * opening a result view when the pack is the surface being read from; the
+   * next render (game renders immediately after) paints the card.
+   */
+  function showReading(result) {
+    if (!result) return;
+    reading = {
+      id: result.interactableId || null,
+      title: result.title || 'It',
+      text: result.text || '',
+    };
+    focusPending = 'back';
+    focusItem = null;
+  }
+
+  /** Flip the sheet back to the pack, focus on the thing just read. */
+  function backToPack() {
+    if (!reading) return;
+    const id = reading.id;
+    reading = null;
+    focusPending = 'pack';
+    focusItem = id;
+    render(lastShell, lastWorld);
   }
 
   /** Find by attribute (works for data-* and ARIA attributes in the stub). */
@@ -456,8 +581,11 @@ Vinland.define('ui/ribbons', function (require) {
   /** For tests: force the open state, then re-render with the last world. */
   function _setOpen(kind) {
     openKind = kind;
+    reading = null;
+    focusPending = null;
+    focusItem = null;
     render(lastShell, lastWorld);
   }
 
-  return { render, open, RIBBONS, _setOpen };
+  return { render, open, RIBBONS, showReading, backToPack, _setOpen };
 });

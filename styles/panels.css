@@ -690,6 +690,90 @@
   line-height: 1.15;
 }
 
+/* Back + title travel together at the left; the X keeps the right end. */
+.sheet__head-lead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+/* The way back to the pack, where the eye starts reading the sheet. */
+.sheet__back {
+  appearance: none;
+  flex: none;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-dim);
+  font: inherit;
+  font-size: var(--font-size-micro);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-label);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.sheet__back:hover,
+.sheet__back:focus-visible {
+  color: var(--color-text-bright);
+  outline: none;
+}
+
+.sheet__back:focus-visible {
+  outline: 1.5px solid var(--color-text-bright);
+  outline-offset: 2px;
+}
+
+/* The reading card: the examine prose, with room to be read, and the way
+   back at the end of it — the page turned over, never covered. */
+.reading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block-start: var(--space-2);
+}
+
+.reading__text {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-small);
+  line-height: 1.75;
+}
+
+.reading__back {
+  appearance: none;
+  align-self: flex-start;
+  margin: 0;
+  padding: 6px 16px;
+  border: 1px solid var(--color-dropdown-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.reading__back:hover,
+.reading__back:focus-visible {
+  color: var(--color-text-bright);
+  background: var(--color-dropdown-hover);
+  border-color: var(--color-dropdown-border-strong);
+  outline: none;
+}
+
+.reading__back:focus-visible {
+  outline: 1.5px solid var(--color-text-bright);
+  outline-offset: 1px;
+}
+
 .sheet__close {
   appearance: none;
   display: flex;
@@ -888,6 +972,38 @@
   letter-spacing: var(--letter-spacing-title);
 }
 
+/* The load wears the attributes' circles: five dots, each a fifth of the
+   haul, filled in half-circle steps and tinted by how the load sits. */
+.pack__dots {
+  display: flex;
+  gap: var(--dot-gap);
+  margin-block: 1px;
+}
+
+.pack__dot {
+  inline-size: var(--dot-size);
+  block-size: var(--dot-size);
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-dot-track);
+  overflow: hidden;
+}
+
+.pack__dot-fill {
+  /* Must be a box so inline percentage widths render in browsers. */
+  display: block;
+  block-size: 100%;
+  background: var(--color-accent);
+}
+
+.pack__dots--heavy .pack__dot-fill {
+  background: var(--color-stat-low);
+}
+
+.pack__dots--full .pack__dot-fill {
+  background: var(--color-stat-critical);
+}
+
 .pack__limit {
   margin: 0;
   color: var(--color-text-dim);
@@ -1019,21 +1135,19 @@
   padding: 1px 7px;
   border-radius: 999px;
   background: var(--color-dot-track);
-  color: var(--color-text);
+  color: var(--color-text-bright);
   font-size: var(--font-size-micro);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1.5;
 }
 
+/* Worn weight is still said — it is just quiet: the thing is on you, not
+   in the pack, so it drags nothing. */
 .pack__weight--worn {
   background: transparent;
   color: var(--color-text-dim);
   font-weight: 400;
-}
-
-.pack__weight {
-  color: var(--color-text-bright);
-  font-weight: 600;
 }
 
 .pack__actions {

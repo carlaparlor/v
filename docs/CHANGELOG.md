@@ -3,6 +3,34 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 19 — the load wears circles, and reading turns the page
+
+**Asked:** the attributes have circles — give the pack's weight the same;
+and examining a thing from the pack leaves the modal sitting on top of the
+examine text ("idek if i want it to — lets figure smth out").
+
+**The circles.** The load now wears the attributes' five-dot row, in
+`core/inventory`'s kg data: each circle is a fifth of what you can haul,
+filled in half-circle steps (9 of 18 kg reads full, full, half, empty,
+empty), tinted by the band — accent, amber when heavy, red when full. The
+kilogram lines stay above and below it, so the circles are a reading of the
+numbers, never a substitute. No bar: still no bar.
+
+**The page-turn.** Examine from the pack is a **sheet act, not a view**. The
+modal turns over into a reading card: the thing's name as the title, its
+prose with room to be read, `‹ The Pack` in the bar and `Back to the pack` at
+the end. The world still pays for the looking and the place waits behind —
+nothing covers the prose any more. Escape turns the page back before it
+closes the sheet; closing the sheet forgets the read, so the next open is the
+pack.
+
+Pinned in `ui-ribbons`: the dots' half-step fills and band classes, the pack
+staying closed under the card, the aria-label following the page, Escape
+layering (back to pack, then close), and no stale card after closing.
+**254 tests, 0 failures.**
+
+---
+
 ## Iteration 18 — the body: dress head to feet, real weights in kg, a toast that behaves
 
 **Asked:** a body system where the player wears individual pieces of clothing
