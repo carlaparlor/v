@@ -15,9 +15,12 @@
  * clickable and show a dropdown of actions. Passages mark them with {id} or {id|Display}.
  * See core/interactables.js for types and default actions.
  *
- * Items may declare `weight`: what they add to the pack if taken (core/inventory;
- * the default is 2). The shore's seven takeable things add up to 21 (the linen bundle is
- * examine-only), more than a default back can carry (18), so which ones you take is a choice.
+ * Items may declare `weight` (kilograms; default 2) and `equip` — a body slot
+ * ('head', 'torso', 'legs', 'feet' or 'hand') the thing rides in instead of
+ * in the pack (core/inventory). The world's twelve takeable things weigh 29
+ * kg together (the linen bundle is examine-only), more than a default back
+ * can haul (18 kg), so what you take is a choice — and what you wear, you
+ * do not carry.
  */
 Vinland.define('data/vinland', function () {
   'use strict';
@@ -58,11 +61,15 @@ Vinland.define('data/vinland', function () {
         floor: 'Ground Floor',
         stairsUp: 'longhall-landing',
         passage:
-          'You stand under the ridge-beam of the longhall, where the smoke finds its way out and the light does not. A {bench} near the {longhall-door|door} is empty. It has been empty all winter, and nobody sits on it. Near the centre a {firepit} smoulders, and against the far wall {elder} keeps watch over the room. Along the wall, {longhall-stairs|stairs} climb into the smoke toward the loft.',
+          'You stand under the ridge-beam of the longhall, where the smoke finds its way out and the light does not. A {bench} near the {longhall-door|door} is empty. It has been empty all winter, and nobody sits on it. A pair of {seaboots} has been left beside it, dripping slowly. Near the centre a {firepit} smoulders, and against the far wall {elder} keeps watch over the room. Along the wall, {longhall-stairs|stairs} climb into the smoke toward the loft.',
         interactables: [
           { id: 'longhall-door', name: 'door', type: 'fixture', actions: ['examine', 'exit'], examine: 'You look at the door. Shoulder-worn, draughty, and the only way back to the yard that does not involve a window.', exit: 'You shoulder the door and step back out onto the shore.' },
           { id: 'longhall-stairs', name: 'stairs', type: 'fixture', actions: ['examine', 'climb'], examine: 'You look at the stairs. Steep as a ladder, worn in the middle of every tread. The smoke goes up them whether you do or not.', climb: 'You climb the stairs, ducking as the roof comes down to meet you.' },
           { id: 'bench', name: 'bench', type: 'fixture', rest: { minutes: 20, energy: 10 }, examine: 'You run your hand along the bench. It is worn smooth by countless winters, and cold to the touch. You suspect it will stay empty until someone decides otherwise.', use: 'You sit on the bench. The wood creaks but holds. You feel no warmer, but you are at least sitting. Twenty minutes, and some of your strength comes back with the ache.' },
+          { id: 'seaboots', name: 'seaboots', type: 'item', weight: 2, equip: 'feet',
+            examine: 'You look at the seaboots. Leather gone grey with salt, soles stuffed with dry grass. They have made every crossing their owner has.',
+            take: 'You take the seaboots, one in each hand. The salt has stiffened them into remembering their owner.',
+            equipText: 'You pull on the seaboots. The dry grass shifts and finds your feet like a held hand.' },
           { id: 'firepit', name: 'firepit', type: 'fixture', examine: 'You lean toward the firepit. Ash and half-burnt birch, still breathing heat. You see your own boots reflected in the dark of it.', use: 'You stir the firepit with a nearby stick. Sparks climb and vanish into the smoke-hole.' },
           { id: 'elder', name: 'elder', type: 'npc', color: '#90be6d', examine: 'You study the elder — weathered face, hands that have stacked every stone on the cairn. They watch you without speaking.', talk: 'You speak to the elder. They nod slowly. \u201CThe sea has been empty nine days,\u201D they say. \u201CWhen it returns, it will have made a decision for us.\u201D' },
         ],
@@ -103,11 +110,19 @@ Vinland.define('data/vinland', function () {
         within: 'hall',
         floor: 'Upper Floor',
         passage:
-          'You duck off the landing into the loft, where the smoke arrives before you do and the roof is close enough to touch. {wool-blankets|Blankets} lie folded along the beams, holding the day\u2019s last warmth like a rumour.',
+          'You duck off the landing into the loft, where the smoke arrives before you do and the roof is close enough to touch. {wool-blankets|Blankets} lie folded along the beams, holding the day\u2019s last warmth like a rumour. A {fur-hood} and {wool-trews} hang near the smoke-hole, drying into shape.',
         interactables: [
           { id: 'wool-blankets', name: 'blankets', type: 'object', rest: { minutes: 120, energy: 60 }, actions: ['examine', 'rest'],
             examine: 'You run a hand over the blankets. Wool, lanolin, and other people\u2019s sleep. Folded with a care that says somebody\u2019s mother still inspects them.',
             restText: 'You sleep on the blankets. Two hours pass like a held breath, and you wake with the smoke\u2019s weight on you and most of your strength back.' },
+          { id: 'fur-hood', name: 'fur-hood', type: 'item', weight: 1, equip: 'head',
+            examine: 'You look at the fur-hood. Fox fur over felt, stitched small and close by someone with more patience than thread. It has known a few winters and outlasted most of them.',
+            take: 'You take the fur-hood. The fur is warm even in your hands.',
+            equipText: 'You pull on the fur-hood. The hall noise goes soft around your ears.' },
+          { id: 'wool-trews', name: 'wool-trews', type: 'item', weight: 2, equip: 'legs',
+            examine: 'You look at the wool-trews. Coarse weave, darned at one knee with more patience than thread. Somebody wore these until the wool gave up and then talked it back.',
+            take: 'You take the wool-trews. They are heavier damp than they look.',
+            equipText: 'You pull on the wool-trews. The weave itches once, then settles.' },
         ],
       },
       {
@@ -144,7 +159,7 @@ Vinland.define('data/vinland', function () {
         name: 'The Yard',
         at: [1, 1],
         passage:
-          'You cross the yard, which is mud in the winter, dust in the summer, and an argument the rest of the year. {ropes}, a {trough} of dark water, a {barrel} and a {grindstone} worn into a saddle. Every door here opens onto somebody\u2019s work, and all of them are within earshot of the others.',
+          'You cross the yard, which is mud in the winter, dust in the summer, and an argument the rest of the year. {ropes}, a {trough} of dark water, a {barrel} and a {grindstone} worn into a saddle. A {storm-cloak} hangs from a peg by the door, and a {seax} is stuck in the doorpost at hand height. Every door here opens onto somebody\u2019s work, and all of them are within earshot of the others.',
         interactables: [
           { id: 'trough', name: 'trough', type: 'fixture', water: { thirst: 40 }, actions: ['examine', 'drink'],
             examine: 'You stoop to the trough. The water in it is dark and still, holding a sky that is not the one above you. It has stood here through every weather this yard has had.',
@@ -157,6 +172,15 @@ Vinland.define('data/vinland', function () {
               eat: 'You eat the herring. It is salt and smoke and it goes down hard, and your stomach says it understands.' },
           ] },
           { id: 'ropes', name: 'ropes', type: 'item', weight: 3, examine: 'You lift the ropes. Hemp, tarred in places, frayed in others. They have held heavier things than you.', take: 'You coil the ropes and take them. They are heavier than they looked, and they smell of the harbour.' },
+          { id: 'storm-cloak', name: 'storm-cloak', type: 'item', weight: 2, equip: 'torso',
+            examine: 'You take the storm-cloak off its peg. Oilskin, dark with years of weather, patched at one shoulder by someone who knew what they were about. It still smells faintly of tar.',
+            take: 'You take the storm-cloak. It is heavier with its history than with its cloth.',
+            equipText: 'You put on the storm-cloak. The yard wind finds the seams, then gives up.',
+            unequipText: 'You take off the storm-cloak and fold it over your arm.' },
+          { id: 'seax', name: 'seax', type: 'item', weight: 1, equip: 'hand',
+            examine: 'You look at the seax. A single edge, a worn leather grip, a blade that has cut more rope than bread. It fits the doorpost the way a hand fits a handshake.',
+            take: 'You work the seax free of the doorpost and take it.',
+            equipText: 'You take the seax in hand. The grip remembers someone else\u2019s fingers.' },
         ],
       },
       {

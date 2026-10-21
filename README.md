@@ -25,6 +25,23 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 18 — the body, and weights that mean something.** The inventory
+is two ideas, both plain: **the body** (five slots head to feet — head,
+torso, legs, feet for clothing, hand for the held thing; what you wear
+drags nothing) and **the pack** (one limit, every weight a real kilogram —
+"15 kg in the pack", "You can haul about 18 kg.", refusals with the numbers
+in units). The load bar is gone; the sheet dresses you top to bottom in a
+quiet slot column and lists the pack with each thing's weight in kg. The
+world ships a wardrobe — fur-hood, storm-cloak, wool-trews, seaboots, and a
+seax for the hand. The toast sits bottom-center, unadorned. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
+**Iteration 17 — the rig, and modals that mean it.** The ribbon sheets
+opened as **centered modals over a dimming backdrop** — no more corner
+drop-overs — with an entrance rise on open and layered Escape. The pack
+gained bulk slots and hand/body gear (since reworked in iteration 18). See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 16 — refined craft, same soul.** Self-hosted **IBM Plex Serif**
 (headings) and **IBM Plex Mono** (prose, vitals, clock and map) ship locally
 under `styles/fonts/` so `file://` renders identically offline on every OS;

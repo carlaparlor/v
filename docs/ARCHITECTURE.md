@@ -22,7 +22,7 @@ v/
 │  │  ├─ environment.js       calendar, daylight, weather, exposure — pure
 │  │  ├─ player.js            the person in the world: attributes, stats, costs — pure
 │  │  ├─ interactables.js     types, colors, default verbs — pure
-│  │  ├─ inventory.js         the pack: weight, capacity, burden, carried verbs — pure
+│  │  ├─ inventory.js         the pack and the body: kg weights, worn & held, carried verbs — pure
 │  │  ├─ actions.js           action resolution: perform() -> { nextWorld, result } — pure
 │  │  ├─ render-text.js       world state -> second-person view model — pure
 │  │  └─ render-map.js        world state -> map geometry (nodes + edges) — pure
@@ -33,7 +33,7 @@ v/
 │     ├─ panels.js            panel registry, keyed by pane role
 │     ├─ panel-text.js        paints a text view model into the left pane
 │     ├─ panel-map.js         paints a map view model into the right pane
-│     └─ ribbons.js           the profile/inventory/settings ribbons and their sheets
+│     └─ ribbons.js           the profile/inventory/settings ribbons and their centered modals
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
 ├─ test/                      node:test unit tests (236)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)

@@ -1,11 +1,14 @@
 /**
- * The ribbons on the map pane's top-right corner and the sheets they drop.
+ * The ribbons on the map pane's top-right corner and the modals they open.
  *
  * The ribbons are shell chrome: profile (who you are — attributes and skills,
- * the two tiers the left pane's condition block no longer carries) and
- * settings (a placeholder for now). One sheet at a time; it is rebuilt with
- * fresh world data on every render pass, so it can never show a stale body.
- * Close by the X, by the ribbon again, or by Escape.
+ * the two tiers the left pane's condition block no longer carries), inventory
+ * (the rig: what rides in hand and on your body, what the pack stows) and
+ * settings (a placeholder for now). One modal at a time: a dimming backdrop
+ * over the whole game with the sheet card centered in it — never a corner
+ * drop-over. The sheet is rebuilt with fresh world data on every render pass,
+ * so it can never show a stale body. Close by the X, by the backdrop, by the
+ * ribbon again, or by Escape.
  */
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -65,6 +68,10 @@ function ribbon(kind) {
   return findByDataset(doc.shell, 'sheet', kind);
 }
 
+function modal() {
+  return findByClass(doc.shell, 'modal');
+}
+
 function openSheet() {
   return findByClass(doc.shell, 'sheet');
 }
@@ -91,6 +98,42 @@ test('three ribbons stick out of the shell, each with its lucide icon', () => {
     assert.equal(svg.getAttribute('viewBox'), '0 0 24 24', 'lucide is a 24x24 stroke grid');
   }
   assert.equal(openSheet(), null, 'no sheet before a click');
+  assert.equal(ribbons.open(), null);
+});
+
+test('a sheet opens as a centered modal over a dimming backdrop, not a corner drop-over', () => {
+  start();
+  ribbon('profile').click();
+  const veil = modal();
+  assert.ok(veil, 'the modal wrapper is there');
+  assert.equal(veil.parentNode, doc.shell, 'the modal is shell chrome');
+  const backdrop = findByClass(veil, 'modal__backdrop');
+  assert.ok(backdrop, 'a backdrop dims the game behind');
+  const sheet = openSheet();
+  assert.ok(sheet, 'the sheet card sits in the modal');
+  assert.equal(sheet.parentNode, veil, 'card inside the modal wrapper');
+  assert.equal(sheet.getAttribute('role'), 'dialog');
+  assert.equal(sheet.getAttribute('aria-modal'), 'true');
+  // The card is centered and constrained by CSS (not pinned to a corner):
+  // the stylesheet says so, and data rots.
+  const css = readFileSync(join(ROOT, 'styles', 'panels.css'), 'utf8');
+  const modalRule = /\.modal\s*\{([^}]*)\}/.exec(css);
+  assert.ok(modalRule, 'the modal wrapper has a CSS rule');
+  assert.match(modalRule[1], /align-items:\s*center/, 'the card is centered crosswise');
+  assert.match(modalRule[1], /justify-content:\s*center/, 'the card is centered end to end');
+  const backdropRule = /\.modal__backdrop\s*\{([^}]*)\}/.exec(css);
+  assert.ok(backdropRule, 'the backdrop has a CSS rule');
+  assert.match(backdropRule[1], /background:\s*var\(--color-modal-backdrop\)/, 'the game dims behind the sheet');
+  // The ribbons themselves stay as the bookmarks they are.
+  assert.equal(ribbonsBar().parentNode, doc.shell);
+});
+
+test('the backdrop closes the modal too', () => {
+  start();
+  ribbon('inventory').click();
+  assert.ok(openSheet(), 'open to start');
+  findByClass(modal(), 'modal__backdrop').click();
+  assert.equal(openSheet(), null, 'clicking the veil closes the sheet');
   assert.equal(ribbons.open(), null);
 });
 
@@ -124,6 +167,7 @@ test('settings drops a placeholder panel, and only one sheet opens at a time', (
   ribbon('profile').click();
   assert.equal(openSheet().dataset.sheet, 'profile');
   assert.equal(findAllByClass(doc.shell, 'sheet').length, 1, 'one sheet at a time');
+  assert.equal(findAllByClass(doc.shell, 'modal').length, 1, 'one modal at a time');
 });
 
 test('the sheet closes by its X, by the ribbon again, or by Escape', () => {
@@ -165,52 +209,63 @@ test('the ribbons survive into the result view, still on the shell', () => {
   assert.ok(openSheet(), 'the sheet opens from the result view too');
 });
 
-test('the inventory ribbon opens the pack: empty, with its capacity named', () => {
+test('the inventory ribbon opens the body: empty, with the load said in kg', () => {
   start();
   ribbon('inventory').click();
   const sheet = openSheet();
   assert.ok(sheet, 'the pack sheet opens');
   assert.equal(sheet.dataset.sheet, 'inventory');
-  assert.ok(String(sheet.className).includes('sheet--pack'), 'the pack uses the narrower sheet');
+  assert.ok(String(sheet.className).includes('sheet--pack'), 'the pack uses the wide sheet');
   assert.equal(sheet.getAttribute('aria-label'), 'Inventory');
   assert.equal(findByClass(sheet, 'sheet__title').textContent, 'The Pack');
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '0 of 18 carried');
+  // The load is said plainly, in kilograms — no bar, no "0 of 18 of what".
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '0 kg in the pack');
+  assert.equal(findByClass(sheet, 'pack__limit').textContent, 'You can haul about 18 kg.');
+  assert.equal(findByClass(sheet, 'pack__gauge'), null, 'no bar. never a bar.');
+  // The body: five slots dressed head to feet, all bare and honest about it.
+  const body = findByClass(sheet, 'pack__body');
+  assert.ok(body, 'the body section is there');
+  assert.equal(findByClass(body, 'pack__section').textContent, 'On you');
+  const slots = findAllByClass(body, 'body-slot');
+  assert.deepEqual(slots.map((sl) => findByClass(sl, 'body-slot__label').textContent),
+    ['Head', 'Torso', 'Legs', 'Feet', 'In hand'], 'dressed top to bottom');
+  assert.equal(findAllByClass(body, 'body-slot__empty').length, 5);
+  assert.match(findByClass(slots[0], 'body-slot__empty').textContent, /nothing on your head/i);
+  assert.match(findByClass(slots[4], 'body-slot__empty').textContent, /nothing in hand/i);
   assert.match(findByClass(sheet, 'sheet__empty').textContent, /pack is empty/i);
   assert.equal(findAllByClass(sheet, 'pack__row').length, 0);
   assert.equal(ribbon('inventory').getAttribute('aria-expanded'), 'true');
   assert.match(findByClass(ribbon('inventory'), 'ribbon__icon').getAttribute('viewBox') || '', /24/);
 });
 
-test('the pack fills row by row as you take things, and the meter follows', () => {
+test('the pack fills row by row as you take things, every weight in kg', () => {
   const g = start();
   ribbon('inventory').click();
   g.performAction('ropes', 'take');
 
   const sheet = openSheet();
   assert.ok(sheet, 'taking does not close the pack');
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '3 of 18 carried');
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '3 kg in the pack');
   const row = findByDataset(sheet, 'item', 'ropes');
   assert.ok(row, 'ropes has a row');
   assert.equal(findByClass(row, 'pack__name').textContent, 'ropes');
-  assert.equal(findByClass(row, 'pack__weight').textContent, '3');
-  assert.equal(findByClass(row, 'pack__weight').getAttribute('title'), 'ropes weighs 3');
+  assert.equal(findByClass(row, 'pack__weight').textContent, '3 kg', 'a real weight, with the unit');
+  assert.equal(findByClass(row, 'pack__weight').getAttribute('title'), 'ropes weighs 3 kg');
   assert.deepEqual(
     findAllByClass(row, 'pack__action').map((b) => b.dataset.verb),
     ['examine', 'drop'],
     'a carried thing is examined or set down, never taken again',
   );
-  const fill = findByClass(sheet, 'pack__meter-fill');
-  assert.ok(fill, 'the load meter has a fill');
-  assert.equal(fill.style.width, '16.7%', '3 of 18');
-  assert.ok(String(fill.className).includes('pack__meter-fill--ok'));
 
   // Eating from the pack removes the row: the sheet is data, not a cache.
   g.performAction('barrel', 'open');
   g.performAction('herring', 'take');
   assert.ok(findByDataset(openSheet(), 'item', 'herring'), 'the herring joined the pack');
+  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '4 kg in the pack');
   g.returnToPlace();
   g.performAction('herring', 'eat');
   assert.equal(findByDataset(openSheet(), 'item', 'herring'), null, 'eaten is gone from the pack');
+  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '3 kg in the pack');
 });
 
 test('a carried thing is examined and set down from its own row', () => {
@@ -230,7 +285,7 @@ test('a carried thing is examined and set down from its own row', () => {
   assert.equal(g.getToast(), 'You set down the ropes.');
   assert.equal(g.getState().inventory.length, 0);
   assert.equal(findAllByClass(openSheet(), 'pack__row').length, 0, 'the row left the open sheet');
-  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '0 of 18 carried');
+  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '0 kg in the pack');
 
   const left = [...doc.shell.children].find((p) => p.dataset && p.dataset.panel === 'text');
   assert.ok(
@@ -240,7 +295,51 @@ test('a carried thing is examined and set down from its own row', () => {
   assert.ok(findByDataset(left, 'interactableId', 'ropes'), 'the dropped word stays clickable');
 });
 
-test('the pack warns when it rides heavy', () => {
+test('the body: equip from the pack row, wear it in its slot, take it off', () => {
+  const g = start();
+  g.performAction('storm-cloak', 'take');
+  g.performAction('seax', 'take');
+  ribbon('inventory').click();
+  let row = findByDataset(openSheet(), 'item', 'storm-cloak');
+  assert.deepEqual(
+    findAllByClass(row, 'pack__action').map((b) => b.dataset.verb),
+    ['examine', 'equip', 'drop'],
+    'gear offers equip while it is stowed',
+  );
+
+  findByDataset(row, 'verb', 'equip').click();
+  const sheet = openSheet();
+  assert.equal(g.getState().inventory.find((i) => i.id === 'storm-cloak').equipped, 'torso', 'the world says it is worn');
+  const slots = findAllByClass(findByClass(sheet, 'pack__body'), 'body-slot');
+  const torso = slots.find((sl) => String(sl.className).includes('body-slot--torso'));
+  assert.ok(findByDataset(torso, 'item', 'storm-cloak'), 'the cloak sits on the torso slot');
+  const wornRow = findByDataset(torso, 'item', 'storm-cloak');
+  assert.deepEqual(
+    findAllByClass(wornRow, 'pack__action').map((b) => b.dataset.verb),
+    ['examine', 'unequip', 'drop'],
+    'and offers taking off',
+  );
+  assert.equal(findByClass(wornRow, 'pack__weight').textContent, '2 kg', 'its weight is still said');
+  assert.ok(String(findByClass(wornRow, 'pack__weight').className).includes('pack__weight--worn'), 'but quietly — it is worn');
+  assert.equal(findByDataset(findByClass(sheet, 'pack__stash'), 'item', 'storm-cloak'), null, 'not in the pack list');
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '1 kg in the pack', 'worn gear drags nothing — only the seax');
+
+  // The hand is its own slot, and it fills the same way.
+  const handRow = findByDataset(findByClass(sheet, 'pack__stash'), 'item', 'seax');
+  findByDataset(handRow, 'verb', 'equip').click();
+  const slots2 = findAllByClass(findByClass(openSheet(), 'pack__body'), 'body-slot');
+  const hand = slots2.find((sl) => String(sl.className).includes('body-slot--hand'));
+  assert.ok(findByDataset(hand, 'item', 'seax'), 'the seax rides in hand');
+  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '0 kg in the pack', 'nothing is being hauled');
+
+  // Taking it off puts it back in the pack at its weight.
+  findByDataset(findByDataset(hand, 'item', 'seax'), 'verb', 'unequip').click();
+  assert.equal(g.getState().inventory.find((i) => i.id === 'seax').equipped, undefined, 'stowed again');
+  assert.ok(findByDataset(findByClass(openSheet(), 'pack__stash'), 'item', 'seax'), 'back in the pack list');
+  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '1 kg in the pack');
+});
+
+test('the pack warns when it rides heavy, with the kilos that made it', () => {
   const g = start();
   // Load 15 of 18: the bloom-iron, the driftwood and the ropes.
   g.performAction('bloom-iron', 'take');
@@ -250,11 +349,14 @@ test('the pack warns when it rides heavy', () => {
   const sheet = openSheet();
   const model = Vinland.require('core/inventory').model(g.getState());
   assert.equal(model.band, 'heavy');
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '15 of 18 carried');
-  assert.match(findByClass(sheet, 'pack__note').textContent, /rides heavy/i);
-  const fill = findByClass(sheet, 'pack__meter-fill');
-  assert.ok(String(fill.className).includes('pack__meter-fill--heavy'));
-  assert.equal(fill.style.width, '83.3%');
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '15 kg in the pack');
+  assert.equal(findByClass(sheet, 'pack__limit').textContent, 'You can haul about 18 kg.');
+  const note = findByClass(sheet, 'pack__note');
+  assert.match(note.textContent, /rides heavy/i);
+  assert.ok(String(note.className).includes('pack__note--heavy'));
+  // Every stowed row says its own weight, in kg.
+  assert.deepEqual(findAllByClass(findByClass(sheet, 'pack__stash'), 'pack__weight').map((w) => w.textContent),
+    ['8 kg', '4 kg', '3 kg']);
 });
 
 /*
@@ -325,6 +427,7 @@ test('the sheet enters once on open without flickering on world updates, and Esc
 
   ribbon('profile').click();
   assert.ok(openSheet().classList.contains('sheet--entering'), 'opening marks the sheet as entering');
+  assert.ok(modal().classList.contains('modal--entering'), 'and the veil with it');
   g.render();
   assert.equal(openSheet().classList.contains('sheet--entering'), false, 'live re-renders do not re-trigger the entrance');
 

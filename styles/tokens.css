@@ -195,11 +195,12 @@
   --color-shadow-soft: rgba(0, 0, 0, 0.28);
   --color-shadow-elevated: 0 14px 34px rgba(0, 0, 0, 0.48), 0 2px 8px rgba(0, 0, 0, 0.28);
 
-  /* Ribbons and sheets — the bookmarks on the top-right of the map pane.
-     The ribbons sit half in the band above the panes and half over the LIGHT
-     tone, so the body is a dark leather and the icon clears WCAG AA on it
-     (theme-contrast.test.js keeps it that way). The sheets reuse the
-     dropdown surface tokens: a dark sheet over the light tone. */
+  /* Ribbons and sheets — the bookmarks on the top-right of the map pane, and
+     the centered modals they open. The ribbons sit half in the band above the
+     panes and half over the LIGHT tone, so the body is a dark leather and the
+     icon clears WCAG AA on it (theme-contrast.test.js keeps it that way).
+     The modal: a dimming backdrop over the whole game, one dark sheet card
+     centered in it — the dropdown surface tokens, dark over everything. */
   --color-ribbon: #241f18;
   --color-ribbon-hover: #332b20;
   --color-ribbon-active: #3d3326;
@@ -216,8 +217,10 @@
   --color-dot-track: rgba(222, 212, 195, 0.11);
   --dot-size: 10px;
   --dot-gap: 6px;
-  --sheet-width: 440px;
-  /* Harmonised width across profile and pack sheets; load meter height is a token. */
-  --pack-sheet-width: 440px;
-  --pack-meter-height: 6px;
+  /* The modal veil: the game behind goes dark and quiet, nothing more. */
+  --color-modal-backdrop: rgba(9, 7, 5, 0.62);
+  --duration-sheet: 180ms;
+  --sheet-width: 520px;
+  /* The pack sheet is the wide one: the body column and the stash list. */
+  --pack-sheet-width: 520px;
 }

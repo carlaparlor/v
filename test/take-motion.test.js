@@ -41,6 +41,17 @@ test('the stylesheets actually spend those tokens on the take', () => {
   assert.match(panels, /\.toast \{[^}]*opacity var\(--duration-toast\) var\(--ease-smooth\)/);
 });
 
+test('the toast is centered and plain: no strip, no corner', () => {
+  const rule = /\.toast\s*\{([^}]*)\}/.exec(panels);
+  assert.ok(rule, 'the toast has a CSS rule');
+  assert.match(rule[1], /left:\s*50%/, 'the toast sits in the horizontal middle, not the far right');
+  assert.match(rule[1], /bottom:/, 'and low on the screen');
+  assert.doesNotMatch(rule[1], /border-inline-start/, 'no coloured strip — the words are the news');
+  const visible = /\.toast\.is-visible\s*\{([^}]*)\}/.exec(panels);
+  assert.ok(visible, 'the toast has a visible state');
+  assert.match(visible[1], /translateX\(-50%\)/, 'the visible state keeps it centered');
+});
+
 test('the map dim is a recede, not a disappearance', () => {
   const layout = readFileSync(join(ROOT, 'styles/layout.css'), 'utf8');
   const opacity = tokens.match(/--map-dim-opacity:\s*([\d.]+)/);

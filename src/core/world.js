@@ -11,6 +11,7 @@ Vinland.define('core/world', function (require) {
 
   const time = require('core/time');
   const playerMod = require('core/player');
+  const inventoryMod = require('core/inventory');
 
   /** Canonical exit order: how the game lists directions everywhere. */
   const DIRECTIONS = ['north', 'east', 'south', 'west'];
@@ -36,6 +37,14 @@ Vinland.define('core/world', function (require) {
     if (inter.weight !== undefined && inter.weight !== null) {
       if (typeof inter.weight !== 'number' || !Number.isFinite(inter.weight) || inter.weight < 0) {
         throw new Error(`interactable "${inter.id}" weight must be a non-negative number`);
+      }
+    }
+    if (inter.equip !== undefined && inter.equip !== null) {
+      if (inter.type !== 'item') {
+        throw new Error(`interactable "${inter.id}" equip is for items only`);
+      }
+      if (inventoryMod.EQUIP_SLOTS.indexOf(inter.equip) === -1) {
+        throw new Error(`interactable "${inter.id}" equip must be a body slot (${inventoryMod.EQUIP_SLOTS.join(', ')})`);
       }
     }
     if (inter.actions !== undefined && inter.actions !== null) {

@@ -58,13 +58,13 @@ Vinland.define('core/player', function (require) {
     energyCost: Object.freeze({
       walk: 4, enter: 3, exit: 3, climb: 3, descend: 3,
       approach: 3, talk: 2, open: 1, close: 1, take: 1, drop: 1, use: 2,
-      eat: 1, drink: 1, failure: 1
+      eat: 1, drink: 1, equip: 1, unequip: 1, failure: 1
     }),
     /** Effort actions whose energy cost scales with strength. */
     effort: Object.freeze(['walk', 'enter', 'exit', 'climb', 'descend', 'approach']),
     strEnergyPerPoint: 0.02,
     /** Fine-motor work whose time cost scales with dexterity. */
-    fine: Object.freeze(['take', 'open', 'close', 'use', 'eat', 'drink']),
+    fine: Object.freeze(['take', 'open', 'close', 'use', 'eat', 'drink', 'equip', 'unequip']),
     dexTimePerPoint: 0.03,
     chaTimePerPoint: 0.03,
     drift: Object.freeze({

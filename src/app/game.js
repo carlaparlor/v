@@ -502,10 +502,12 @@ Vinland.define('app/game', function (require) {
           showToast('You have taken ' + outcome.result.title);
           return outcome;
         }
-        // Setting something down is not a view either: it leaves the pack for
-        // the ground here. The place prose names it (core/render-text), the
-        // open pack sheet loses its row on this pass, and the popup confirms.
-        if (action === 'drop' && !outcome.failed && outcome.result.kind !== 'collapse') {
+        // Pack verbs are not views: setting something down, putting it on or
+        // taking it off stays right where you are. The place prose names a
+        // dropped thing (core/render-text), the open pack sheet re-paints on
+        // this pass, and the popup confirms what happened.
+        if ((action === 'drop' || action === 'equip' || action === 'unequip')
+            && !outcome.failed && outcome.result.kind !== 'collapse') {
           cancelPendingTake();
           if (mode.kind === 'action' && pendingResult) {
             pendingResult = Vinland.require('core/actions').refreshResult(state, pendingResult);
@@ -513,7 +515,7 @@ Vinland.define('app/game', function (require) {
           } else {
             renderPlace();
           }
-          showToast('You set down the ' + outcome.result.title + '.');
+          showToast(action === 'drop' ? 'You set down the ' + outcome.result.title + '.' : outcome.result.text);
           return outcome;
         }
         // Crossing a doorway — or a floor, by the stairs — is travel, not a

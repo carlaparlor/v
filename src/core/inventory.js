@@ -1,24 +1,31 @@
 /**
- * Inventory — the pack you carry, and what carrying costs.
+ * Inventory — the pack you haul, and the body you dress.
  *
- * The pack is a weight, not a grid of slots: every thing you take adds its
- * `weight` (an item's own field, default 2) to a single load. A body can
- * carry `baseCapacity + strength` — 18 at the default strength of 10 — so a
- * stronger back takes more and a weak one has to choose. Load at or past
- * three-quarters of capacity is HEAVY: effort verbs (walk, enter, exit,
- * climb, descend, approach) take `burdenCost` longer, priced by
- * `core/player.effectiveCost` before weather.
+ * ONE limit, in real weights: every thing has a `weight` in kilograms (its
+ * own field, default 2), and a body can haul `baseCapacity + strength` kg —
+ * 18 kg at the default strength of 10. Load at or past three-quarters of
+ * capacity is HEAVY: effort verbs (walk, enter, exit, climb, descend,
+ * approach) take `burdenCost` longer, priced by `core/player.effectiveCost`
+ * before weather. Every number this system shows is a weight in kg — no
+ * abstract bars, no slots, no shares-to-guess.
+ *
+ * What you WEAR and what you HOLD rides on you, not in the pack: an item may
+ * declare `equip` as one of five body slots, head to feet —
+ * `head, torso, legs, feet` for clothing and `hand` for the one thing held.
+ * A worn or held thing drags nothing ("what is on your body is not on your
+ * back"). One thing per slot; equipping and unequipping are verbs in
+ * core/actions.
  *
  * Three rules live here and nowhere else, so the sheet, the take gate and
  * the clock cannot disagree (ADR-0006):
- *   - what a thing weighs          weightOf
- *   - how much a body can carry    capacityFor / loadState / fitFor
- *   - which verbs a carried thing  actionsFor
+ *   - what a thing weighs             weightOf (and how to say it: weightLabel)
+ *   - how much a body can haul        capacityFor / loadState / fitFor
+ *   - which verbs a carried thing     actionsFor
  *     offers (never `take` — it is already yours — and always `drop`)
  *
- * What the pack HOLDS is world state (`world.inventory`, a flat frozen list);
- * this module only derives numbers and view data from it. Pure: no DOM, no
- * globals, no I/O.
+ * What the pack HOLDS is world state (`world.inventory`, a flat frozen list;
+ * a worn or held thing carries `equipped: '<slot>'`); this module only
+ * derives numbers and view data from it. Pure: no DOM, no globals, no I/O.
  */
 Vinland.define('core/inventory', function (require) {
   'use strict';
@@ -26,23 +33,31 @@ Vinland.define('core/inventory', function (require) {
   const interactablesMod = require('core/interactables');
 
   const PACK_CONFIG = Object.freeze({
-    /** Capacity = baseCapacity + strength × capacityPerStrength. */
+    /** How much a body can haul: baseCapacity + strength, in kilograms. */
     baseCapacity: 8,
     capacityPerStrength: 1,
-    /** What a thing with no declared `weight` adds to the load. */
+    /** What a thing with no declared `weight` adds to the load, in kg. */
     defaultWeight: 2,
     /** At or past this share of capacity, effort verbs take longer. */
     burdenedAt: 0.75,
     burdenCost: 1.25,
+    /** Every weight the game ever says is in this unit. */
+    unit: 'kg',
   });
+
+  /**
+   * The five body slots, head to feet — the order the sheet dresses you in.
+   * Clothing (head, torso, legs, feet) and the one thing held in hand.
+   */
+  const EQUIP_SLOTS = Object.freeze(['head', 'torso', 'legs', 'feet', 'hand']);
 
   function round2(x) { return Math.round(x * 100) / 100; }
   function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
 
   /**
-   * What a carried thing weighs. An explicit, finite, non-negative `weight`
-   * field wins; otherwise the item default (never an implicit zero — a thing
-   * with no weight would be a thing the pack can swallow forever).
+   * What a carried thing weighs, in kg. An explicit, finite, non-negative
+   * `weight` field wins; otherwise the item default (never an implicit zero —
+   * a thing with no weight would be a thing the pack can swallow forever).
    */
   function weightOf(held) {
     if (held && typeof held.weight === 'number' && Number.isFinite(held.weight) && held.weight >= 0) {
@@ -51,7 +66,24 @@ Vinland.define('core/inventory', function (require) {
     return PACK_CONFIG.defaultWeight;
   }
 
-  /** How much weight a body of `strength` can carry. */
+  /** A weight as the game says it: "3 kg", "2.5 kg". */
+  function weightLabel(kg) {
+    return round2(kg) + ' ' + PACK_CONFIG.unit;
+  }
+
+  /** Which body slot a thing declares ('head' | 'torso' | 'legs' | 'feet' | 'hand'), or null. */
+  function equipSlot(held) {
+    const slot = held && held.equip;
+    return EQUIP_SLOTS.indexOf(slot) !== -1 ? slot : null;
+  }
+
+  /** Is this carried thing riding on you right now (a body slot), or stowed? */
+  function equippedSlot(held) {
+    const slot = held && held.equipped;
+    return EQUIP_SLOTS.indexOf(slot) !== -1 ? slot : null;
+  }
+
+  /** How much weight a body of `strength` can haul, in kg. */
   function capacityFor(strength) {
     const s = typeof strength === 'number' && Number.isFinite(strength) ? strength : 10;
     return PACK_CONFIG.baseCapacity + PACK_CONFIG.capacityPerStrength * s;
@@ -65,7 +97,7 @@ Vinland.define('core/inventory', function (require) {
     return capacityFor(strength);
   }
 
-  /** Total weight of a list of carried things. */
+  /** Total weight of a list of carried things, in kg. */
   function loadOf(items) {
     const list = items || [];
     let load = 0;
@@ -73,7 +105,30 @@ Vinland.define('core/inventory', function (require) {
     return round2(load);
   }
 
-  /** Load as a share of capacity, 0..1 (the meter's width). */
+  /** The things by where they ride: what is worn on each slot, held, and stowed. */
+  function split(items) {
+    const list = items || [];
+    const body = { head: null, torso: null, legs: null, feet: null, hand: null };
+    const stowed = [];
+    for (let i = 0; i < list.length; i++) {
+      const slot = equippedSlot(list[i]);
+      if (slot) body[slot] = list[i];
+      else stowed.push(list[i]);
+    }
+    body.stowed = stowed;
+    return body;
+  }
+
+  /** The thing riding in a given body slot, or null. */
+  function equippedIn(world, slot) {
+    const list = (world && world.inventory) || [];
+    for (let i = 0; i < list.length; i++) {
+      if (equippedSlot(list[i]) === slot) return list[i];
+    }
+    return null;
+  }
+
+  /** Load as a share of capacity, 0..1. */
   function share(load, capacity) {
     if (!(capacity > 0)) return 1;
     return clamp(load / capacity, 0, 1);
@@ -85,13 +140,15 @@ Vinland.define('core/inventory', function (require) {
   }
 
   /**
-   * The pack's numbers in one place: what you carry, what you can, what is
-   * left, and whether the load is riding heavy. `band` is view-model data
-   * (ok / heavy / full) — the sheet paints it, it does not compute it.
+   * The pack's numbers in one place: what you haul in kg, what you can, what
+   * is left, and whether the load rides heavy. What is worn or held is not
+   * hauled at all. `band` is view-model data (ok / heavy / full) — the sheet
+   * paints it, it does not compute it.
    */
   function loadState(world) {
     const capacity = capacityOf(world);
-    const load = loadOf(world && world.inventory);
+    const body = split(world && world.inventory);
+    const load = loadOf(body.stowed);
     const heavy = burdened(load, capacity);
     const free = round2(Math.max(0, capacity - load));
     return {
@@ -101,6 +158,7 @@ Vinland.define('core/inventory', function (require) {
       share: share(load, capacity),
       band: free <= 0 ? 'full' : heavy ? 'heavy' : 'ok',
       burdened: heavy,
+      body,
     };
   }
 
@@ -111,27 +169,30 @@ Vinland.define('core/inventory', function (require) {
   function fitFor(world, held) {
     const state = loadState(world);
     const weight = weightOf(held);
+    const over = round2(Math.max(0, state.load + weight - state.capacity));
     return {
-      ok: round2(state.load + weight) <= state.capacity,
+      ok: over <= 0,
       weight,
       load: state.load,
       capacity: state.capacity,
       free: state.free,
-      over: round2(Math.max(0, state.load + weight - state.capacity)),
+      over,
+      reason: over > 0 ? 'weight' : null,
     };
   }
 
-  /** The refusal, in second person and with the numbers that made it. */
-  function tooHeavyText(held, fit) {
+  /** The refusal, in second person, in kg, with the numbers that made it. */
+  function refusalText(held, fit) {
     const name = (held && (held.name || held.id)) || 'thing';
-    return 'Your pack will not take the ' + name + ' — it weighs ' + fit.weight
-      + ', and you have ' + fit.free + ' free of ' + fit.capacity + '.';
+    return 'Your pack will not take the ' + name + ' — it weighs ' + weightLabel(fit.weight)
+      + ', and you have ' + weightLabel(fit.free) + ' free of ' + weightLabel(fit.capacity) + '.';
   }
 
   /**
    * Verbs a carried thing offers. The type's own list minus `take` (it is
-   * already yours), plus eat/drink when the thing has the values, and always
-   * `drop` last. Containers cannot be carried, so open/close never appear.
+   * already yours), plus eat/drink when the thing has the values, plus
+   * equip/unequip when it can ride on you, and always `drop` last.
+   * Containers cannot be carried, so open/close never appear.
    */
   function actionsFor(held) {
     const list = interactablesMod.actionsFor(held).filter(function (action) {
@@ -139,11 +200,12 @@ Vinland.define('core/inventory', function (require) {
     });
     if (held && held.food && list.indexOf('eat') === -1) list.push('eat');
     if (held && held.water && list.indexOf('drink') === -1) list.push('drink');
+    if (equipSlot(held)) list.push(equippedSlot(held) ? 'unequip' : 'equip');
     if (list.indexOf('drop') === -1) list.push('drop');
     return list;
   }
 
-  /** One carried thing, as the sheet paints it. */
+  /** One carried thing, as the sheet paints it (every weight in kg). */
   function itemModel(held) {
     return {
       id: held.id,
@@ -151,6 +213,9 @@ Vinland.define('core/inventory', function (require) {
       type: held.type,
       color: interactablesMod.colorFor(held),
       weight: weightOf(held),
+      weightLabel: weightLabel(weightOf(held)),
+      equip: equipSlot(held),
+      equipped: equippedSlot(held),
       actions: actionsFor(held),
     };
   }
@@ -162,13 +227,18 @@ Vinland.define('core/inventory', function (require) {
   });
 
   /**
-   * View model for the inventory ribbon's sheet: the load meter, the note,
-   * and one row per carried thing. Pure data — no strings are built in ui/.
+   * View model for the inventory ribbon's sheet: the load in kg, the note,
+   * the body dressed head to feet, and one row per stowed thing. Pure data —
+   * no strings are built in ui/.
    */
   function model(world) {
     if (!world) return null;
     const state = loadState(world);
-    const items = (world.inventory || []).map(itemModel);
+    const body = {};
+    for (let i = 0; i < EQUIP_SLOTS.length; i++) {
+      const slot = EQUIP_SLOTS[i];
+      body[slot] = state.body[slot] ? itemModel(state.body[slot]) : null;
+    }
     return {
       capacity: state.capacity,
       load: state.load,
@@ -176,23 +246,34 @@ Vinland.define('core/inventory', function (require) {
       share: state.share,
       band: state.band,
       burdened: state.burdened,
+      // Copy (built here, never in ui/): every number is a weight in kg.
+      summary: weightLabel(state.load) + ' in the pack',
+      limit: 'You can haul about ' + weightLabel(state.capacity) + '.',
       note: NOTES[state.band] || null,
-      items: items,
-      summary: state.load + ' of ' + state.capacity + ' carried',
+      // The painted parts.
+      body,
+      stowed: state.body.stowed.map(itemModel),
+      items: state.body.stowed.map(itemModel),
     };
   }
 
   return {
     PACK_CONFIG,
+    EQUIP_SLOTS,
     weightOf,
+    weightLabel,
+    equipSlot,
+    equippedSlot,
     capacityFor,
     capacityOf,
     loadOf,
+    split,
+    equippedIn,
     share,
     burdened,
     loadState,
     fitFor,
-    tooHeavyText,
+    refusalText,
     actionsFor,
     model,
   };

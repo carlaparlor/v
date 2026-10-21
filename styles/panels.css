@@ -285,26 +285,26 @@
   filter: brightness(1.08);
 }
 
-/* "You have taken …" popup — sits over the top right, answers to nobody.
-   Taking never fades or changes the view, so this carries the news instead. */
+/* "You have taken …" popup — bottom-center, plain. The words are the news:
+   no strip, no corner, nothing to look at but the sentence. */
 .toast {
   position: fixed;
-  top: var(--space-4);
-  right: var(--space-4);
+  left: 50%;
+  bottom: var(--space-5);
   z-index: 100;
-  max-inline-size: min(360px, calc(100vw - 32px));
-  padding: 9px 14px;
+  max-inline-size: min(420px, calc(100vw - 32px));
+  padding: 9px 16px;
   background: var(--color-dropdown-bg);
   border: 1px solid var(--color-dropdown-border);
-  border-inline-start: 3px solid var(--color-accent);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--color-shadow-elevated);
   color: var(--color-text);
   font-family: var(--font-ui);
   font-size: var(--font-size-small);
   line-height: 1.45;
+  text-align: center;
   opacity: 0;
-  transform: translateY(-8px) scale(0.98);
+  transform: translateX(-50%) translateY(8px) scale(0.98);
   pointer-events: none;
   transition:
     opacity var(--duration-toast) var(--ease-smooth),
@@ -313,7 +313,7 @@
 
 .toast.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 /* Action result view — shown in the text pane after an action */
@@ -607,36 +607,61 @@
   transition: color 120ms ease;
 }
 
-@keyframes sheet-drop {
+/* ------------------------------------------------- the modal (centered sheets) */
+
+/*
+ * A sheet opens as a MODAL: a dimming backdrop over the whole game and one
+ * centered card — never a drop-over in the corner. The veil is quiet (the
+ * game just goes dark behind it); the card is the front door while it is
+ * open. One sheet at a time; rebuilt with fresh world data on every render
+ * pass. Only opening/switching adds .modal--entering / .sheet--entering, so
+ * live world updates never flicker.
+ */
+.modal {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--color-modal-backdrop);
+  animation: veil-in var(--duration-sheet) var(--ease-smooth);
+}
+
+@keyframes veil-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sheet-rise {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(10px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-/*
- * The sheet drops from the top-right of the map pane, just under the ribbons.
- * One sheet at a time; rebuilt with fresh world data on every render pass.
- * Only opening/switching adds .sheet--entering, so live world updates never flicker.
- */
 .sheet {
-  position: absolute;
-  top: calc(var(--shell-padding-top) + var(--space-3));
-  right: calc(var(--pane-padding) + 4px);
-  z-index: 60;
-  width: min(var(--sheet-width), calc(50vw - 24px));
-  max-height: calc(100dvh - var(--shell-padding-top) - var(--space-6));
+  position: relative;
+  z-index: 1;
+  width: min(var(--sheet-width), calc(100vw - 48px));
+  max-height: calc(100dvh - var(--shell-padding-top) - var(--space-8));
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-dropdown-border) transparent;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-5);
+  padding: var(--space-5) var(--space-5) var(--space-6);
   background: var(--color-dropdown-bg);
   border: 1px solid var(--color-dropdown-border);
   border-radius: var(--radius-lg);
@@ -645,7 +670,7 @@
 }
 
 .sheet--entering {
-  animation: sheet-drop 180ms var(--ease-smooth);
+  animation: sheet-rise var(--duration-sheet) var(--ease-smooth);
 }
 
 .sheet__bar {
@@ -819,67 +844,59 @@
 
 /* ------------------------------------------------- the pack (inventory sheet) */
 
+/*
+ * The pack is a rig: what rides on you (hand/body), what the rack stows
+ * (bulk slots), and what all of it drags (weight). The sheet is tactile —
+ * colored gauge segments and swatches carry the item colours, chunky rows
+ * carry the verbs.
+ */
 .sheet--pack {
-  width: min(var(--pack-sheet-width), calc(50vw - 24px));
+  width: min(var(--pack-sheet-width), calc(100vw - 48px));
 }
 
 .pack {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-5);
 }
 
-.pack__load {
+.pack__section {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-dim);
+  font-size: var(--font-size-micro);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-label);
+}
+
+/* The load, said in kg: a total, a limit, and a warning if it rides heavy. */
+.pack__vitals {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 3px;
   padding: 11px var(--space-3);
   background: var(--color-surface-inset);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
 }
 
-.pack__load-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
 .pack__summary {
+  margin: 0;
   color: var(--color-text-bright);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-map-title);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-title);
 }
 
-.pack__meter {
-  block-size: var(--pack-meter-height);
-  border-radius: 999px;
-  background: var(--color-dot-track);
-  overflow: hidden;
-}
-
-.pack__meter-fill {
-  display: block;
-  block-size: 100%;
-  background: var(--color-accent);
-  border-radius: 999px;
-  transition:
-    width 220ms var(--ease-smooth),
-    background 200ms var(--ease-smooth);
-}
-
-.pack__meter-fill--heavy {
-  background: var(--color-stat-low);
-}
-
-.pack__meter-fill--full {
-  background: var(--color-stat-critical);
+.pack__limit {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-micro);
+  line-height: 1.5;
 }
 
 .pack__note {
-  margin: 0;
+  margin: var(--space-2) 0 0;
   color: var(--color-stat-low);
   font-size: var(--font-size-micro);
   font-style: italic;
@@ -890,6 +907,56 @@
   color: var(--color-stat-critical);
 }
 
+/*
+ * The body: slot rows stacked head to feet — the label at the left in a
+ * quiet column, what rides there at the right. A paper doll made of rows.
+ */
+.pack__body-slots {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-inset);
+  overflow: hidden;
+}
+
+.body-slot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+  min-inline-size: 0;
+}
+
+.body-slot:last-child {
+  border-block-end: 0;
+}
+
+.body-slot__label {
+  flex: none;
+  inline-size: 64px;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-micro);
+  font-weight: 500;
+  letter-spacing: var(--letter-spacing-label);
+}
+
+.body-slot__empty {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-micro);
+  font-style: italic;
+}
+
+.body-slot .pack__row {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+/* Carried things: chunky rows with a colour swatch, its weight in kg,
+   and the verbs as pills. Worn rows keep the weight quiet — it is on you,
+   not in the pack. */
 .pack__list {
   display: flex;
   flex-direction: column;
@@ -903,27 +970,70 @@
   border-block-end: 1px solid var(--color-border-subtle);
 }
 
-.pack__row:last-child {
+.pack__list .pack__row:last-child {
   padding-block-end: 0;
   border-block-end: 0;
 }
 
+.pack__row--worn {
+  padding-block: 0;
+  border-block-end: 0;
+}
+
+.pack__row--worn .pack__name {
+  font-weight: 500;
+}
+
 .pack__row-head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.pack__swatch {
+  inline-size: 10px;
+  block-size: 10px;
+  flex: none;
+  border-radius: 3px;
 }
 
 .pack__name {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   font-size: 13.5px;
 }
 
+.pack__badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
 .pack__weight {
-  color: var(--color-text-dim);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-dot-track);
+  color: var(--color-text);
   font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.pack__weight--worn {
+  background: transparent;
+  color: var(--color-text-dim);
+  font-weight: 400;
+}
+
+.pack__weight {
+  color: var(--color-text-bright);
+  font-weight: 600;
 }
 
 .pack__actions {
@@ -958,29 +1068,25 @@
   outline: none;
 }
 
-.pack__action:focus-visible {
-  outline: 1.5px solid var(--color-text-bright);
-  outline-offset: 1px;
-}
-
+/* The modal is the room itself on narrow screens: the veil stays, the card
+   fills what the thumbs can reach. */
 @media (max-width: 760px) {
+  .modal {
+    padding: var(--space-3);
+  }
+
   .sheet,
   .sheet--pack {
-    width: min(var(--sheet-width), calc(100vw - 28px));
-    max-height: calc(100dvh - var(--shell-padding-top) - 20px);
+    width: 100%;
+    max-height: calc(100dvh - var(--space-8));
+    padding: var(--space-4);
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toast,
-  .interactable,
-  .interactable__menu,
-  .sheet--entering,
-  .sheet__value,
-  .ribbon,
-  .pack__meter-fill,
-  .map__edge {
-    transition: none;
+  .modal__backdrop,
+  .sheet--entering {
     animation: none;
   }
 }
