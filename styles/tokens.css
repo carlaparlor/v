@@ -221,9 +221,6 @@
   --color-modal-backdrop: rgba(9, 7, 5, 0.62);
   --duration-sheet: 180ms;
   --sheet-width: 520px;
-  /* The pack sheet is the wide one: rig slots, meters and the stash list. */
-  --pack-sheet-width: 560px;
-  --pack-gauge-height: 10px;
-  /* The room meter: one square per rack slot, filled ones in item colours. */
-  --pack-rack-slot: 12px;
+  /* The pack sheet is the wide one: the body column and the stash list. */
+  --pack-sheet-width: 520px;
 }

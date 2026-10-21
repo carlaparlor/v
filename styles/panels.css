@@ -285,26 +285,26 @@
   filter: brightness(1.08);
 }
 
-/* "You have taken …" popup — sits over the top right, answers to nobody.
-   Taking never fades or changes the view, so this carries the news instead. */
+/* "You have taken …" popup — bottom-center, plain. The words are the news:
+   no strip, no corner, nothing to look at but the sentence. */
 .toast {
   position: fixed;
-  top: var(--space-4);
-  right: var(--space-4);
+  left: 50%;
+  bottom: var(--space-5);
   z-index: 100;
-  max-inline-size: min(360px, calc(100vw - 32px));
-  padding: 9px 14px;
+  max-inline-size: min(420px, calc(100vw - 32px));
+  padding: 9px 16px;
   background: var(--color-dropdown-bg);
   border: 1px solid var(--color-dropdown-border);
-  border-inline-start: 3px solid var(--color-accent);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--color-shadow-elevated);
   color: var(--color-text);
   font-family: var(--font-ui);
   font-size: var(--font-size-small);
   line-height: 1.45;
+  text-align: center;
   opacity: 0;
-  transform: translateY(-8px) scale(0.98);
+  transform: translateX(-50%) translateY(8px) scale(0.98);
   pointer-events: none;
   transition:
     opacity var(--duration-toast) var(--ease-smooth),
@@ -313,7 +313,7 @@
 
 .toast.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 /* Action result view — shown in the text pane after an action */
@@ -868,93 +868,35 @@
   letter-spacing: var(--letter-spacing-label);
 }
 
-/* Two meters side by side: strain (weight) and room (bulk). */
+/* The load, said in kg: a total, a limit, and a warning if it rides heavy. */
 .pack__vitals {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 3px;
   padding: 11px var(--space-3);
   background: var(--color-surface-inset);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
 }
 
-.pack__meter {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.pack__summary,
-.pack__room {
+.pack__summary {
   margin: 0;
   color: var(--color-text-bright);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-map-title);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-title);
 }
 
-.pack__room {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
-/* The strain gauge: one segment per stowed thing, sized by its weight share
-   and coloured as the thing itself — the meter shows WHAT weighs you down. */
-.pack__gauge {
-  position: relative;
-  display: flex;
-  block-size: var(--pack-gauge-height);
-  border-radius: 999px;
-  background: var(--color-dot-track);
-  overflow: hidden;
-}
-
-.pack__gauge-segment {
-  display: block;
-  block-size: 100%;
-  min-inline-size: 2px;
-}
-
-.pack__gauge-segment + .pack__gauge-segment {
-  border-inline-start: 1px solid var(--color-dropdown-bg);
-}
-
-.pack__gauge-free {
-  display: block;
-  block-size: 100%;
-}
-
-.pack__gauge-tick {
-  position: absolute;
-  inset-block: 0;
-  inline-size: 0;
-  border-inline-start: 1.5px solid var(--color-dropdown-bg);
-  opacity: 0.9;
-}
-
-/* The room meter: one square per rack slot, filled ones taken. */
-.pack__rack {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.pack__rack-slot {
-  inline-size: var(--pack-rack-slot);
-  block-size: var(--pack-rack-slot);
-  border-radius: 3px;
-  border: 1px solid var(--color-dropdown-border);
-  background: transparent;
-}
-
-.pack__rack-slot--full {
-  background: var(--color-text-dim);
-  border-color: var(--color-text-dim);
+.pack__limit {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: var(--font-size-micro);
+  line-height: 1.5;
 }
 
 .pack__note {
-  margin: 0;
+  margin: var(--space-2) 0 0;
   color: var(--color-stat-low);
   font-size: var(--font-size-micro);
   font-style: italic;
@@ -965,56 +907,56 @@
   color: var(--color-stat-critical);
 }
 
-/* The rig: two chunky slots, hand and body. */
-.pack__rig-slots {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-}
-
-.rig-slot {
+/*
+ * The body: slot rows stacked head to feet — the label at the left in a
+ * quiet column, what rides there at the right. A paper doll made of rows.
+ */
+.pack__body-slots {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-inline-size: 0;
-  padding: 10px 12px;
-  border: 1px dashed var(--color-dropdown-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-surface-inset);
+  overflow: hidden;
 }
 
-.rig-slot:has(.pack__row) {
-  border-style: solid;
-}
-
-.rig-slot__head {
+.body-slot {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-3);
+  padding: 8px var(--space-3);
+  border-block-end: 1px solid var(--color-border-subtle);
+  min-inline-size: 0;
+}
+
+.body-slot:last-child {
+  border-block-end: 0;
+}
+
+.body-slot__label {
+  flex: none;
+  inline-size: 64px;
   color: var(--color-text-dim);
-}
-
-.rig-slot__icon {
-  width: 14px;
-  height: 14px;
-  pointer-events: none;
-}
-
-.rig-slot__label {
   font-size: var(--font-size-micro);
   font-weight: 500;
   letter-spacing: var(--letter-spacing-label);
 }
 
-.rig-slot__empty {
+.body-slot__empty {
   margin: 0;
   color: var(--color-text-dim);
   font-size: var(--font-size-micro);
   font-style: italic;
 }
 
-/* Carried things: chunky rows with a colour swatch, bulk + weight badges,
-   and the verbs as pills. */
+.body-slot .pack__row {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+/* Carried things: chunky rows with a colour swatch, its weight in kg,
+   and the verbs as pills. Worn rows keep the weight quiet — it is on you,
+   not in the pack. */
 .pack__list {
   display: flex;
   flex-direction: column;
@@ -1033,9 +975,13 @@
   border-block-end: 0;
 }
 
-.pack__row--rig {
+.pack__row--worn {
   padding-block: 0;
   border-block-end: 0;
+}
+
+.pack__row--worn .pack__name {
+  font-weight: 500;
 }
 
 .pack__row-head {
@@ -1069,7 +1015,6 @@
   flex: none;
 }
 
-.pack__bulk,
 .pack__weight {
   padding: 1px 7px;
   border-radius: 999px;
@@ -1078,6 +1023,12 @@
   font-size: var(--font-size-micro);
   font-variant-numeric: tabular-nums;
   line-height: 1.5;
+}
+
+.pack__weight--worn {
+  background: transparent;
+  color: var(--color-text-dim);
+  font-weight: 400;
 }
 
 .pack__weight {
@@ -1131,9 +1082,6 @@
     padding: var(--space-4);
   }
 
-  .pack__rig-slots {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

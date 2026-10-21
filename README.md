@@ -25,18 +25,22 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
-**Iteration 17 — the rig, and modals that mean it.** The pack now has **two
-dimensions**: **room** (bulk slots — a rack of 6 + half of strength, 11 at the
-default 10; a bloom-iron eats three, a herring one) and **strain** (weight —
-8 + strength, heavy at three-quarters, effort +25%). Take is refused by
-whichever dimension says no, always with its numbers. Some things **ride on
-you instead**: `equip: 'hand' | 'body'` gear (the shore ships a storm-cloak
-and a seax) takes zero bulk and zero weight while worn or held — one per
-slot, and stowing it back must fit. The ribbon sheets are **centered modals
-over a dimming backdrop** now — no more corner drop-overs — and the pack
-sheet is tactile: a load gauge built from one colored segment per thing (so
-you see *what* weighs you down), a slot rack, chunky hand/body rig slots, and
-verb pills on every row. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+**Iteration 18 — the body, and weights that mean something.** The inventory
+is two ideas, both plain: **the body** (five slots head to feet — head,
+torso, legs, feet for clothing, hand for the held thing; what you wear
+drags nothing) and **the pack** (one limit, every weight a real kilogram —
+"15 kg in the pack", "You can haul about 18 kg.", refusals with the numbers
+in units). The load bar is gone; the sheet dresses you top to bottom in a
+quiet slot column and lists the pack with each thing's weight in kg. The
+world ships a wardrobe — fur-hood, storm-cloak, wool-trews, seaboots, and a
+seax for the hand. The toast sits bottom-center, unadorned. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
+**Iteration 17 — the rig, and modals that mean it.** The ribbon sheets
+opened as **centered modals over a dimming backdrop** — no more corner
+drop-overs — with an entrance rise on open and layered Escape. The pack
+gained bulk slots and hand/body gear (since reworked in iteration 18). See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
 
 **Iteration 16 — refined craft, same soul.** Self-hosted **IBM Plex Serif**
 (headings) and **IBM Plex Mono** (prose, vitals, clock and map) ship locally

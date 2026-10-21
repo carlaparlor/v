@@ -66,14 +66,15 @@ Vinland.define('core/actions', function (require) {
       case 'eat': return 'You eat the ' + name + '.';
       case 'drink': return 'You drink from the ' + name + '.';
       case 'rest': return 'You rest on the ' + name + '.';
-      // The rig: the declared slot is `equip` ('hand' | 'body'), so the verb's
-      // prose can never share that key — it lives in equipText / unequipText.
-      case 'equip': return interactable.equip === 'body'
-        ? 'You put on the ' + name + '.'
-        : 'You take the ' + name + ' in hand.';
-      case 'unequip': return interactable.equip === 'body'
-        ? 'You take off the ' + name + ' and stow it in the pack.'
-        : 'You stow the ' + name + ' in the pack.';
+      // The rig: the declared slot is `equip` ('head' | 'torso' | 'legs' |
+      // 'feet' | 'hand'), so the verb's prose can never share that key — it
+      // lives in equipText / unequipText.
+      case 'equip': return interactable.equip === 'hand'
+        ? 'You take the ' + name + ' in hand.'
+        : 'You put on the ' + name + '.';
+      case 'unequip': return interactable.equip === 'hand'
+        ? 'You stow the ' + name + ' in the pack.'
+        : 'You take off the ' + name + ' and stow it in the pack.';
       default: return 'You ' + action + ' the ' + name + '.';
     }
   }
@@ -398,12 +399,12 @@ Vinland.define('core/actions', function (require) {
       }
     }
 
-    // The rig says no: a hand or body already has something riding on it.
+    // The rig says no: a body slot already has something riding on it.
     if (action === 'equip' && found.fromInventory) {
       var slot = inventoryMod.equipSlot(interactable);
       var occupant = inventoryMod.equippedIn(world, slot);
       if (occupant && occupant.id !== interactable.id) {
-        var where = slot === 'body' ? 'You already wear the ' : 'Your hand already holds the ';
+        var where = slot === 'hand' ? 'Your hand already holds the ' : 'You already wear the ';
         return failedAttempt(world, interactable, action, where + (occupant.name || occupant.id) + '.', false);
       }
     }

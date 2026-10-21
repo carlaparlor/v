@@ -42,13 +42,13 @@
   contents in `open:`/`examineOpen:` with `{id}` placeholders so the word highlights in
   the flow of the prose — never list contents in a sentence after it, and never in the
   location prose.
-- **Items may declare `weight` and `bulk`:** what they add to the pack if
-  taken (core/inventory; defaults 2 and 1). `weight` must be a finite
-  non-negative number and `bulk` a positive integer; `validatePack` refuses
-  anything else. An item may also declare `equip: 'hand' | 'body'` — it can
-  ride on the rig instead of in the pack (see Inventory below). Weights and
-  bulk are balance data — the shore's nine takeables total 24 weight and 14
-  slots against a default 18 and 11.
+- **Items may declare `weight` (kg) and `equip` (a body slot):** what they
+  add to the pack if taken (core/inventory; default 2 kg) and where they
+  ride on you instead — `equip` is one of `head, torso, legs, feet, hand`
+  (see Inventory below). `weight` must be a finite non-negative number and
+  `equip` an exact slot on an item; `validatePack` refuses anything else.
+  Weights are balance data — the world's twelve takeables total 29 kg
+  against a default haul of 18 kg.
 
 ## Player (attributes, skills, stats)
 
@@ -132,55 +132,54 @@ a new icon is a PATHS entry, and an unknown icon name throws.
 The view model carries it, so the nameplate and the profile sheet's title can
 never disagree.
 
-## Inventory (the rig)
+## Inventory (the pack and the body)
 
 `world.inventory` is a flat frozen list of everything ON YOU — world state,
-like locations and the player. An equipped thing carries
-`equipped: 'hand' | 'body'`; everything else is stowed. The rules that read
-it live in `core/inventory` and nowhere else, so the sheet, the take gate and
-the clock cannot disagree:
+like locations and the player. A worn or held thing carries
+`equipped: '<slot>'` (one of the five body slots); everything else is
+stowed in the pack. The rules that read it live in `core/inventory` and
+nowhere else, so the sheet, the take gate and the clock cannot disagree:
 
-- **Room and strain, both from data.** A thing's `weight` (non-negative
-  number, default `PACK_CONFIG.defaultWeight` = 2) adds to the load a body
-  hauls against `baseCapacity + strength` — 8 + 10 = 18 for the default
-  body. Its `bulk` (positive integer, default `PACK_CONFIG.defaultBulk` = 1)
-  takes slots in a rack of `baseSlots + floor(strength × slotsPerStrength)` —
-  6 + 5 = 11 at strength 10. `loadState` returns both meters: load /
-  capacity / free / share / band (`ok` / `heavy` / `full`) and bulk / slots /
-  slotsFree / slotsShare / slotsBand (`ok` / `tight` / `full`).
-- **Heavy is 75% of strain only.** From there `player.effectiveCost`
+- **One limit, real weights.** A thing's `weight` is its mass in kilograms
+  (non-negative number, default `PACK_CONFIG.defaultWeight` = 2). A body
+  hauls `baseCapacity + strength` kg — 8 + 10 = 18 for the default body.
+  Every weight the game ever says carries the unit (`weightLabel`:
+  "3 kg", "2.5 kg") — summaries, rows and refusals alike. `loadState`
+  returns load / capacity / free / share / band (`ok` / `heavy` / `full`).
+  There is no second dimension and no meter: numbers and words only.
+- **Heavy is 75% of capacity.** From there `player.effectiveCost`
   multiplies effort verbs (walk, enter, exit, climb, descend, approach) by
-  `PACK_CONFIG.burdenCost` (1.25). Room is not drag: a full rack of feathers
-  is not a heavy back. Talking, eating and everything else keep their normal
-  price. The burden verdict is the fifth argument to `effectiveCost`;
-  `player.step` reads it from `loadState(world)`.
-- **The rig: worn and held.** An item may declare `equip: 'hand' | 'body'`
-  (validated: items only, those two values only). While it carries
-  `equipped: 'hand' | 'body'` it rides ON you — zero bulk, zero weight —
-  ("a thing on your body is worn; a thing in the pack is carried"). One
-  thing per slot: a second `equip` for an occupied slot is refused naming
-  the occupant ("Your hand already holds the seax."). `equip` / `unequip`
-  are verbs (30s, fine work like take; `equipText` / `unequipText` hold
-  their prose, since `equip` names the slot — never fall through to the
-  field). Unequipping must fit the rack and load like anything else; a
-  dropped thing always lands stowed (the flag belongs to the pack, exactly
-  as the `dropped` mark belongs to the ground).
+  `PACK_CONFIG.burdenCost` (1.25). Talking, eating and everything else keep
+  their normal price. The burden verdict is the fifth argument to
+  `effectiveCost`; `player.step` reads it from `loadState(world)`.
+- **The body: worn and held.** `EQUIP_SLOTS` is `head, torso, legs, feet,
+  hand` — clothing head to feet plus the one thing held. An item may
+  declare `equip` with one of those slots (validated: items only, exact
+  slots only); while it carries `equipped: '<slot>'` it rides ON you —
+  zero kg ("what is on your body is not on your back"). One thing per slot:
+  a second `equip` for an occupied slot is refused naming the occupant
+  ("Your hand already holds the seax.", "You already wear the fur-hood.").
+  `equip` / `unequip` are verbs (30s, fine work like take; `equipText` /
+  `unequipText` hold their prose, since `equip` names the slot — never fall
+  through to the field). Unequipping must fit the load like anything else;
+  a dropped thing always lands stowed (the flag belongs to the pack,
+  exactly as the `dropped` mark belongs to the ground).
 - **Take is gated; drop is a verb.** `core/actions.perform` refuses a take
-  that would pass either limit, with the numbers of the dimension that
-  refused ("it weighs W, and you have F free of C" or "it needs B slots, and
-  you have F free of S") and the usual half-minute failure. `drop` costs 30
-  seconds and 1 energy: the thing leaves the pack and joins the current
-  location's interactables flagged `dropped: true`. `core/render-text` names
-  dropped things in one sentence after the passage, with `{id|name}`
-  placeholders so the word stays clickable; taking it back strips the flag.
+  that would pass the limit, with the numbers in kg ("it weighs W kg, and
+  you have F kg free of C kg") and the usual half-minute failure. `drop`
+  costs 30 seconds and 1 energy: the thing leaves the pack and joins the
+  current location's interactables flagged `dropped: true`.
+  `core/render-text` names dropped things in one sentence after the
+  passage, with `{id|name}` placeholders so the word stays clickable;
+  taking it back strips the flag.
 - **Carried verbs.** `inventory.actionsFor(held)` is the type's verbs minus
   `take` (it is already yours), plus eat/drink when the thing has those
   values, plus `equip` or `unequip` when it can ride on you, and always
   `drop` last. The pack sheet paints those verbs as buttons.
-- **The sheet** is core/inventory's `model(world)`: the two meters (strain
-  gauge — one segment per stowed thing in its own colour, so the meter shows
-  WHAT weighs you down — and the room rack), the notes, the rig's two slots,
-  and one row per stowed thing. No arithmetic and no prose in `ui/ribbons`.
+- **The sheet** is core/inventory's `model(world)`: the load in kg
+  (summary, limit line, heavy/full note), the body dressed head to feet
+  (`body` maps each slot to its item model or null), and one row per stowed
+  thing. No arithmetic and no prose in `ui/ribbons`.
 
 ## Ribbons and sheets (map-pane chrome)
 - The ribbons and their sheets are **shell chrome**: children of the shell,
@@ -196,7 +195,7 @@ the clock cannot disagree:
   focus; open hands focus to the close button, close hands it back to the
   ribbon. The entrance (`.modal--entering` / `.sheet--entering`) plays once
   on open, never on live re-renders.
-- The ribbons are **profile** (who you are), **inventory** (the rig) and
+- The ribbons are **profile** (who you are), **inventory** (the body and the pack) and
   **settings** (a placeholder), in that order.
 - Adding a ribbon: one entry in `RIBBONS` in `ui/ribbons.js`, one icon entry
   in `ui/icons.js` plus its reference in `RIBBON_ICONS`, one sheet branch in

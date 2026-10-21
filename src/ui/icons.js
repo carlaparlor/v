@@ -45,21 +45,6 @@ Vinland.define('ui/icons', function () {
       Object.freeze({ tag: 'path', attrs: { d: 'M18 6 6 18' } }),
       Object.freeze({ tag: 'path', attrs: { d: 'm6 6 12 12' } }),
     ]),
-    // The rig slots in the pack sheet: what rides in hand and on the body.
-    hand: Object.freeze([
-      Object.freeze({ tag: 'path', attrs: { d: 'M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2' } }),
-      Object.freeze({ tag: 'path', attrs: { d: 'M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2' } }),
-      Object.freeze({ tag: 'path', attrs: { d: 'M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8' } }),
-      Object.freeze({ tag: 'path', attrs: { d: 'M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15' } }),
-    ]),
-    shirt: Object.freeze([
-      Object.freeze({
-        tag: 'path',
-        attrs: {
-          d: 'M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z',
-        },
-      }),
-    ]),
     // Vitals, keyed by stat name.
     health: Object.freeze([
       // heart

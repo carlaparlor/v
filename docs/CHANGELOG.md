@@ -3,6 +3,42 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 18 — the body: dress head to feet, real weights in kg, a toast that behaves
+
+**Asked:** a body system where the player wears individual pieces of clothing
+top to bottom; get rid of the inventory's bars and abstract numbers ("0 of 18
+of what? use actual weights"); and fix the toast — no coloured strip, not the
+far right.
+
+**The body.** Five slots, head to feet: **head, torso, legs, feet** for
+clothing and **hand** for the one thing held. An item declares `equip` with
+its slot and rides ON you — zero kg while it is on your body ("what is on
+your body is not on your back"). One thing per slot; a second head-covering
+is refused naming the first. The sheet dresses you top to bottom: the pack
+modal now leads with **On you** — a quiet slot column (Head / Torso / Legs /
+Feet / In hand) where each row shows what rides there, its weight said
+quietly (worn, not carried), and its verbs (examine / unequip / drop). The
+world ships the wardrobe: **fur-hood** (head), **storm-cloak** (torso),
+**wool-trews** (legs), **seaboots** (feet), and the **seax** (hand).
+
+**Real weights, one limit.** The bulk/slots dimension is gone — the pack is
+weight again, and every weight is a **kilogram**: "3 kg", "15 kg in the
+pack", "You can haul about 18 kg.", and refusals with the numbers in units
+("it weighs 2 kg, and you have 1 kg free of 18 kg"). The load bar is gone
+too — the sheet says the load in words and numbers, and every stowed row
+carries its own weight. Heavy at three-quarters, +25% effort, unchanged.
+
+**The toast.** Bottom-center instead of the far right, no accent strip —
+just the sentence, rising into place.
+
+Pinned across `core-inventory`, `ui-ribbons` and `take-motion`: kg on every
+weight (labels, summaries, refusals), the five body slots and
+one-thing-per-slot, worn gear dragging nothing, the slot column's head-to-
+feet order and empty states, and the toast's centered, strip-free CSS.
+**248 tests, 0 failures.**
+
+---
+
 ## Iteration 17 — the rig: room and strain, gear you wear, and centered modals
 
 **Asked:** redesign and revamp the inventory system ("rework the rules too"), and

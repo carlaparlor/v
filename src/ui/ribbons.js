@@ -54,10 +54,16 @@ Vinland.define('ui/ribbons', function (require) {
     settings: 'Settings',
   });
 
-  /** The rig's two slots, in the order the sheet paints them. */
-  const RIG_SLOTS = Object.freeze([
-    Object.freeze({ slot: 'hand', label: 'Hand', icon: 'hand' }),
-    Object.freeze({ slot: 'body', label: 'Body', icon: 'shirt' }),
+  /**
+   * The body, head to feet: the order the sheet dresses you in. Clothing
+   * first (head, torso, legs, feet), then the one thing held in hand.
+   */
+  const BODY_SLOTS = Object.freeze([
+    Object.freeze({ slot: 'head', label: 'Head', empty: 'nothing on your head' }),
+    Object.freeze({ slot: 'torso', label: 'Torso', empty: 'nothing on your torso' }),
+    Object.freeze({ slot: 'legs', label: 'Legs', empty: 'nothing on your legs' }),
+    Object.freeze({ slot: 'feet', label: 'Feet', empty: 'nothing on your feet' }),
+    Object.freeze({ slot: 'hand', label: 'In hand', empty: 'nothing in hand' }),
   ]);
 
   /** One line under each attribute name in the profile sheet. */
@@ -172,51 +178,19 @@ Vinland.define('ui/ribbons', function (require) {
     document.dispatchEvent(ev);
   }
 
-  /**
-   * The strain gauge: one colored segment per stowed thing, sized by its
-   * share of the load, then the free remainder — so the meter shows WHAT is
-   * weighing you down. A tick marks the ¾ line where the pack turns heavy.
-   */
-  function packGauge(model) {
-    const gauge = el('div', 'pack__gauge');
-    gauge.setAttribute('aria-hidden', 'true');
-    for (const seg of model.gauge) {
-      const piece = el('span', seg.kind === 'free' ? 'pack__gauge-free' : 'pack__gauge-segment');
-      piece.style.width = (Math.round(seg.share * 1000) / 10) + '%';
-      if (seg.kind !== 'free' && seg.color) piece.style.background = seg.color;
-      gauge.appendChild(piece);
-    }
-    const tick = el('span', 'pack__gauge-tick');
-    tick.style.left = (inventoryMod.PACK_CONFIG.burdenedAt * 100) + '%';
-    gauge.appendChild(tick);
-    return gauge;
-  }
-
-  /** The load's two meters: what you haul and what you stow, side by side. */
+  /** The load, said plainly: kg in the pack, kg you can haul, kg of warning. */
   function packVitals(model) {
     const vitals = el('div', 'pack__vitals');
-    const strain = el('div', 'pack__meter');
-    strain.appendChild(el('p', 'pack__summary', model.summary));
-    strain.appendChild(packGauge(model));
-    vitals.appendChild(strain);
-
-    const room = el('div', 'pack__meter pack__meter--room');
-    room.appendChild(el('p', 'pack__room', model.roomSummary));
-    const rack = el('div', 'pack__rack');
-    rack.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < model.slots; i++) {
-      const slot = el('span', 'pack__rack-slot');
-      if (i < model.bulk) slot.classList.add('pack__rack-slot--full');
-      rack.appendChild(slot);
-    }
-    room.appendChild(rack);
-    vitals.appendChild(room);
-
+    vitals.appendChild(el('p', 'pack__summary', model.summary));
+    vitals.appendChild(el('p', 'pack__limit', model.limit));
     if (model.note) vitals.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
     return vitals;
   }
 
-  /** One carried thing: its word and weight, then the verbs it offers. */
+  /**
+   * One thing as a row: its colour, its name, its weight in kg (worn things
+   * carry it quiet — they are on you, not in the pack), then the verbs.
+   */
   function packRow(item, extraClass) {
     const row = el('div', 'pack__row' + (extraClass ? ' ' + extraClass : ''));
     row.dataset.item = item.id;
@@ -228,16 +202,11 @@ Vinland.define('ui/ribbons', function (require) {
     const name = el('span', 'pack__name', item.name);
     name.style.color = item.color;
     head.appendChild(name);
-    const badges = el('span', 'pack__badges');
-    const bulk = el('span', 'pack__bulk', '\u25ae' + item.bulk);
-    bulk.setAttribute('title', item.name + ' takes ' + item.bulk + (item.bulk === 1 ? ' slot' : ' slots'));
-    bulk.setAttribute('aria-label', item.name + ' takes ' + item.bulk + (item.bulk === 1 ? ' slot' : ' slots'));
-    badges.appendChild(bulk);
-    const weight = el('span', 'pack__weight', String(item.weight));
-    weight.setAttribute('title', item.name + ' weighs ' + item.weight);
-    weight.setAttribute('aria-label', item.name + ' weighs ' + item.weight);
-    badges.appendChild(weight);
-    head.appendChild(badges);
+    const worn = !!item.equipped;
+    const weight = el('span', 'pack__weight' + (worn ? ' pack__weight--worn' : ''), item.weightLabel);
+    weight.setAttribute('title', item.name + ' weighs ' + item.weightLabel + (worn ? ' — worn, not carried' : ''));
+    weight.setAttribute('aria-label', item.name + ' weighs ' + item.weightLabel + (worn ? ', worn, not carried' : ''));
+    head.appendChild(weight);
     row.appendChild(head);
 
     const actions = el('div', 'pack__actions');
@@ -257,23 +226,22 @@ Vinland.define('ui/ribbons', function (require) {
     return row;
   }
 
-  /** One rig slot: the label, then what rides there (or the empty truth). */
-  function rigSlot(spec, item) {
-    const box = el('div', 'rig-slot rig-slot--' + spec.slot);
-    const head = el('div', 'rig-slot__head');
-    head.appendChild(iconsMod.icon(spec.icon, 'rig-slot__icon'));
-    head.appendChild(el('span', 'rig-slot__label', spec.label));
-    box.appendChild(head);
+  /**
+   * One body slot: the label at the left, then what rides there (or the
+   * empty truth) — the sheet dresses you head to feet.
+   */
+  function bodySlot(spec, item) {
+    const line = el('div', 'body-slot body-slot--' + spec.slot);
+    line.appendChild(el('span', 'body-slot__label', spec.label));
     if (item) {
-      box.appendChild(packRow(item, 'pack__row--rig'));
+      line.appendChild(packRow(item, 'pack__row--worn'));
     } else {
-      box.appendChild(el('p', 'rig-slot__empty',
-        spec.slot === 'body' ? 'Nothing worn.' : 'Nothing in hand.'));
+      line.appendChild(el('p', 'body-slot__empty', spec.empty));
     }
-    return box;
+    return line;
   }
 
-  /** The inventory sheet: the meters, the rig, then what is in the pack. */
+  /** The inventory sheet: the load in kg, the body, then what is in the pack. */
   function buildPack(world) {
     const wrap = el('div', 'pack');
     const model = inventoryMod.model(world);
@@ -283,14 +251,14 @@ Vinland.define('ui/ribbons', function (require) {
     }
     wrap.appendChild(packVitals(model));
 
-    const rig = el('div', 'pack__rig');
-    rig.appendChild(el('h3', 'pack__section', 'On you'));
-    const slots = el('div', 'pack__rig-slots');
-    for (const spec of RIG_SLOTS) {
-      slots.appendChild(rigSlot(spec, model[spec.slot === 'hand' ? 'held' : 'worn'][0] || null));
+    const body = el('div', 'pack__body');
+    body.appendChild(el('h3', 'pack__section', 'On you'));
+    const slots = el('div', 'pack__body-slots');
+    for (const spec of BODY_SLOTS) {
+      slots.appendChild(bodySlot(spec, model.body[spec.slot]));
     }
-    rig.appendChild(slots);
-    wrap.appendChild(rig);
+    body.appendChild(slots);
+    wrap.appendChild(body);
 
     const stash = el('div', 'pack__stash');
     stash.appendChild(el('h3', 'pack__section', 'In the pack'));
