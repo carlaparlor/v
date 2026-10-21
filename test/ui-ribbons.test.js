@@ -219,14 +219,21 @@ test('the inventory ribbon opens the body: empty, with the load said in kg', () 
   assert.equal(sheet.getAttribute('aria-label'), 'Inventory');
   assert.equal(findByClass(sheet, 'sheet__title').textContent, 'The Pack');
   // The load is said plainly, in kilograms — no bar, no "0 of 18 of what".
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '0 kg in the pack');
-  assert.equal(findByClass(sheet, 'pack__limit').textContent, 'You can haul about 18 kg.');
+  assert.equal(findByClass(sheet, 'pack__load').textContent, '0 kg / 18 kg');
+  assert.equal(findByClass(sheet, 'pack__load').getAttribute('aria-label'),
+    '0 kg in the pack of 18 kg', 'and says it as a sentence for screen readers');
   assert.equal(findByClass(sheet, 'pack__gauge'), null, 'no bar. never a bar.');
   // The weight wears the attributes' circles: five dots, empty with the pack.
   const dots = findByClass(sheet, 'pack__dots');
   assert.ok(dots, 'the load has circles');
   assert.ok(String(dots.className).includes('pack__dots--ok'));
   assert.equal(dots.getAttribute('aria-hidden'), 'true', 'the kg lines carry the information');
+  const vitals = findByClass(sheet, 'pack__vitals');
+  assert.deepEqual(
+    [...vitals.children].map((c) => c.className.split(' ')[0]),
+    ['pack__dots', 'pack__load'],
+    'the circles come first, the kilos directly under them',
+  );
   assert.deepEqual(
     findAllByClass(dots, 'pack__dot-fill').map((f) => f.style.width),
     ['0%', '0%', '0%', '0%', '0%'],
@@ -255,7 +262,7 @@ test('the pack fills row by row as you take things, every weight in kg', () => {
 
   const sheet = openSheet();
   assert.ok(sheet, 'taking does not close the pack');
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '3 kg in the pack');
+  assert.equal(findByClass(sheet, 'pack__load').textContent, '3 kg / 18 kg');
   assert.deepEqual(
     findAllByClass(findByClass(sheet, 'pack__dots'), 'pack__dot-fill').map((f) => f.style.width),
     ['100%', '0%', '0%', '0%', '0%'],
@@ -276,11 +283,11 @@ test('the pack fills row by row as you take things, every weight in kg', () => {
   g.performAction('barrel', 'open');
   g.performAction('herring', 'take');
   assert.ok(findByDataset(openSheet(), 'item', 'herring'), 'the herring joined the pack');
-  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '4 kg in the pack');
+  assert.equal(findByClass(openSheet(), 'pack__load').textContent, '4 kg / 18 kg');
   g.returnToPlace();
   g.performAction('herring', 'eat');
   assert.equal(findByDataset(openSheet(), 'item', 'herring'), null, 'eaten is gone from the pack');
-  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '3 kg in the pack');
+  assert.equal(findByClass(openSheet(), 'pack__load').textContent, '3 kg / 18 kg');
 });
 
 test('a carried thing is examined and set down from its own row', () => {
@@ -310,7 +317,7 @@ test('a carried thing is examined and set down from its own row', () => {
   assert.equal(g.getToast(), 'You set down the ropes.');
   assert.equal(g.getState().inventory.length, 0);
   assert.equal(findAllByClass(openSheet(), 'pack__row').length, 0, 'the row left the open sheet');
-  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '0 kg in the pack');
+  assert.equal(findByClass(openSheet(), 'pack__load').textContent, '0 kg / 18 kg');
 
   const left = [...doc.shell.children].find((p) => p.dataset && p.dataset.panel === 'text');
   assert.ok(
@@ -328,7 +335,7 @@ test('the load wears the attributes circles: five dots, half-circle steps', () =
   ribbon('inventory').click();
 
   const sheet = openSheet();
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '9 kg in the pack');
+  assert.equal(findByClass(sheet, 'pack__load').textContent, '9 kg / 18 kg');
   const dots = findByClass(sheet, 'pack__dots');
   assert.ok(String(dots.className).includes('pack__dots--ok'), 'a half-full pack is not a warning');
   assert.deepEqual(
@@ -342,6 +349,10 @@ test('the load wears the attributes circles: five dots, half-circle steps', () =
 test('the load circles turn with the band, and never become a bar', () => {
   const css = readFileSync(join(ROOT, 'styles/panels.css'), 'utf8');
   assert.match(css, /\.pack__dot \{[^}]*border-radius: 50%/, 'circles, literally');
+  // Centered, with the weight under them: the readout is the point of the card.
+  assert.match(css, /\.pack__vitals \{[^}]*align-items: center/, 'the load block is centered');
+  assert.match(css, /\.pack__dots \{[^}]*justify-content: center/, 'the circles are centered');
+  assert.match(css, /\.pack__load \{[^}]*tabular-nums/, 'the numbers line up under the circles');
   assert.match(css, /\.pack__dots--heavy \.pack__dot-fill \{[^}]*var\(--color-stat-low\)/);
   assert.match(css, /\.pack__dots--full \.pack__dot-fill \{[^}]*var\(--color-stat-critical\)/);
   assert.ok(!/\.pack__(gauge|meter)/.test(css), 'the bar stays dead');
@@ -416,7 +427,7 @@ test('the body: equip from the pack row, wear it in its slot, take it off', () =
   assert.equal(findByClass(wornRow, 'pack__weight').textContent, '2 kg', 'its weight is still said');
   assert.ok(String(findByClass(wornRow, 'pack__weight').className).includes('pack__weight--worn'), 'but quietly — it is worn');
   assert.equal(findByDataset(findByClass(sheet, 'pack__stash'), 'item', 'storm-cloak'), null, 'not in the pack list');
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '1 kg in the pack', 'worn gear drags nothing — only the seax');
+  assert.equal(findByClass(sheet, 'pack__load').textContent, '1 kg / 18 kg', 'worn gear drags nothing — only the seax');
 
   // The hand is its own slot, and it fills the same way.
   const handRow = findByDataset(findByClass(sheet, 'pack__stash'), 'item', 'seax');
@@ -424,13 +435,13 @@ test('the body: equip from the pack row, wear it in its slot, take it off', () =
   const slots2 = findAllByClass(findByClass(openSheet(), 'pack__body'), 'body-slot');
   const hand = slots2.find((sl) => String(sl.className).includes('body-slot--hand'));
   assert.ok(findByDataset(hand, 'item', 'seax'), 'the seax rides in hand');
-  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '0 kg in the pack', 'nothing is being hauled');
+  assert.equal(findByClass(openSheet(), 'pack__load').textContent, '0 kg / 18 kg', 'nothing is being hauled');
 
   // Taking it off puts it back in the pack at its weight.
   findByDataset(findByDataset(hand, 'item', 'seax'), 'verb', 'unequip').click();
   assert.equal(g.getState().inventory.find((i) => i.id === 'seax').equipped, undefined, 'stowed again');
   assert.ok(findByDataset(findByClass(openSheet(), 'pack__stash'), 'item', 'seax'), 'back in the pack list');
-  assert.equal(findByClass(openSheet(), 'pack__summary').textContent, '1 kg in the pack');
+  assert.equal(findByClass(openSheet(), 'pack__load').textContent, '1 kg / 18 kg');
 });
 
 test('the pack warns when it rides heavy, with the kilos that made it', () => {
@@ -443,8 +454,9 @@ test('the pack warns when it rides heavy, with the kilos that made it', () => {
   const sheet = openSheet();
   const model = Vinland.require('core/inventory').model(g.getState());
   assert.equal(model.band, 'heavy');
-  assert.equal(findByClass(sheet, 'pack__summary').textContent, '15 kg in the pack');
-  assert.equal(findByClass(sheet, 'pack__limit').textContent, 'You can haul about 18 kg.');
+  assert.equal(findByClass(sheet, 'pack__load').textContent, '15 kg / 18 kg');
+  assert.equal(findByClass(sheet, 'pack__load').getAttribute('aria-label'),
+    '15 kg in the pack of 18 kg', 'and says it as a sentence for screen readers');
   const note = findByClass(sheet, 'pack__note');
   assert.match(note.textContent, /rides heavy/i);
   assert.ok(String(note.className).includes('pack__note--heavy'));

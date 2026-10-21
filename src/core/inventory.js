@@ -247,8 +247,10 @@ Vinland.define('core/inventory', function (require) {
       band: state.band,
       burdened: state.burdened,
       // Copy (built here, never in ui/): every number is a weight in kg.
-      summary: weightLabel(state.load) + ' in the pack',
-      limit: 'You can haul about ' + weightLabel(state.capacity) + '.',
+      // The line under the circles is the load against the haul, and the
+      // label is the same fact said as a sentence for screen readers.
+      loadLine: weightLabel(state.load) + ' / ' + weightLabel(state.capacity),
+      loadLabel: weightLabel(state.load) + ' in the pack of ' + weightLabel(state.capacity),
       note: NOTES[state.band] || null,
       // The painted parts.
       body,

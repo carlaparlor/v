@@ -25,10 +25,11 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
-**Iteration 19 — circles on the load, and reading that turns the page.** The
-pack's weight now wears the same five-circle row as the attributes (each
-circle a fifth of the haul, half-circle steps, amber when heavy, red when
-full) with the kg lines above and below it. Examining a carried thing flips
+**Iteration 20 — the load, laid out.** The pack's weight wears the same
+five-circle row as the attributes (each circle a fifth of the haul,
+half-circle steps, amber when heavy, red when full), **centered**, with the
+weight written under it as one line — **"9 kg / 18 kg"** — and the heavy
+warning below that. Examining a carried thing flips
 the sheet into a reading card — the prose in the sheet, `‹ The Pack` in the
 bar, Escape turning back before it closes — so the text is never buried
 under the modal it was asked from. See
@@ -38,8 +39,7 @@ under the modal it was asked from. See
 is two ideas, both plain: **the body** (five slots head to feet — head,
 torso, legs, feet for clothing, hand for the held thing; what you wear
 drags nothing) and **the pack** (one limit, every weight a real kilogram —
-"15 kg in the pack", "You can haul about 18 kg.", refusals with the numbers
-in units). The load bar is gone; the sheet dresses you top to bottom in a
+"15 kg / 18 kg" under the circles, refusals with the numbers in units). The load bar is gone; the sheet dresses you top to bottom in a
 quiet slot column and lists the pack with each thing's weight in kg. The
 world ships a wardrobe — fur-hood, storm-cloak, wool-trews, seaboots, and a
 seax for the hand. The toast sits bottom-center, unadorned. See

@@ -7,6 +7,58 @@ Two kinds of tests, both required every iteration:
 2. **Manual test script** — the steps below, run in a browser. This is what *you* run.
 
 New iterations are added at the top. Older ones stay as the regression suite.
+Where an older manual script below disagrees with the pack (it still says
+"0 of 18 carried", a meter, or `3` for a weight), **this section wins** — the
+pack has been reworked three times since.
+
+---
+
+## Iteration 20 — the pack as it stands (iterations 17–20)
+
+**Asked:** centered modals; a body you dress head to feet; real weights in
+kg instead of a bar; a centered, strip-free toast; the load's circles
+centered with the weight under them; and examine-from-pack not burying its
+prose under the modal.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **254 tests, 0 failures.** The pack's contracts live in three
+files: `core-inventory.test.js` (kg labels and refusals, the 8 + strength
+curve, the 75% heavy edge, `loadLine` / `loadLabel`, the five body slots and
+one-thing-per-slot, worn gear dragging nothing), `ui-ribbons.test.js` (the
+centered circles and their half-step fills, the load line and its `aria-label`,
+the head-to-feet slot column, the reading card and its Escape layering,
+pack verbs) and `take-motion.test.js` (the toast's centered, strip-free CSS).
+
+### Manual
+
+1. Refresh. Click the backpack ribbon. The sheet is **centered over a dimmed
+   backdrop** — never a corner drop-over. At the top: five centered circles,
+   none lit, and under them **`0 kg / 18 kg`**.
+2. Take the ropes in the yard. The toast confirms **bottom-center, no
+   coloured strip**, and the sheet is still open: one circle lights, the line
+   reads **`3 kg / 18 kg`**, and the row says **3 kg** with `examine` / `drop`.
+3. Walk to the longhall hall and take the **seaboots**, then the loft for the
+   **fur-hood** and **wool-trews**, the yard for the **storm-cloak** and the
+   **seax**. Click `equip` on each: they climb into **Head → Torso → Legs →
+   Feet → In hand**, top to bottom, and the pack total does not move — worn
+   gear drags nothing. Their weight is still written, quietly.
+4. Click `examine` on anything in the pack: the sheet **turns the page** —
+   the thing's name as the title, its prose with room to read, `‹ The Pack`
+   in the bar and `Back to the pack` at the end. Nothing is buried. Escape
+   turns the page back; a second Escape closes the sheet.
+5. Load up past **13.5 kg** (bloom-iron 8 + driftwood 4 + ropes 3): the
+   circles turn **amber**, the line reads `15 kg / 18 kg`, and the note says
+   the pack rides heavy — effort verbs cost a quarter more (one map edge =
+   **6 min 15 s**). Talk and eat keep their price.
+6. Fill past 18 kg: the take is refused with the kilos that refused it
+   ("it weighs 2 kg, and you have 1 kg free of 18 kg") and the circles turn
+   red. There is **no bar anywhere** — never bring one back.
+
 ---
 
 ## Iteration 16 — typography, sheet proportion, map hierarchy and polish
