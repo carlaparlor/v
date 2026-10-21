@@ -222,6 +222,16 @@ test('the inventory ribbon opens the body: empty, with the load said in kg', () 
   assert.equal(findByClass(sheet, 'pack__summary').textContent, '0 kg in the pack');
   assert.equal(findByClass(sheet, 'pack__limit').textContent, 'You can haul about 18 kg.');
   assert.equal(findByClass(sheet, 'pack__gauge'), null, 'no bar. never a bar.');
+  // The weight wears the attributes' circles: five dots, empty with the pack.
+  const dots = findByClass(sheet, 'pack__dots');
+  assert.ok(dots, 'the load has circles');
+  assert.ok(String(dots.className).includes('pack__dots--ok'));
+  assert.equal(dots.getAttribute('aria-hidden'), 'true', 'the kg lines carry the information');
+  assert.deepEqual(
+    findAllByClass(dots, 'pack__dot-fill').map((f) => f.style.width),
+    ['0%', '0%', '0%', '0%', '0%'],
+    'an empty pack lights no circle',
+  );
   // The body: five slots dressed head to feet, all bare and honest about it.
   const body = findByClass(sheet, 'pack__body');
   assert.ok(body, 'the body section is there');
@@ -246,6 +256,11 @@ test('the pack fills row by row as you take things, every weight in kg', () => {
   const sheet = openSheet();
   assert.ok(sheet, 'taking does not close the pack');
   assert.equal(findByClass(sheet, 'pack__summary').textContent, '3 kg in the pack');
+  assert.deepEqual(
+    findAllByClass(findByClass(sheet, 'pack__dots'), 'pack__dot-fill').map((f) => f.style.width),
+    ['100%', '0%', '0%', '0%', '0%'],
+    '3 of 18 kg lights the first circle',
+  );
   const row = findByDataset(sheet, 'item', 'ropes');
   assert.ok(row, 'ropes has a row');
   assert.equal(findByClass(row, 'pack__name').textContent, 'ropes');
@@ -274,11 +289,21 @@ test('a carried thing is examined and set down from its own row', () => {
   ribbon('inventory').click();
   let row = findByDataset(openSheet(), 'item', 'ropes');
 
+  // Reading what you carry turns the sheet over: the prose is never buried
+  // under the modal it was asked from, and you never leave the place.
   findByDataset(row, 'verb', 'examine').click();
-  assert.equal(g.getMode(), 'action', 'examine is a view');
-  assert.equal(g.getResult().title, 'ropes');
+  assert.equal(g.getMode(), 'place', 'reading in the pack is a sheet act, not a view');
+  const card = findByClass(openSheet(), 'reading');
+  assert.ok(card, 'the sheet turns into the reading card');
+  assert.equal(findByClass(openSheet(), 'sheet__title').textContent, 'ropes', 'the title is the thing itself');
+  assert.match(findByClass(card, 'reading__text').textContent, /Hemp, tarred in places/);
+  assert.equal(findAllByClass(openSheet(), 'pack__row').length, 0, 'the pack steps aside while you read');
+  assert.equal(findByDataset(openSheet(), 'back', 'pack').textContent.includes('The Pack'), true, 'with a way back');
+  assert.equal(openSheet().getAttribute('aria-label'), 'ropes', 'the dialog names the page it shows');
 
-  g.back();
+  findByDataset(openSheet(), 'back', 'pack').click();
+  assert.ok(findByDataset(openSheet(), 'item', 'ropes'), 'back to the pack');
+  assert.equal(findAllByClass(openSheet(), 'reading').length, 0, 'the card is put away');
   row = findByDataset(openSheet(), 'item', 'ropes');
   findByDataset(row, 'verb', 'drop').click();
   assert.equal(g.getMode(), 'place', 'drop is not a view');
@@ -293,6 +318,75 @@ test('a carried thing is examined and set down from its own row', () => {
     'the place prose says where it lies',
   );
   assert.ok(findByDataset(left, 'interactableId', 'ropes'), 'the dropped word stays clickable');
+});
+
+test('the load wears the attributes circles: five dots, half-circle steps', () => {
+  const g = start();
+  g.performAction('seax', 'take');        // 1 kg
+  assert.ok(g.travel('east'), 'a step to the smithy');
+  g.performAction('bloom-iron', 'take');  // 8 kg
+  ribbon('inventory').click();
+
+  const sheet = openSheet();
+  assert.equal(findByClass(sheet, 'pack__summary').textContent, '9 kg in the pack');
+  const dots = findByClass(sheet, 'pack__dots');
+  assert.ok(String(dots.className).includes('pack__dots--ok'), 'a half-full pack is not a warning');
+  assert.deepEqual(
+    findAllByClass(dots, 'pack__dot-fill').map((f) => f.style.width),
+    ['100%', '100%', '50%', '0%', '0%'],
+    '9 of 18 kg reads two circles and a half — the report card way, not a meter',
+  );
+  assert.equal(findByClass(sheet, 'pack__gauge'), null, 'no bar. never a bar.');
+});
+
+test('the load circles turn with the band, and never become a bar', () => {
+  const css = readFileSync(join(ROOT, 'styles/panels.css'), 'utf8');
+  assert.match(css, /\.pack__dot \{[^}]*border-radius: 50%/, 'circles, literally');
+  assert.match(css, /\.pack__dots--heavy \.pack__dot-fill \{[^}]*var\(--color-stat-low\)/);
+  assert.match(css, /\.pack__dots--full \.pack__dot-fill \{[^}]*var\(--color-stat-critical\)/);
+  assert.ok(!/\.pack__(gauge|meter)/.test(css), 'the bar stays dead');
+});
+
+test('closing the sheet forgets the read — the pack comes back as the pack', () => {
+  const g = start();
+  g.performAction('ropes', 'take');
+  ribbon('inventory').click();
+  findByDataset(findByDataset(openSheet(), 'item', 'ropes'), 'verb', 'examine').click();
+  assert.ok(findByClass(openSheet(), 'reading'), 'reading');
+
+  findByDataset(openSheet(), 'close', 'sheet').click();
+  assert.equal(openSheet(), null, 'the X closes everything');
+
+  ribbon('inventory').click();
+  assert.equal(findByClass(openSheet(), 'reading'), null, 'no stale card');
+  assert.ok(findByDataset(openSheet(), 'item', 'ropes'), 'the pack, dressed again');
+});
+
+test('reading in the pack does not disturb the place behind it', () => {
+  const g = start();
+  g.performAction('storm-cloak', 'take');
+  ribbon('inventory').click();
+  const toastBefore = g.getToast();
+  findByDataset(findByDataset(openSheet(), 'item', 'storm-cloak'), 'verb', 'examine').click();
+  assert.equal(g.getMode(), 'place', 'no view opens behind the sheet');
+  const left = [...doc.shell.children].find((p) => p.dataset && p.dataset.panel === 'text');
+  assert.ok(findAllByClass(left, 'text__body').length > 0, 'the place prose is still the page');
+  assert.equal(g.getToast(), toastBefore, 'reading is not a toast');
+});
+
+test('Escape turns the reading card back before it closes the sheet', () => {
+  const g = start();
+  g.performAction('ropes', 'take');
+  ribbon('inventory').click();
+  findByDataset(findByDataset(openSheet(), 'item', 'ropes'), 'verb', 'examine').click();
+  assert.ok(findByClass(openSheet(), 'reading'), 'reading');
+
+  doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+  assert.ok(openSheet(), 'the first Escape only turns the page back');
+  assert.equal(findByClass(openSheet(), 'reading'), null, 'back to the pack');
+
+  doc.dispatchEvent({ type: 'keydown', key: 'Escape' });
+  assert.equal(openSheet(), null, 'the second Escape closes the sheet');
 });
 
 test('the body: equip from the pack row, wear it in its slot, take it off', () => {

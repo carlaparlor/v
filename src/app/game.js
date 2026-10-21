@@ -502,6 +502,22 @@ Vinland.define('app/game', function (require) {
           showToast('You have taken ' + outcome.result.title);
           return outcome;
         }
+        // Reading what you carry is a sheet act, not a view: with the pack
+        // open, the sheet itself turns into the reading card (ui/ribbons), so
+        // the prose is never buried under the modal it was asked from. Time
+        // still passes; the place waits behind, repainted with the new clock.
+        if (action === 'examine' && ribbons.open() === 'inventory'
+            && !outcome.failed && outcome.result.kind !== 'collapse') {
+          cancelPendingTake();
+          ribbons.showReading(outcome.result);
+          if (mode.kind === 'action' && pendingResult) {
+            pendingResult = Vinland.require('core/actions').refreshResult(state, pendingResult);
+            renderResult(pendingResult);
+          } else {
+            renderPlace();
+          }
+          return outcome;
+        }
         // Pack verbs are not views: setting something down, putting it on or
         // taking it off stays right where you are. The place prose names a
         // dropped thing (core/render-text), the open pack sheet re-paints on

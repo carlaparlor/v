@@ -180,6 +180,12 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
   (summary, limit line, heavy/full note), the body dressed head to feet
   (`body` maps each slot to its item model or null), and one row per stowed
   thing. No arithmetic and no prose in `ui/ribbons`.
+- **The load wears the attributes' circles:** five dots under the kg summary,
+  each a fifth of the haul, filled in half-circle steps from
+  `load / capacity` (9 of 18 kg is two full and a half). They are tinted by
+  the band (accent, `--color-stat-low` heavy, `--color-stat-critical` full).
+  Dots, not a meter: the numbers in kg are above and below them, and there is
+  no bar — never reintroduce one.
 
 ## Ribbons and sheets (map-pane chrome)
 - The ribbons and their sheets are **shell chrome**: children of the shell,
@@ -192,9 +198,19 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
   state. The open sheet is rebuilt from the current world on every render
   pass, so it can never show a stale body. One sheet at a time; close by the
   X, by the backdrop, by the ribbon again, or by Escape. `render` never moves
-  focus; open hands focus to the close button, close hands it back to the
-  ribbon. The entrance (`.modal--entering` / `.sheet--entering`) plays once
-  on open, never on live re-renders.
+  focus on its own — only a sheet action asks for it (the reading flip, and
+  the flip back); open hands focus to the close button, close hands it back
+  to the ribbon. The entrance (`.modal--entering` / `.sheet--entering`) plays
+  once on open, never on live re-renders.
+- **Reading in the pack turns the page.** Examining a carried thing while the
+  pack is open is a sheet act, not a view: `app/game` pays the time, calls
+  `ribbons.showReading(result)`, and the sheet becomes a reading card — the
+  thing's name as the title, its prose in `.reading__text`, `‹ The Pack` in
+  the bar and `Back to the pack` at the end. The place waits behind; no
+  result view opens, no toast fires. Escape turns the page back before it
+  closes the sheet, and closing the sheet forgets the read (the next open is
+  the pack again). The point: the prose is never buried under the modal it
+  was asked from.
 - The ribbons are **profile** (who you are), **inventory** (the body and the pack) and
   **settings** (a placeholder), in that order.
 - Adding a ribbon: one entry in `RIBBONS` in `ui/ribbons.js`, one icon entry
