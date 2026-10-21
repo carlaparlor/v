@@ -101,13 +101,14 @@ test('the load is heavy at three quarters and full when nothing is free', () => 
     [empty.band, empty.load, empty.capacity, empty.free, empty.note],
     ['ok', 0, 18, 18, null],
   );
-  assert.equal(empty.summary, '0 kg in the pack');
-  assert.equal(empty.limit, 'You can haul about 18 kg.');
+  // The line under the circles: what you carry / what you can, in kg.
+  assert.equal(empty.loadLine, '0 kg / 18 kg');
+  assert.equal(empty.loadLabel, '0 kg in the pack of 18 kg', 'the same fact, as a sentence');
   const loaded = Object.freeze({ ...world, inventory: Object.freeze([{ id: 'a', name: 'a', weight: 17 }]) });
   const heavy = inventory.model(loaded);
   assert.equal(heavy.band, 'heavy');
   assert.match(heavy.note, /rides heavy/);
-  assert.equal(heavy.summary, '17 kg in the pack');
+  assert.equal(heavy.loadLine, '17 kg / 18 kg');
   const full = Object.freeze({ ...world, inventory: Object.freeze([{ id: 'b', name: 'b', weight: 18 }]) });
   assert.equal(inventory.model(full).band, 'full');
   assert.match(inventory.model(full).note, /full to the seams/);
@@ -318,8 +319,8 @@ test('the sheet model is view data: the load in kg, the body, the stash', () => 
   loaded = actions.perform(loaded, 'seax', 'equip').nextWorld;
   const model = inventory.model(loaded);
 
-  assert.equal(model.summary, '3 kg in the pack', 'the seax rides on you and drags nothing');
-  assert.equal(model.limit, 'You can haul about 18 kg.');
+  assert.equal(model.loadLine, '3 kg / 18 kg', 'the seax rides on you and drags nothing');
+  assert.equal(model.loadLabel, '3 kg in the pack of 18 kg');
   assert.equal(model.load, 3);
   assert.equal(model.capacity, 18);
   assert.equal(model.free, 15);

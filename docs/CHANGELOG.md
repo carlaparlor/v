@@ -3,6 +3,23 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 20 — the load, laid out
+
+**Asked:** the circles should be centered, with "0 kg / 8 kg" under them.
+
+The load block is now a centered readout: the five circles on top, the
+weight under them as `loadLine` — "9 kg / 18 kg", tabular figures, load and
+haul in one line — and the heavy/full warning below that when there is one.
+The old two lines ("9 kg in the pack" / "You can haul about 18 kg.") are
+gone: the fraction says both numbers once, and `loadLabel` keeps the
+sentence ("9 kg in the pack of 18 kg") as the line's `aria-label`, so screen
+readers still hear it in words. The dots and the line are pinned as centered
+in `ui-ribbons`.
+
+**254 tests, 0 failures.**
+
+---
+
 ## Iteration 19 — the load wears circles, and reading turns the page
 
 **Asked:** the attributes have circles — give the pack's weight the same;

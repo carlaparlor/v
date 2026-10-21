@@ -195,8 +195,9 @@ Vinland.define('ui/ribbons', function (require) {
    * The load wears the same circles the attributes do: five dots, each worth
    * a fifth of what the body can haul, filled in half-circle steps — a load
    * of 15 of 18 kg reads full, full, full, full, half. They are the report
-   * card's way of showing a level, not a bar, and never a bar: the kilogram
-   * line above and the haul line below carry every number.
+   * card's way of showing a level, not a bar, and never a bar: the line
+   * underneath carries both numbers in kilograms ("15 kg / 18 kg"), and the
+   * label says the same fact as a sentence for anyone not reading dots.
    */
   const LOAD_DOTS = 5;
 
@@ -217,12 +218,17 @@ Vinland.define('ui/ribbons', function (require) {
     return dots;
   }
 
-  /** The load, said plainly: kg in the pack, the circles, kg you can haul. */
+  /**
+   * The load, said plainly: the circles centered, and under them the weight
+   * you carry against the weight you can — "15 kg / 18 kg" — with the
+   * warning under that when the pack rides heavy.
+   */
   function packVitals(model) {
     const vitals = el('div', 'pack__vitals');
-    vitals.appendChild(el('p', 'pack__summary', model.summary));
     vitals.appendChild(loadDots(model));
-    vitals.appendChild(el('p', 'pack__limit', model.limit));
+    const line = el('p', 'pack__load', model.loadLine);
+    line.setAttribute('aria-label', model.loadLabel);
+    vitals.appendChild(line);
     if (model.note) vitals.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
     return vitals;
   }

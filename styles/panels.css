@@ -952,32 +952,30 @@
   letter-spacing: var(--letter-spacing-label);
 }
 
-/* The load, said in kg: a total, a limit, and a warning if it rides heavy. */
+/* The load, said in kg: the circles centered, the weight under them, and a
+   warning if it rides heavy. */
 .pack__vitals {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 11px var(--space-3);
+  align-items: center;
+  gap: 9px;
+  padding: 14px var(--space-3);
   background: var(--color-surface-inset);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-}
-
-.pack__summary {
-  margin: 0;
-  color: var(--color-text-bright);
-  font-size: var(--font-size-map-title);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--letter-spacing-title);
+  text-align: center;
 }
 
 /* The load wears the attributes' circles: five dots, each a fifth of the
    haul, filled in half-circle steps and tinted by how the load sits. */
 .pack__dots {
+  /* The readout is the card's centrepiece: a little larger than the profile's
+     inline dots, and centered under the sheet's title. */
+  --dot-size: 12px;
+  --dot-gap: 7px;
   display: flex;
+  justify-content: center;
   gap: var(--dot-gap);
-  margin-block: 1px;
 }
 
 .pack__dot {
@@ -1004,15 +1002,19 @@
   background: var(--color-stat-critical);
 }
 
-.pack__limit {
+/* The numbers under the circles: what you carry, against what you can. */
+.pack__load {
   margin: 0;
-  color: var(--color-text-dim);
-  font-size: var(--font-size-micro);
-  line-height: 1.5;
+  color: var(--color-text-bright);
+  font-size: var(--font-size-map-title);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-title);
+  line-height: 1.15;
 }
 
 .pack__note {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   color: var(--color-stat-low);
   font-size: var(--font-size-micro);
   font-style: italic;

@@ -177,15 +177,19 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
   values, plus `equip` or `unequip` when it can ride on you, and always
   `drop` last. The pack sheet paints those verbs as buttons.
 - **The sheet** is core/inventory's `model(world)`: the load in kg
-  (summary, limit line, heavy/full note), the body dressed head to feet
-  (`body` maps each slot to its item model or null), and one row per stowed
-  thing. No arithmetic and no prose in `ui/ribbons`.
-- **The load wears the attributes' circles:** five dots under the kg summary,
-  each a fifth of the haul, filled in half-circle steps from
-  `load / capacity` (9 of 18 kg is two full and a half). They are tinted by
-  the band (accent, `--color-stat-low` heavy, `--color-stat-critical` full).
-  Dots, not a meter: the numbers in kg are above and below them, and there is
-  no bar — never reintroduce one.
+  (`loadLine` — "9 kg / 18 kg" — with `loadLabel` saying the same fact as a
+  sentence for screen readers, plus `load`, `capacity`, `free`, `band` and
+  the heavy/full `note`), the body dressed head to feet (`body` maps each
+  slot to its item model or null), and one row per stowed thing. No
+  arithmetic and no prose in `ui/ribbons`.
+- **The load wears the attributes' circles,** centered at the top of the pack
+  sheet: five dots, each a fifth of the haul, filled in half-circle steps
+  from `load / capacity` (9 of 18 kg is two full and a half), tinted by the
+  band (accent, `--color-stat-low` heavy, `--color-stat-critical` full).
+  Directly under them sits `loadLine` — "9 kg / 18 kg" — centered, in tabular
+  figures, and under that the heavy/full note when there is one. Dots, not a
+  meter: the kilograms are written out underneath, and there is no bar —
+  never reintroduce one.
 
 ## Ribbons and sheets (map-pane chrome)
 - The ribbons and their sheets are **shell chrome**: children of the shell,
