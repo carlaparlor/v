@@ -39,8 +39,7 @@ test('it describes where you actually are', () => {
   const model = view();
   assert.equal(model.place, pack.start);
   assert.equal(model.title, pack.locations.find((l) => l.id === pack.start).name);
-  // paragraphs may have placeholders resolved, so just check they contain the plain passage's core
-  assert.ok(model.paragraphs.length === 3);
+  assert.equal(model.paragraphs.length, 1, 'only the place passage is rendered — no bolted-on trailing paragraphs');
   assert.ok(model.paragraphs[0].includes('You cross the yard'));
 });
 
@@ -92,7 +91,7 @@ test('a dead end says so instead of listing nothing', () => {
   });
   const model = renderText(solo);
   assert.deepEqual(model.exits, []);
-  assert.equal(model.exitsLine, 'There is no way out of here that you can see.');
+  assert.equal(model.exitsLine, 'There\u2019s no obvious way out from here.');
 });
 
 test('rendering does not mutate the world', () => {

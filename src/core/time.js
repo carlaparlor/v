@@ -38,27 +38,10 @@ Vinland.define('core/time', function (require) {
   function blocked(world, inter, action) {
     const hour = seconds(world) % 86400 / 3600;
     if (inter.type === 'npc' && action === 'talk' && (hour < 7 || hour >= 20)) {
-      return 'You cannot talk to the ' + inter.name + ' now; they are resting. You can speak with them between 07:00 and 20:00.';
+      return 'You can\u2019t talk to the ' + inter.name + ' right now\u2014they\u2019re resting. Try again between 07:00 and 20:00.';
     }
     return environment.blocked(world, inter, action);
   }
 
-  function atmosphere(world, indoors) {
-    const phase = clock(world).phase;
-    const outside = {
-      dawn: 'You see the shore emerge in the pale light of dawn.',
-      day: 'You move under the light of day.',
-      dusk: 'You watch the light fade and the shadows lengthen across the shore.',
-      night: 'You make out the shore in darkness; familiar shapes become silhouettes.'
-    };
-    const inside = {
-      dawn: 'You notice pale dawn light finding its way through the gaps.',
-      day: 'You see daylight filtering into the room.',
-      dusk: 'You notice the last light fading from the room.',
-      night: 'You find the corners lost in night-time shadow.'
-    };
-    return (indoors ? inside : outside)[phase];
-  }
-
-  return { START, COSTS, seconds, advance, clock, blocked, atmosphere };
+  return { START, COSTS, seconds, advance, clock, blocked };
 });

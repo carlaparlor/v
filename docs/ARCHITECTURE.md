@@ -35,9 +35,9 @@ v/
 │     ├─ panel-map.js         paints a map view model into the right pane
 │     └─ ribbons.js           the profile/inventory/settings ribbons and their centered modals
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (236)
+├─ test/                      node:test unit tests (262)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
-└─ docs/                      workflow, vision, architecture, conventions, testing, changelog
+└─ docs/                      workflow, style, vision, architecture, conventions, testing, changelog
 ```
 
 ## The module registry (`src/kernel.js`)
@@ -626,3 +626,35 @@ from 75% — that is deliberate, but it means capacity alone is not the warning;
 there is no "use from the pack" shortcut beyond the verbs the item already
 declares; and `drop` adds location interactables during play, so any future
 system that enumerates "the room's original things" must respect `dropped`.
+
+### ADR-0017 — Plain, sensory prose with natural contractions, self-contained passages, and zero purple prose
+**Context:** A text-based game's prose is its rendering engine. Early iterations accumulated
+three kinds of friction across `src/data/vinland.js` and `src/core/`: (1) abstract, epigrammatic
+"purple" flourishes (*"temperature of a decision not yet made"*, *"hot metal remembered in
+water"*), (2) stiff uncontracted prose across feedback and refusals (*"cannot"*, *"will not"*,
+*"do not"*), and (3) two canned time-of-day and season/weather paragraphs bolted onto the bottom
+of every single location passage in `core/render-text`, burying each room's closing sentence under
+repetitive boilerplate that repeated verbatim across neighbouring places even though clock, phase,
+season, and weather already sit in the map pane header.
+**Decision:**
+- **Codify the voice in `docs/STYLE.md` (summarised in `docs/CONVENTIONS.md`).** All world prose,
+  dialogue, status notes, refusals, toasts, and empty states use direct, sensory second-person
+  present-tense English with natural contractions, complete sentences, concrete physical details,
+  human dialogue, and quiet, understated tension.
+- **Keep room passages self-contained — cut trailing generated atmosphere paragraphs completely.**
+  `core/render-text` renders strictly the place's own authored passage (or its `passages[phase]`
+  override when a room's scene genuinely changes at dawn/dusk/night), plus dropped items when
+  present, followed by exits. `core/time` and `core/environment` own clock, calendar, weather,
+  durations, and blocked-action rules, while `core/render-map` displays clock, season, and weather
+  in the map header.
+- **Enforce mechanically in `test/writing-style.test.js`.** Automated checks verify every passage
+  (including phase overrides), interactable text, condition note, refusal, collapse screen, and
+  sheet empty state against banned purple-prose patterns, stiff uncontracted phrasing, trailing
+  boilerplate paragraphs, and broken sentence capitalization before and after taking items.
+**Rejected:** leaving tone as an informal review note (drifts across iterations and agent runs);
+keeping two generated weather/light paragraphs appended to every room (undercuts room endings and
+repeats verbatim on every step when the map header already reports time and weather).
+**Consequences:** Clean, self-contained room passages and one consistent, readable voice across
+`data/`, `core/`, `ui/`, and `app/`, protected by fast zero-dependency tests alongside
+`test/data-pack.test.js`.
+

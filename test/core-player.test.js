@@ -328,7 +328,7 @@ test('a collapse during an action replaces the action result', () => {
   const outcome = perform(w, 'bench', 'use');
   assert.equal(outcome.result.kind, 'collapse', 'the result is the collapse, not the sitting');
   assert.equal(outcome.nextWorld.lastEvent && outcome.nextWorld.lastEvent.kind, 'collapse');
-  assert.match(outcome.result.text, /You are alive/);
+  assert.match(outcome.result.text, /you\u2019re alive/i);
 });
 
 test('the body is data: a JSON round trip changes nothing', () => {
@@ -386,7 +386,7 @@ test('the voice holds: notes are second person, present tense', () => {
   const notes = player.model(worn.player).notes;
   assert.equal(notes.length, 5);
   for (const note of notes) {
-    assert.ok(/^(You |Your )/.test(note), `note is second person: "${note}"`);
+    assert.ok(/^(You\b|Your\b)/.test(note), `note is second person: "${note}"`);
     assert.doesNotMatch(note, /player/i, 'never "the player"');
   }
 });

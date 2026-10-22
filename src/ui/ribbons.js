@@ -329,7 +329,7 @@ Vinland.define('ui/ribbons', function (require) {
     const stash = el('div', 'pack__stash');
     stash.appendChild(el('h3', 'pack__section', 'In the pack'));
     if (model.stowed.length === 0) {
-      stash.appendChild(el('p', 'sheet__empty', 'Your pack is empty. Whatever you take from the shore will be carried here.'));
+      stash.appendChild(el('p', 'sheet__empty', 'Your pack is empty. Anything you pick up along the shore goes here.'));
       wrap.appendChild(stash);
       return wrap;
     }
@@ -425,7 +425,7 @@ Vinland.define('ui/ribbons', function (require) {
     } else if (kind === 'inventory') {
       s.appendChild(reading ? buildReading() : buildPack(world));
     } else {
-      s.appendChild(el('p', 'sheet__empty', 'There is nothing to configure yet.'));
+      s.appendChild(el('p', 'sheet__empty', 'There\u2019s nothing to configure yet.'));
     }
     return s;
   }

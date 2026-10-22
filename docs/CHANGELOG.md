@@ -3,6 +3,41 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 22 — writing style and tone
+
+**Asked:** adopt a direct, concrete, sensory second-person writing style and
+quietly atmospheric tone across Vinland, and document the rules thoroughly.
+
+**Prose rewrite & clean room passages (`src/data/vinland.js`, `src/core/`, `src/ui/`, `src/app/`).**
+Rewrote every location passage (including `dawn`, `dusk`, and `night`
+overrides) and all 23 interactables across Straumfjord and the two-storey
+Longhall in plain, readable modern English with natural contractions, physical
+sensory detail, complete grammatical clauses (every `{id}` token reads cleanly
+both highlighted and after being taken), human NPC speech, and quiet everyday
+unease — removing all abstract purple prose and epigrammatic closers. Removed
+the two bolted-on time-of-day and season/weather paragraphs that
+`core/render-text` previously appended beneath every room so each place renders
+strictly its own self-contained passage (while clock, phase, season, and
+weather live cleanly in the map pane header). Updated condition `NOTES`,
+exhaustion refusal, and collapse text in `core/player`, action fallbacks and
+refusals in `core/actions` and `core/inventory`, dropped/dead-end lines in
+`core/render-text`, empty states in `ui/ribbons`, and take toast copy in
+`app/game` to share the same natural voice.
+
+**Documentation & automated guards.** Added **[docs/STYLE.md](STYLE.md)**
+defining Vinland's core voice, tone, hard bans, sentence rhythm, placeholder
+grammar rules, per-surface anatomy, and Do/Don't examples; updated
+`docs/CONVENTIONS.md`, `docs/VINLAND.md`, `docs/ARCHITECTURE.md` (ADR-0017),
+`docs/TESTING.md`, and `README.md`.
+
+**262 tests, 0 failures.** New: `test/writing-style.test.js` — guards all pack
+prose, phase overrides, condition notes, refusals, collapse prose, and sheet
+empty states against stiff uncontracted prose, purple-prose aphorisms, bolted-on
+trailing paragraphs, and broken sentence capitalization before and after taking
+items.
+
+---
+
 ## Iteration 21 — every kind of thing has a face
 
 **Asked:** interactables of each type should have icons next to them.

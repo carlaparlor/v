@@ -499,7 +499,7 @@ Vinland.define('app/game', function (require) {
         // thing in the world to click) — and the popup says what happened.
         if (action === 'take' && !outcome.failed && outcome.result.kind !== 'collapse') {
           settleAfterTake(interactableId);
-          showToast('You have taken ' + outcome.result.title);
+          showToast('You take the ' + outcome.result.title + '.');
           return outcome;
         }
         // Reading what you carry is a sheet act, not a view: with the pack

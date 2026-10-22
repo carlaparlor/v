@@ -51,18 +51,18 @@ Vinland.define('core/actions', function (require) {
   function fallbackText(interactable, action) {
     var name = interactable.name || interactable.id;
     switch (action) {
-      case 'examine': return interactable.examine || 'You look at the ' + name + '.';
-      case 'take': return 'You take the ' + name + '. It is yours now.';
-      case 'drop': return 'You set down the ' + name + '. It stays here, in case you come back for it.';
+      case 'examine': return interactable.examine || 'You look closely at the ' + name + '.';
+      case 'take': return 'You pick up the ' + name + ' and tuck it into your pack.';
+      case 'drop': return 'You set down the ' + name + ' on the ground.';
       case 'open': return 'You open the ' + name + '.';
       case 'close': return 'You close the ' + name + '.';
-      case 'enter': return 'You enter the ' + name + '.';
-      case 'exit': return 'You step out through the ' + name + '.';
-      case 'climb': return 'You climb the ' + name + '.';
-      case 'descend': return 'You descend the ' + name + '.';
-      case 'use': return 'You put the ' + name + ' to use.';
-      case 'talk': return 'You speak to ' + name + '. They do not answer yet.';
-      case 'approach': return 'You approach the ' + name + ' cautiously.';
+      case 'enter': return 'You step inside the ' + name + '.';
+      case 'exit': return 'You step outside through the ' + name + '.';
+      case 'climb': return 'You climb up the ' + name + '.';
+      case 'descend': return 'You climb carefully down the ' + name + '.';
+      case 'use': return 'You use the ' + name + '.';
+      case 'talk': return 'You speak to the ' + name + ', though they don\u2019t answer.';
+      case 'approach': return 'You step carefully toward the ' + name + '.';
       case 'eat': return 'You eat the ' + name + '.';
       case 'drink': return 'You drink from the ' + name + '.';
       case 'rest': return 'You rest on the ' + name + '.';
@@ -70,11 +70,11 @@ Vinland.define('core/actions', function (require) {
       // 'feet' | 'hand'), so the verb's prose can never share that key — it
       // lives in equipText / unequipText.
       case 'equip': return interactable.equip === 'hand'
-        ? 'You take the ' + name + ' in hand.'
+        ? 'You grip the ' + name + ' in your hand.'
         : 'You put on the ' + name + '.';
       case 'unequip': return interactable.equip === 'hand'
-        ? 'You stow the ' + name + ' in the pack.'
-        : 'You take off the ' + name + ' and stow it in the pack.';
+        ? 'You slip the ' + name + ' back into your pack.'
+        : 'You take off the ' + name + ' and pack it away.';
       default: return 'You ' + action + ' the ' + name + '.';
     }
   }
@@ -92,7 +92,7 @@ Vinland.define('core/actions', function (require) {
     // now lies at your feet — so the prose's own word is the way back to it.
     if (interactable && action === 'drop' && typeof interactable.drop !== 'string') {
       return 'You set down the {' + interactable.id + '|' + (interactable.name || interactable.id)
-        + '}. It stays here, in case you come back for it.';
+        + '} on the ground.';
     }
     // Examining an open container describes it open, if the author wrote that.
     if (interactable && action === 'examine' && containerState === 'open' &&
@@ -361,7 +361,7 @@ Vinland.define('core/actions', function (require) {
     // Contents are only reachable while their container is open.
     if (found.containerId && worldMod.containerState(world, found.containerId) !== 'open') {
       var holderName = (found.container && (found.container.name || found.container.id)) || found.containerId;
-      return failedAttempt(world, interactable, action, 'You cannot reach the ' + interactable.name + ' — the ' + holderName + ' is closed.', true);
+      return failedAttempt(world, interactable, action, 'You can\u2019t reach the ' + interactable.name + ' \u2014 the ' + holderName + ' is closed.', true);
     }
 
     var restriction = time.blocked(world, interactable, action);
@@ -373,7 +373,7 @@ Vinland.define('core/actions', function (require) {
       var provenTarget = crossingTarget(world, found, action);
       if (!provenTarget) {
         var way = (action === 'climb' || action === 'descend') ? 'stairs' : 'doorway';
-        return failedAttempt(world, interactable, action, 'You find no ' + way + ' to ' + action + ' through here.', true);
+        return failedAttempt(world, interactable, action, 'There\u2019s no ' + way + ' to ' + action + ' through here.', true);
       }
       // Exhaustion: an exposed crossing you no longer have the strength for.
       var exhausted = playerMod.exposedTravelRefused(world, provenTarget);
@@ -384,10 +384,10 @@ Vinland.define('core/actions', function (require) {
 
     // The body says no: a full stomach, a throat that is not dry.
     if (action === 'eat' && world.player && world.player.stats.hunger >= playerMod.PLAYER_CONFIG.max) {
-      return failedAttempt(world, interactable, action, 'You are too full to eat the ' + interactable.name + '.', false);
+      return failedAttempt(world, interactable, action, 'You\u2019re too full to eat the ' + interactable.name + '.', false);
     }
     if (action === 'drink' && world.player && world.player.stats.thirst >= playerMod.PLAYER_CONFIG.max) {
-      return failedAttempt(world, interactable, action, 'You are not thirsty enough to drink from the ' + interactable.name + '.', false);
+      return failedAttempt(world, interactable, action, 'You\u2019re not thirsty enough to drink from the ' + interactable.name + '.', false);
     }
 
     // The pack says no: it will not close over one more thing (room first,
@@ -404,7 +404,7 @@ Vinland.define('core/actions', function (require) {
       var slot = inventoryMod.equipSlot(interactable);
       var occupant = inventoryMod.equippedIn(world, slot);
       if (occupant && occupant.id !== interactable.id) {
-        var where = slot === 'hand' ? 'Your hand already holds the ' : 'You already wear the ';
+        var where = slot === 'hand' ? 'You\u2019re already holding the ' : 'You\u2019re already wearing the ';
         return failedAttempt(world, interactable, action, where + (occupant.name || occupant.id) + '.', false);
       }
     }

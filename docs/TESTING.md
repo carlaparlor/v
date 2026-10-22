@@ -13,6 +13,44 @@ pack has been reworked three times since.
 
 ---
 
+## Iteration 22 — writing style and tone
+
+**Asked:** update Vinland's writing style and tone across the game to plain,
+concrete, sensory-grounded second-person prose with natural contractions and
+quiet everyday-plus-unease atmosphere, and document the style rules.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **262 tests, 0 failures.** `test/writing-style.test.js` verifies every
+location passage (including `dawn` / `dusk` / `night` overrides), every
+interactable string in `src/data/vinland.js`, all player condition notes,
+refusals, collapse prose, and ribbon empty states for second-person voice,
+natural contractions, complete sentence punctuation, clean capitalization
+before and after taking items, zero purple-prose aphorisms, and strictly
+self-contained room prose with zero bolted-on clock/weather paragraphs.
+
+### Manual
+
+1. Open `index.html`. Read **The Yard**: a single clean, self-contained passage
+   ends directly on its closing sentence right above the exits line — the old
+   two trailing time/weather paragraphs are completely gone (while the map pane
+   header still shows `Day 1 · 06:00 · dawn` and `Spring · cloudy`).
+2. Open the **barrel**, examine and take the **herring**, and drop it back from
+   **The Pack**: toasts (`You take the herring.`, `You set down the herring.`)
+   and ground text (`You’ve left your herring on the ground here.`) read
+   naturally in present tense with contractions.
+3. Visit **The Smithy**, **The Harbour** (open **cargo**, examine
+   **linen-bundle**), **The Cairn**, **The Beach**, **The Grove** (examine and
+   talk to **woodcutter**), and enter **The Longhall** (wait/travel past 07:00
+   and talk to the **elder**): every description and line of speech reads
+   plainly, physically, and naturally — zero riddles or abstract flourishes.
+
+---
+
 ## Iteration 21 — icons on interactables
 
 **Asked:** interactables of each type have icons next to them.

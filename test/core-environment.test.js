@@ -133,16 +133,15 @@ test('actions price conditions at departure, then arrivals reflect the new slot'
   assert.equal(after.timeSeconds - next.timeSeconds, 420);
 });
 
-test('both view models use the calendar and weather and distinguish indoor shelter', () => {
+test('the map view model surfaces season and weather while indoor state tracks shelter', () => {
   const w = withWeather('snow', 90);
   const model = V.require('core/render-map').renderMap(w);
   assert.equal(model.environment.label, 'Winter · snow');
-  assert.match(V.require('core/render-text').renderText(w).paragraphs.join(' '), /snow collecting/);
+  assert.equal(env.conditions(w).sheltered, false);
   const indoor = { ...w, current: 'longhall-hall' };
   assert.equal(V.require('core/render-map').renderMap(indoor).environment.label, 'Winter · snow');
   assert.equal(env.conditions(indoor).sheltered, true);
-  assert.match(V.require('core/render-text').renderText(indoor).paragraphs.join(' '), /sheltered/);
-  assert.doesNotMatch(env.atmosphere(indoor), /each outdoor crossing/);
+  assert.equal(V.require('core/render-text').renderText(indoor).paragraphs.length, 1);
 });
 
 test('content seed configuration is validated and preserved as plain immutable state', () => {

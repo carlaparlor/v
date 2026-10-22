@@ -102,7 +102,7 @@ test('contents are highlighted in the flow of the open/examine prose — not app
   const herring = clickable(openResult, 'herring');
   assert.ok(herring, 'herring is highlighted in the open prose');
   assert.deepEqual(herring.actions, ['examine', 'take', 'eat']);
-  assert.ok(segText(openResult.segments).includes('leaving the barrel open. Salt, water, and a herring stares up at you.'));
+  assert.ok(segText(openResult.segments).includes('leaving the barrel open. Cold dark brine sloshes inside, with a pickled herring floating near the top.'));
   assert.equal(openResult.text, segText(openResult.segments));
   assert.ok(!openResult.text.includes('{'), 'no raw placeholders leak into the plain text');
   assert.equal(openResult.contentsSegments, undefined, 'no appended contents sentence anymore');

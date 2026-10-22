@@ -88,10 +88,10 @@ test('phase boundaries and prose follow world time, including indoor night overr
   for (const [hour, phase] of [[0, 'night'], [5, 'dawn'], [7, 'day'], [18, 'dusk'], [20, 'night']]) {
     const w = at(hour);
     assert.equal(time.clock(w).phase, phase);
-    assert.ok(V.require('core/render-text').renderText(w).paragraphs.includes(time.atmosphere(w, false)));
   }
   const model = V.require('core/render-text').renderText({ ...at(22), current: 'longhall-landing' });
-  assert.match(model.paragraphs.join(' '), /dark slit/);
-  assert.doesNotMatch(model.paragraphs.join(' '), /blade of daylight/);
+  assert.equal(model.paragraphs.length, 1);
+  assert.match(model.paragraphs[0], /dark slit/);
+  assert.doesNotMatch(model.paragraphs[0], /blade of daylight/);
   assert.throws(() => world.createWorld({ ...pack, locations: pack.locations.map(l => ({ ...l, passages: { invalid: 'text' } })) }), /phase passage/);
 });

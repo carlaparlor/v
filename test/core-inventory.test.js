@@ -131,7 +131,7 @@ test('the pack refuses one more thing at the limit, for half a minute', () => {
   const before = world.timeSeconds;
   const refused = actions.perform(world, 'stone', 'take');
   assert.equal(refused.failed, true);
-  assert.match(refused.result.text, /will not take the stone/);
+  assert.match(refused.result.text, /won\u2019t fit the stone/);
   assert.match(refused.result.text, /weighs 2 kg, and you have 1 kg free of 18 kg/);
   assert.equal(refused.nextWorld.inventory.length, 1, 'nothing entered the pack');
   assert.equal(refused.nextWorld.timeSeconds - before, 30, 'a refused take costs thirty seconds');
@@ -154,7 +154,7 @@ test('dropping returns the thing to the ground, named in the place prose', () =>
   assert.equal(onGround.dropped, true, 'it is marked as set down');
   assert.equal(world.timeSeconds - before, time.COSTS.drop, 'setting it down takes half a minute');
   assert.equal(world.player.stats.energy, beforeEnergy - 1, 'it costs a sliver of energy');
-  assert.ok(renderText.renderText(world).paragraphs.includes('You have set down your feather here.'),
+  assert.ok(renderText.renderText(world).paragraphs.includes('You\u2019ve left your feather on the ground here.'),
     'the place prose says where it lies');
 });
 
@@ -165,7 +165,7 @@ test('several things set down share one sentence, joined like prose', () => {
   world = actions.perform(world, 'feather', 'drop').nextWorld;
   world = actions.perform(world, 'stone', 'drop').nextWorld;
   assert.ok(
-    renderText.renderText(world).paragraphs.includes('You have set down your feather and your stone here.'),
+    renderText.renderText(world).paragraphs.includes('You\u2019ve left your feather and your stone on the ground here.'),
     'two dropped things read as one sentence, not a list',
   );
 });
@@ -294,7 +294,7 @@ test('one thing per slot: the slot already has what it has', () => {
   world = actions.perform(world, 'staff', 'take').nextWorld;
   const crowded = actions.perform(world, 'staff', 'equip');
   assert.equal(crowded.failed, true);
-  assert.match(crowded.result.text, /Your hand already holds the seax\./);
+  assert.match(crowded.result.text, /You\u2019re already holding the seax\./);
   assert.equal(inventory.equippedIn(crowded.nextWorld, 'hand').id, 'seax', 'the hand is unchanged');
 
   // Two things that both dress the head.
@@ -309,7 +309,7 @@ test('one thing per slot: the slot already has what it has', () => {
   capped = actions.perform(capped, 'cap', 'take').nextWorld;
   const second = actions.perform(capped, 'cap', 'equip');
   assert.equal(second.failed, true);
-  assert.match(second.result.text, /You already wear the hood\./);
+  assert.match(second.result.text, /You\u2019re already wearing the hood\./);
 });
 
 test('the sheet model is view data: the load in kg, the body, the stash', () => {

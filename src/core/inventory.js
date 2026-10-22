@@ -184,7 +184,7 @@ Vinland.define('core/inventory', function (require) {
   /** The refusal, in second person, in kg, with the numbers that made it. */
   function refusalText(held, fit) {
     const name = (held && (held.name || held.id)) || 'thing';
-    return 'Your pack will not take the ' + name + ' — it weighs ' + weightLabel(fit.weight)
+    return 'Your pack won\u2019t fit the ' + name + ' \u2014 it weighs ' + weightLabel(fit.weight)
       + ', and you have ' + weightLabel(fit.free) + ' free of ' + weightLabel(fit.capacity) + '.';
   }
 
@@ -222,8 +222,8 @@ Vinland.define('core/inventory', function (require) {
 
   /** What the sheet says when the load is no longer light. */
   const NOTES = Object.freeze({
-    heavy: 'The pack rides heavy on your shoulders; every crossing will take longer.',
-    full: 'The pack is full to the seams; nothing else will fit.',
+    heavy: 'Your pack rides heavy on your shoulders; every crossing outside takes longer.',
+    full: 'Your pack is full to the seams\u2014nothing else fits inside.',
   });
 
   /**
