@@ -22,6 +22,10 @@
  *   (overheating) in the heat — and shelter lets it settle back to the
  *   middle. Only the distance from 50 is severity, so its bands, its health
  *   drain and its travel penalty all read off that distance, on either side.
+ *   What you wear matters: each equipped piece adds °C of warmth (its
+ *   `insulation`) that nudges the open-air target back toward comfortable —
+ *   a winter cloak saves you, a summer cloak cooks you. The ambient
+ *   temperature itself lives in core/environment.temperature().
  *
  * Pure module: no DOM, no globals, no I/O. The player lives inside world state as
  * plain frozen data (ADR-0006), so every transition returns a new world and the
@@ -79,6 +83,10 @@ Vinland.define('core/player', function (require) {
       exposureTarget: Object.freeze({ spring: 38, summer: 82, autumn: 32, winter: 12 }),
       exposureWeather: Object.freeze({ clear: 6, cloudy: 3, fog: 0, rain: -8, snow: -22, storm: -10 }),
       exposureNight: -8,
+      // Each degree of worn warmth nudges the needle toward fine: a fur-hood
+      // (+3°C) counts as +6 on the 0–100 exposure scale. Bundled in winter it
+      // saves you; overdressed in summer it cooks you.
+      insulationPerDegree: 2,
       // How fast the needle chases its target (fraction of the gap per second).
       exposureRate: 1 / 14400,
       conDecayPerPoint: 0.03,
@@ -217,10 +225,12 @@ Vinland.define('core/player', function (require) {
     s.hunger -= seconds * D.hunger;
     s.thirst -= seconds * D.thirst;
     if (context.exposed) {
+      const warmth = typeof context.insulation === 'number' && Number.isFinite(context.insulation) ? context.insulation : 0;
       const target = clamp(
         D.exposureTarget[context.season]
         + D.exposureWeather[context.weather]
-        + (context.phase === 'night' ? D.exposureNight : 0), 0, PLAYER_CONFIG.max);
+        + (context.phase === 'night' ? D.exposureNight : 0)
+        + warmth * D.insulationPerDegree, 0, PLAYER_CONFIG.max);
       let step = (target - s.exposure) * Math.min(1, seconds * D.exposureRate);
       // Constitution only shrugs off the air pushing you AWAY from fine;
       // it never slows the needle settling back toward it.
@@ -258,7 +268,10 @@ Vinland.define('core/player', function (require) {
       exposed: isExposed(source, destination),
       season: environment.calendar(source).season,
       weather: environment.weather(source),
-      phase: environment.phase(source)
+      phase: environment.phase(source),
+      // The warmth you are wearing at departure — a cloak counted now, not
+      // after the step, exactly like the season and the weather are.
+      insulation: inventoryMod.totalInsulation(source)
     };
   }
 

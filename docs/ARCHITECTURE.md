@@ -19,7 +19,7 @@ v/
 │  │  ├─ layout.js            pane specs (count, ids, roles, size weights) — pure
 │  │  ├─ world.js             world state: locations, exits, travel — pure, immutable
 │  │  ├─ time.js              action-driven clock: costs, advance — pure
-│  │  ├─ environment.js       calendar, daylight, weather, exposure — pure
+│  │  ├─ environment.js       calendar, daylight, weather, temperature, exposure — pure
 │  │  ├─ player.js            the person in the world: attributes, stats, costs — pure
 │  │  ├─ interactables.js     types, colors, default verbs — pure
 │  │  ├─ inventory.js         the pack and the body: kg weights, worn & held, carried verbs — pure
@@ -35,7 +35,7 @@ v/
 │     ├─ panel-map.js         paints a map view model into the right pane
 │     └─ ribbons.js           the profile/inventory/settings ribbons and their centered modals
 ├─ server.mjs                 OPTIONAL static dev server (Node >= 18, no deps)
-├─ test/                      node:test unit tests (262)
+├─ test/                      node:test unit tests (277)
 ├─ tools/                     dev-only helpers: script loader, DOM stub (never shipped)
 └─ docs/                      workflow, style, vision, architecture, conventions, testing, changelog
 ```
@@ -626,6 +626,46 @@ from 75% — that is deliberate, but it means capacity alone is not the warning;
 there is no "use from the pack" shortcut beyond the verbs the item already
 declares; and `drop` adds location interactables during play, so any future
 system that enumerates "the room's original things" must respect `dropped`.
+
+### ADR-0018 — Temperature is derived in core/environment, felt as insulation in core/inventory
+
+**Context:** Iteration 23 asked for temperature. Vinland already modelled cold
+and heat as **exposure** — a needle with a comfortable middle, pushed by
+season, weather and night (ADR-0011 / iteration 14). Adding a second
+"how cold is it" number risked two sources of truth, and a bare °C readout
+would be decoration unless the body could do something about it.
+**Decision:**
+- **One derived number, in the environment.** `core/environment.temperature(world)`
+  is a pure function of state (season base + weather bend + phase bend, then a
+  shelter pull toward `TEMPERATURE_HEARTH`), never stored in the world and
+  never rolled — so it survives
+  JSON round trips, renders and action counts unchanged. `temperatureLabel`
+  formats it (whole degrees, real minus sign); `conditions()` carries
+  `temperature` / `temperatureLabel` beside season and weather, whose own
+  `label` stays `Season · weather`.
+- **Shelter is a set-point, not a bonus.** Indoors the air is 60% of the way
+  from outside to `TEMPERATURE_HEARTH` (18 °C), so a roof cuts both ways: it
+  warms a winter night and cools a summer noon. A flat "+12 indoors" would
+  have made a summer hall swelter at 31 °C while the body reported "feeling
+  fine" — the readout and the exposure needle must not disagree.
+- **Display belongs to the map header, never to the prose.** Following
+  ADR-0017, no temperature line is appended to a room passage: the header's
+  season/weather line gains a `.map__temperature` span with its own
+  aria-label.
+- **Warmth is a property of what is worn, counted by core/inventory.** An item
+  declares `insulation` (°C); `totalInsulation` sums **worn** pieces only; the
+  inventory module counts the degrees and never decides what they are worth.
+- **The body decides what warmth is worth.** `core/player`'s drift takes the
+  total as the exposure target's warmth term, so the same cloak pulls you
+  toward comfortable in winter and past it in summer — the needle's two ends
+  do the drama, not a special case.
+**Consequences:** temperature is one number with one home, readable by a mod
+(`Vinland.require('core/environment').temperature`) and testable in Node with
+no DOM. A pack that wants a tropical shore overrides `TEMPERATURE_BASE` or
+replaces `core/environment`; a pack that wants warmer gear just declares
+`insulation`. Cost: exposure now has one more input, so a drift bug can hide
+behind clothing — `test/core-temperature.test.js` pins both sides (winter
+saved, summer cooked) so it cannot silently become one-directional.
 
 ### ADR-0017 — Plain, sensory prose with natural contractions, self-contained passages, and zero purple prose
 **Context:** A text-based game's prose is its rendering engine. Early iterations accumulated

@@ -221,7 +221,8 @@ Vinland.define('ui/ribbons', function (require) {
   /**
    * The load, said plainly: the circles centered, and under them the weight
    * you carry against the weight you can — "15 kg / 18 kg" — with the
-   * warning under that when the pack rides heavy.
+   * warning under that when the pack rides heavy, and your warmth when
+   * something on you keeps the cold off.
    */
   function packVitals(model) {
     const vitals = el('div', 'pack__vitals');
@@ -230,6 +231,12 @@ Vinland.define('ui/ribbons', function (require) {
     line.setAttribute('aria-label', model.loadLabel);
     vitals.appendChild(line);
     if (model.note) vitals.appendChild(el('p', 'pack__note pack__note--' + model.band, model.note));
+    if (model.warmthLabel) {
+      const warmth = el('p', 'pack__warmth', model.warmthLabel);
+      warmth.setAttribute('aria-label', 'Worn warmth ' + model.warmthLabel);
+      warmth.setAttribute('title', model.warmthNote || model.warmthLabel);
+      vitals.appendChild(warmth);
+    }
     return vitals;
   }
 
@@ -253,6 +260,12 @@ Vinland.define('ui/ribbons', function (require) {
     weight.setAttribute('title', item.name + ' weighs ' + item.weightLabel + (worn ? ' — worn, not carried' : ''));
     weight.setAttribute('aria-label', item.name + ' weighs ' + item.weightLabel + (worn ? ', worn, not carried' : ''));
     head.appendChild(weight);
+    if (worn && item.insulation && item.insulation > 0) {
+      const warmth = el('span', 'pack__warmth-badge', item.insulationLabel);
+      warmth.setAttribute('title', item.name + ' keeps ' + item.insulationLabel + ' of the cold off you');
+      warmth.setAttribute('aria-label', item.name + ' warmth ' + item.insulationLabel);
+      head.appendChild(warmth);
+    }
     row.appendChild(head);
 
     const actions = el('div', 'pack__actions');

@@ -223,4 +223,11 @@
   --sheet-width: 520px;
   /* The pack sheet is the wide one: the body column and the stash list. */
   --pack-sheet-width: 520px;
+
+  /* Warmth — the cold kept off you by what you wear (a worn thing's
+     `insulation`, in °C). Amber, like the heavy/low band: borrowed from the
+     same warm family, so a warm cloak reads as warmth, not as a warning. */
+  --color-warmth: #d9a441;
+  --color-warmth-bg: rgba(217, 164, 65, 0.12);
+  --color-warmth-border: rgba(217, 164, 65, 0.24);
 }

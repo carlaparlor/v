@@ -51,6 +51,11 @@ Vinland.define('core/inventory', function (require) {
    */
   const EQUIP_SLOTS = Object.freeze(['head', 'torso', 'legs', 'feet', 'hand']);
 
+  /** A thing with no declared `insulation` keeps no cold off you. */
+  const INSULATION_DEFAULT = 0;
+  /** Every warmth the game ever says is in this unit (degrees Celsius). */
+  const WARMTH_UNIT = '\u00B0C';
+
   function round2(x) { return Math.round(x * 100) / 100; }
   function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
 
@@ -117,6 +122,27 @@ Vinland.define('core/inventory', function (require) {
     }
     body.stowed = stowed;
     return body;
+  }
+
+  /** What a carried thing adds to your warmth when worn (degrees C, 0 if not clothing). */
+  function insulationOf(held) {
+    if (!held || typeof held.insulation !== 'number' || !Number.isFinite(held.insulation)) return INSULATION_DEFAULT;
+    return Math.max(0, held.insulation);
+  }
+
+  function insulationLabel(c) {
+    const n = Math.round(c);
+    return (n < 0 ? '\u2212' + Math.abs(n) : '+' + n) + WARMTH_UNIT;
+  }
+
+  /** Total warmth from everything currently on your body. */
+  function totalInsulation(world) {
+    const list = (world && world.inventory) || [];
+    let sum = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (equippedSlot(list[i])) sum += insulationOf(list[i]);
+    }
+    return sum;
   }
 
   /** The thing riding in a given body slot, or null. */
@@ -205,7 +231,7 @@ Vinland.define('core/inventory', function (require) {
     return list;
   }
 
-  /** One carried thing, as the sheet paints it (every weight in kg). */
+  /** One carried thing, as the sheet paints it (every weight in kg, and warmth when worn). */
   function itemModel(held) {
     return {
       id: held.id,
@@ -214,6 +240,8 @@ Vinland.define('core/inventory', function (require) {
       color: interactablesMod.colorFor(held),
       weight: weightOf(held),
       weightLabel: weightLabel(weightOf(held)),
+      insulation: insulationOf(held),
+      insulationLabel: insulationLabel(insulationOf(held)),
       equip: equipSlot(held),
       equipped: equippedSlot(held),
       actions: actionsFor(held),
@@ -239,6 +267,7 @@ Vinland.define('core/inventory', function (require) {
       const slot = EQUIP_SLOTS[i];
       body[slot] = state.body[slot] ? itemModel(state.body[slot]) : null;
     }
+    const warmth = totalInsulation(world);
     return {
       capacity: state.capacity,
       load: state.load,
@@ -252,6 +281,9 @@ Vinland.define('core/inventory', function (require) {
       loadLine: weightLabel(state.load) + ' / ' + weightLabel(state.capacity),
       loadLabel: weightLabel(state.load) + ' in the pack of ' + weightLabel(state.capacity),
       note: NOTES[state.band] || null,
+      warmth: warmth,
+      warmthLabel: warmth > 0 ? insulationLabel(warmth) + ' warmth' : null,
+      warmthNote: warmth > 0 ? 'Worn clothes keep ' + insulationLabel(warmth) + ' of the cold off you.' : null,
       // The painted parts.
       body,
       stowed: state.body.stowed.map(itemModel),
@@ -262,10 +294,15 @@ Vinland.define('core/inventory', function (require) {
   return {
     PACK_CONFIG,
     EQUIP_SLOTS,
+    INSULATION_DEFAULT,
+    WARMTH_UNIT,
     weightOf,
     weightLabel,
     equipSlot,
     equippedSlot,
+    insulationOf,
+    insulationLabel,
+    totalInsulation,
     capacityFor,
     capacityOf,
     loadOf,

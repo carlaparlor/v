@@ -3,6 +3,70 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 23 — temperature: the air has a number, and clothes keep it off you
+
+**Asked:** "add temperature."
+
+**The air (`core/environment`).** Weather now comes with a reading.
+**`temperature(world)`** returns the ambient air in whole degrees Celsius,
+derived — never stored, never rolled — from four transparent terms that live
+in `core/environment` next to the weather fronts: `TEMPERATURE_BASE` by
+season (spring 7 °C, summer 16 °C, autumn 4 °C, winter −6 °C — a cold
+northern shore), `TEMPERATURE_WEATHER` (clear +3, cloudy 0, fog −1, rain −4,
+storm −6, snow −9), `TEMPERATURE_PHASE` (day +1, dusk −1, dawn −2, night −4)
+and a **roof, which holds the air near hearth-warm** (`TEMPERATURE_HEARTH`
+18 °C, at `TEMPERATURE_SHELTER_SHARE` 0.6 of the way from outside in). It is
+read at departure, like every other environment rule, so the same day, hour
+and place always read the same — and a JSON round trip cannot change it.
+`temperatureLabel` says it plainly: `11°C`, `−12°C` (a real minus sign, and
+whole degrees). `conditions()` carries `temperature` / `temperatureLabel`
+alongside season and weather, and **the map header reads it on the
+season/weather line** — `Spring · clear · 8°C` — as its own `.map__temperature`
+span with an aria-label, so the season's line stays the season's line. Step
+indoors and only the number moves: the weather is regional, the air is not —
+and because shelter is a set-point rather than a bonus, **a roof cuts both
+ways**, warming a winter night (−14 °C outside, 5 °C in the hall) and taking
+the edge off a summer noon. A flat "+12 indoors" would have put a summer hall
+at 31 °C while the body reported "feeling fine"; the readout and the needle
+are not allowed to disagree.
+The left pane is untouched — no bolted-on weather paragraph (docs/STYLE.md).
+
+**What you wear (`core/inventory`, `core/player`).** A number on a header is
+decoration unless the body feels it, so warmth became a thing you can put on.
+An item may declare `insulation` — degrees Celsius of cold it keeps off you —
+and the shore's wardrobe now declares it: **fur-hood +3 °C (head), storm-cloak
++4 °C (torso), wool-trews +2 °C (legs), seaboots +2 °C (feet)** — **+11 °C**
+head to feet, one thing per slot, all wearable at once (the seax is a tool:
+it rides in hand and warms nothing). `totalInsulation` counts **worn** pieces
+only — a cloak in the pack is cloth, not clothing — and the total feeds
+`core/player`'s drift as the exposure target's warmth term
+(`PLAYER_CONFIG.drift.insulationPerDegree`, +2 per degree). Because exposure
+is a needle with two ends, **warmth cuts both ways: bundling up drags you back
+toward comfortable in a winter night, and pushes you further past it in
+summer** — you can overdress. `validatePack` rejects an `insulation` that is
+not a finite non-negative number.
+
+**The sheet says it.** The pack sheet's vitals gained a warmth line under the
+kilograms — **"+7°C warmth"** — with a note in words, and every **worn** row
+carries its own `+4°C` badge (stowed, a thing carries no badge: it is not on
+you). Warmth colours come from new tokens (`--color-warmth`,
+`--color-warmth-bg`, `--color-warmth-border`), so a retheme still starts in
+`styles/tokens.css`.
+
+**277 tests, 0 failures.** New: `test/core-temperature.test.js` — the season,
+weather, night and shelter terms (including the roof cutting both ways);
+deterministic readings across renders,
+actions and JSON round trips; `temperatureLabel` (including the minus sign and
+whole-degree rounding); `conditions()` agreeing with `temperature()` while the
+season/weather label stays untouched; insulation counted worn-only and summed
+to +11 °C for the shipped wardrobe; the two-ended effect of warmth on exposure
+(winter saved, summer cooked); `validatePack` refusing a dishonest
+`insulation`; the map header showing the number and following a step indoors;
+and the pack sheet's warmth line and worn-row badge appearing and clearing
+with equip/unequip.
+
+---
+
 ## Iteration 22 — writing style and tone
 
 **Asked:** adopt a direct, concrete, sensory second-person writing style and

@@ -431,6 +431,11 @@
   color: var(--color-text);
 }
 
+.map__temperature {
+  color: var(--color-text-bright);
+  font-weight: 600;
+}
+
 .map__legend {
   margin: var(--space-1) 0 0;
   color: var(--color-text);
@@ -1040,6 +1045,26 @@
 
 .pack__note--full {
   color: var(--color-stat-critical);
+}
+
+.pack__warmth {
+  margin: 0;
+  color: var(--color-warmth);
+  font-size: var(--font-size-micro);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.pack__warmth-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-warmth-bg);
+  border: 1px solid var(--color-warmth-border);
+  color: var(--color-warmth);
+  font-size: var(--font-size-micro);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
 }
 
 /*

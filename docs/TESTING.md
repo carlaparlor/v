@@ -13,7 +13,47 @@ pack has been reworked three times since.
 
 ---
 
-## Iteration 22 — writing style and tone
+## Iteration 23 — temperature
+
+**Asked:** "add temperature."
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **277 tests, 0 failures.** The contract lives in
+`test/core-temperature.test.js`: the four terms that make the air (season
+base, weather bend, hour's phase, and the roof's pull toward hearth-warm —
+which cuts both ways), whole-degree readings that
+are deterministic across renders, actions and JSON round trips,
+`temperatureLabel` with a real minus sign, `conditions()` carrying the number
+while the season/weather label stays `Season · weather`, insulation counted
+worn-only and summing to +11 °C for the shipped wardrobe, warmth pulling the
+exposure needle toward comfortable in winter and past it in summer,
+`validatePack` refusing a dishonest `insulation`, the map header showing
+`Spring · clear · 8°C` (with an aria-label) and following a step indoors, and
+the pack sheet's `+7°C warmth` line plus a badge on each worn row.
+
+### Manual
+
+1. Open `index.html`. Under **Day 1 · 06:00 · dawn** the map header reads
+   **`Spring · clear · 8°C`** — one line, the temperature in brighter text at
+   the end of it. No temperature paragraph was bolted onto the yard prose.
+2. Walk into **The Longhall** (`enter` the longhall): season and weather stand
+   (`Spring · clear`) but the number climbs toward hearth-warm — a roof is
+   worth something on a cold dawn. Walk back out and it drops again. In high
+   summer the same step nudges the number *down*: a roof cuts both ways.
+3. Take the **storm-cloak** from the yard and **equip** it. Open the
+   **inventory** ribbon: under the kilograms the sheet now reads
+   **`+4°C warmth`**, and the cloak's row in **Torso** carries a small
+   **`+4°C`** badge. **Unequip** it: the line and the badge both go — a cloak
+   in the pack is cloth, not clothing.
+4. Full outfit: hood (+3), cloak (+4), trews (+2), seaboots (+2) reads
+   **`+11°C warmth`**, one thing per slot, nothing in hand counted.
+
+
 
 **Asked:** update Vinland's writing style and tone across the game to plain,
 concrete, sensory-grounded second-person prose with natural contractions and
