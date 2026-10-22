@@ -25,6 +25,15 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 21 — every kind of thing has a face.** Every coloured word in
+the prose now leads with the glyph of its type, in the word's own colour: a
+thing (object), a parcel (item), a lidded store (container), a hammer
+(fixture), a person (npc), a paw (wildlife). The map lives in `ui/icons`
+(`TYPE_ICONS`, keyed by `core/interactables`' type names) with a plain mark
+for any unknown type; the glyph is sized in `em`, hidden from screen readers
+so the word stays the button's name, and fades with the colour when a taken
+word settles. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 20 — the load, laid out.** The pack's weight wears the same
 five-circle row as the attributes (each circle a fifth of the haul,
 half-circle steps, amber when heavy, red when full), **centered**, with the

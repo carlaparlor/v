@@ -11,6 +11,10 @@
  * backpack, settings and x for the ribbons; heart, utensils, droplet, zap and
  * thermometer (exposure: cold one way, hot the other) for the five vitals — keyed by stat name, so
  * icon(playerModel.stats[i].key) just works.
+ *
+ * The six interactable types (core/interactables) each have a glyph too, in
+ * TYPE_ICONS — one shape language for the prose: a thing, a takeable parcel, a
+ * lidded store, a built fixture, a person, a paw.
  */
 Vinland.define('ui/icons', function () {
   'use strict';
@@ -83,7 +87,58 @@ Vinland.define('ui/icons', function () {
       // thermometer
       Object.freeze({ tag: 'path', attrs: { d: 'M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z' } }),
     ]),
+    // Interactable types, keyed by core/interactables' type names.
+    shapes: Object.freeze([
+      // object — a thing, in no particular shape
+      Object.freeze({ tag: 'path', attrs: { d: 'M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z' } }),
+      Object.freeze({ tag: 'rect', attrs: { x: 3, y: 14, width: 7, height: 7, rx: 1 } }),
+      Object.freeze({ tag: 'circle', attrs: { cx: 17.5, cy: 17.5, r: 3.5 } }),
+    ]),
+    package: Object.freeze([
+      // item — a parcel, made to be picked up
+      Object.freeze({ tag: 'path', attrs: { d: 'M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M12 22V12' } }),
+      Object.freeze({ tag: 'polyline', attrs: { points: '3.29 7 12 12 20.71 7' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'm7.5 4.27 9 5.15' } }),
+    ]),
+    archive: Object.freeze([
+      // container — something with a lid
+      Object.freeze({ tag: 'rect', attrs: { width: 20, height: 5, x: 2, y: 3, rx: 1 } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M10 12h4' } }),
+    ]),
+    hammer: Object.freeze([
+      // fixture — built into the place, not carried
+      Object.freeze({ tag: 'path', attrs: { d: 'm15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'm18 15 4-4' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'm21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5' } }),
+    ]),
+    'paw-print': Object.freeze([
+      // wildlife
+      Object.freeze({ tag: 'circle', attrs: { cx: 11, cy: 4, r: 2 } }),
+      Object.freeze({ tag: 'circle', attrs: { cx: 18, cy: 8, r: 2 } }),
+      Object.freeze({ tag: 'circle', attrs: { cx: 20, cy: 16, r: 2 } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z' } }),
+    ]),
+    'circle-dot': Object.freeze([
+      // fallback — a type this build does not know still gets a mark
+      Object.freeze({ tag: 'circle', attrs: { cx: 12, cy: 12, r: 10 } }),
+      Object.freeze({ tag: 'circle', attrs: { cx: 12, cy: 12, r: 1 } }),
+    ]),
   });
+
+  /** Interactable type (core/interactables' TYPES) → icon name. */
+  const TYPE_ICONS = Object.freeze({
+    object: 'shapes',
+    item: 'package',
+    container: 'archive',
+    fixture: 'hammer',
+    npc: 'user-round',
+    wildlife: 'paw-print',
+  });
+
+  /** The icon for an unknown type: a mark, never a blank. */
+  const TYPE_ICON_FALLBACK = 'circle-dot';
 
   /** SVG goes through createElementNS — the test stub supports it. */
   function svgEl(tag, attrs) {
@@ -120,5 +175,13 @@ Vinland.define('ui/icons', function () {
     return svg;
   }
 
-  return { icon, ICONS };
+  /**
+   * The icon name for an interactable type. Every core type has one; an
+   * unknown type falls back to a plain mark rather than a hole in the prose.
+   */
+  function iconForType(type) {
+    return TYPE_ICONS[type] || TYPE_ICON_FALLBACK;
+  }
+
+  return { icon, iconForType, ICONS, TYPE_ICONS, TYPE_ICON_FALLBACK };
 });

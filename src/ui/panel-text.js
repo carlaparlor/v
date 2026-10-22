@@ -145,7 +145,12 @@ Vinland.define('ui/panel-text', function (require) {
 
   function makeInteractableNode(seg) {
     const wrap = el('span', 'interactable-wrap');
-    const btn = el('button', 'interactable', seg.display);
+    // The word leads with its type's glyph (ui/icons, keyed by the same type
+    // names core/interactables uses), so a look at the prose tells you what
+    // kind of thing each coloured word is before you open it.
+    const btn = el('button', 'interactable');
+    btn.appendChild(iconsMod.icon(iconsMod.iconForType(seg.typeName), 'interactable__icon'));
+    btn.appendChild(document.createTextNode(seg.display));
     btn.dataset.interactableId = seg.id;
     btn.dataset.interactableType = seg.typeName || '';
     btn.style.color = seg.color || '';

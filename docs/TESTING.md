@@ -13,6 +13,40 @@ pack has been reworked three times since.
 
 ---
 
+## Iteration 21 — icons on interactables
+
+**Asked:** interactables of each type have icons next to them.
+
+### Automated
+
+```bash
+npm test
+```
+
+Expected: **257 tests, 0 failures.** The contract lives in
+`ui-interactable-icons.test.js`: every one of the six core types maps to a
+real lucide glyph, no two types share one, an unknown type falls back to
+`circle-dot`, each rendered word leads with its type's `<svg>` in the word's
+own colour (`currentColor`, 24×24), the glyph is `aria-hidden` with the word
+as the button's text, and the CSS sizes it in `em` and fades it with a taken
+word.
+
+### Manual
+
+1. Refresh. Look at the yard prose: **ropes**, **storm-cloak** and **seax**
+   (items) carry a parcel; the **barrel** (container) carries a lidded
+   store; the **trough** and **grindstone** (fixtures) carry a hammer.
+2. Click a glyph: it opens the same dropdown as the word — the icon is part
+   of the button. Its colour matches the word's type colour.
+3. Go to the cairn: **cairn-stones** (object) carries the shapes glyph and
+   the **raven** (wildlife) a paw. Talk to the **elder** in the longhall for
+   the person glyph (npc).
+4. Take the **ropes**: the word settles to plain body text and the glyph
+   fades with it, then the re-render drops both. Open the barrel and take
+   the **herring**: same settle.
+
+---
+
 ## Iteration 20 — the pack as it stands (iterations 17–20)
 
 **Asked:** centered modals; a body you dress head to feet; real weights in

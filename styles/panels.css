@@ -178,15 +178,32 @@
     text-decoration-color 120ms ease;
 }
 
+/* The type glyph rides before the word, in the word's own colour (the svg
+   strokes currentColor). Sized in em so it follows the prose, not a fixed px. */
+.interactable__icon {
+  inline-size: 0.9em;
+  block-size: 0.9em;
+  margin-inline-end: 0.32em;
+  vertical-align: -0.1em;
+  opacity: 0.9;
+  pointer-events: none;
+  transition: opacity var(--duration-take) var(--ease-smooth);
+}
+
 /* Being taken: the word settles — colour drains to body text, weight drops.
    The re-render that follows lands on an already-plain word, so the swap
-   itself is never seen. */
+   itself is never seen. The glyph goes with the colour: what is taken is no
+   longer a thing you can act on. */
 .interactable.is-taken {
   color: var(--color-text);
   font-weight: 400;
   cursor: default;
   pointer-events: none;
   text-decoration: none;
+}
+
+.interactable.is-taken .interactable__icon {
+  opacity: 0;
 }
 
 .interactable:hover,
