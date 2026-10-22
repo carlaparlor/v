@@ -25,6 +25,23 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 23 — temperature: the air has a number, and clothes keep it off
+you.** Weather now comes with a reading. The map header reads
+**`Spring · clear · 8°C`** — the ambient air in whole degrees, derived in
+`core/environment` from four transparent terms: a base per season (spring 7,
+summer 16, autumn 4, winter −6), a bend per weather (clear +3 … snow −9), the
+hour's phase (day +1 … night −4), and **a roof, which holds the air near
+hearth-warm (18 °C)** — read at departure, so the same day, hour and place
+always read the same, and stepping indoors moves only the number. And the body feels it: an item may declare
+**`insulation`** — degrees of cold it keeps off you while it rides **on** you —
+and the shore's wardrobe declares it (**fur-hood +3, storm-cloak +4,
+wool-trews +2, seaboots +2**: **+11 °C** head to feet). `totalInsulation`
+counts worn pieces only — a cloak in the pack is cloth, not clothing — and it
+nudges exposure back toward comfortable, which **cuts both ways: bundling up
+saves you on a winter night and cooks you in summer.** The pack sheet says the
+warmth you wear (`+7°C warmth`) with a badge on every worn row. See
+[docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 22 — writing style and tone.** Rewrote all location passages,
 phase overrides, interactable examinations, action results, NPC speech,
 condition notes, refusals, collapse prose, and UI copy into one plain,

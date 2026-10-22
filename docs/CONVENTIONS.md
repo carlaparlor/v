@@ -58,8 +58,10 @@
 - **Items may declare `weight` (kg) and `equip` (a body slot):** what they
   add to the pack if taken (core/inventory; default 2 kg) and where they
   ride on you instead — `equip` is one of `head, torso, legs, feet, hand`
-  (see Inventory below). `weight` must be a finite non-negative number and
-  `equip` an exact slot on an item; `validatePack` refuses anything else.
+  (see Inventory below). `weight` must be a finite non-negative number,
+  `insulation` a finite non-negative number (degrees of warmth when worn,
+  default 0) and `equip` an exact slot on an item; `validatePack` refuses
+  anything else.
   Weights are balance data — the world's twelve takeables total 29 kg
   against a default haul of 18 kg.
 
@@ -102,6 +104,15 @@ The player is world state (`world.player`) — plain frozen data created by
   ≤ 25 ok, ≤ 40 low, beyond that critical — on either side — and the status
   note names the side (freezing vs overheating). Never reintroduce a
   one-directional temperature stat; too hot and too cold are this one needle.
+- **Warmth is worn, and it cuts both ways** (`core/inventory.totalInsulation`,
+  `PLAYER_CONFIG.drift.insulationPerDegree`): a worn thing may declare
+  `insulation` — degrees Celsius of cold it keeps off you. Only **worn**
+  pieces count (a cloak in the pack is cloth, not clothing), and the total
+  nudges the open-air exposure target back toward comfortable by
+  `insulationPerDegree` (`+2`) per degree. Because the needle has two ends,
+  bundling up saves you in winter and **cooks you in summer** — warmth moves
+  you toward 50, never past it, and never away from it. The number you wear
+  is shown on the pack sheet (`warmthLabel`, and a badge per worn row).
 
 The cost pipeline is fixed and one-directional (ADR-0013): base (core/time) →
 attributes → skill → condition (core/player, `effectiveCost`) → weather
@@ -186,6 +197,14 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
   through to the field). Unequipping must fit the load like anything else;
   a dropped thing always lands stowed (the flag belongs to the pack,
   exactly as the `dropped` mark belongs to the ground).
+- **Warmth is what clothing does.** An item may declare `insulation` —
+  degrees Celsius of cold it keeps off you while it rides on you
+  (`insulationOf`, `insulationLabel`: `"+4\u00b0C"`). `totalInsulation(world)`
+  sums the worn pieces only (a stowed cloak warms nothing; a tool in hand
+  insulates nothing), and the total is shown as `warmthLabel` on the pack
+  sheet with a badge per worn row. How warmth is *felt* belongs to
+  `core/player` (the exposure target), never to this module: the inventory
+  counts the degrees, the body decides what they are worth.
 - **Take is gated; drop is a verb.** `core/actions.perform` refuses a take
   that would pass the limit, with the numbers in kg ("Your pack won't fit the
   X — it weighs W kg, and you have F kg free of C kg.") and the usual
@@ -281,6 +300,18 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
   weather independently of renders, action count and JSON round trips.
 - Environment rules live in `core/environment`: thirty-day seasons, daylight
   windows, season-weighted three-hour weather fronts and exposure modifiers.
+- **Temperature lives where the weather lives** (`core/environment.temperature`):
+  the ambient air in whole degrees Celsius, derived — never stored, never
+  rolled — from `TEMPERATURE_BASE[season]` + `TEMPERATURE_WEATHER[weather]` +
+  `TEMPERATURE_PHASE[phase]`, then pulled `TEMPERATURE_SHELTER_SHARE` (0.6) of
+  the way toward `TEMPERATURE_HEARTH` (18 °C) when sheltered, and read at
+  departure like every other environment rule. Shelter is a set-point, not a
+  bonus: a roof warms a winter night and cools a summer noon, so the reading
+  can never contradict the exposure needle that settles indoors. `temperatureLabel` says it
+  (`"11\u00b0C"`, `"\u221212\u00b0C"` — a real minus sign, whole degrees), and
+  `conditions()` carries `temperature` / `temperatureLabel` next to season and
+  weather. The map header shows it on the season/weather line; the left pane
+  never bolts it onto the prose (STYLE: no generated clock/weather paragraphs).
 - A location with `within` is sheltered. Outdoor penalties apply to crossings
   with either endpoint exposed, priced at departure, never arrival.
 

@@ -129,4 +129,11 @@ test('the ribbons and sheets are readable on the surfaces they sit on (WCAG AA)'
     const ratio = contrast(colour, sheetBg);
     assert.ok(ratio >= 4.5, `pack meter ${name} ${colour} on ${sheetBg} is ${ratio.toFixed(2)}:1, needs >= 4.5:1`);
   }
+  // Warmth (what your clothes keep off you) is text at small size on the
+  // same surface — the line and the worn-row badge both read it.
+  const warmth = token('--color-warmth');
+  assert.ok(
+    contrast(warmth, sheetBg) >= 4.5,
+    `warmth ${warmth} on ${sheetBg} is ${contrast(warmth, sheetBg).toFixed(2)}:1, needs >= 4.5:1`,
+  );
 });

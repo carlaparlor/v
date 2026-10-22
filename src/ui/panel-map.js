@@ -245,9 +245,17 @@ Vinland.define('ui/panel-map', function (require) {
       }
 
       if (model.environment) {
-        center.appendChild(el('p', 'map__environment', model.environment.label));
+        const envLine = el('p', 'map__environment', model.environment.label);
+        // Temperature lives with its weather: "Spring \u00b7 cloudy" gains " \u00b7 8\u00b0C" when known.
+        if (model.environment.temperatureLabel) {
+          const temp = el('span', 'map__temperature', ' \u00b7 ' + model.environment.temperatureLabel);
+          temp.setAttribute('aria-label', 'temperature ' + model.environment.temperatureLabel);
+          envLine.appendChild(temp);
+        }
+        center.appendChild(envLine);
         body.dataset.season = model.environment.season;
         body.dataset.weather = model.environment.weather;
+        if (model.environment.temperature !== undefined) body.dataset.temperature = String(model.environment.temperature);
       }
 
       const hereNode = (model.nodes || []).find((n) => n.isHere);

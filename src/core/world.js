@@ -39,6 +39,11 @@ Vinland.define('core/world', function (require) {
         throw new Error(`interactable "${inter.id}" weight must be a non-negative number`);
       }
     }
+    if (inter.insulation !== undefined && inter.insulation !== null) {
+      if (typeof inter.insulation !== 'number' || !Number.isFinite(inter.insulation) || inter.insulation < 0) {
+        throw new Error(`interactable "${inter.id}" insulation must be a non-negative number`);
+      }
+    }
     if (inter.equip !== undefined && inter.equip !== null) {
       if (inter.type !== 'item') {
         throw new Error(`interactable "${inter.id}" equip is for items only`);

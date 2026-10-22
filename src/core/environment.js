@@ -1,4 +1,4 @@
-/** Pure calendar, daylight and regional weather. No wall time or random rerolls. */
+/** Pure calendar, daylight and regional weather — and the air's temperature. No wall time or random rerolls. */
 Vinland.define('core/environment', function () {
   'use strict';
 
@@ -27,6 +27,19 @@ Vinland.define('core/environment', function () {
     autumn: Object.freeze(['fair', 'wet', 'wet', 'mist', 'mist', 'storm', 'storm']),
     winter: Object.freeze(['fair', 'mist', 'snow', 'snow', 'snow', 'wet', 'storm'])
   });
+
+  // Temperature in degrees Celsius. The air you feel at departure — the same
+  // convention weather uses — bent by season, weather, night and shelter.
+  // Straumfjord sits on a cold northern shore: summer is brief, winter bites.
+  const TEMPERATURE_BASE = Object.freeze({ spring: 7, summer: 16, autumn: 4, winter: -6 });
+  const TEMPERATURE_WEATHER = Object.freeze({ clear: 3, cloudy: 0, fog: -1, rain: -4, snow: -9, storm: -6 });
+  const TEMPERATURE_PHASE = Object.freeze({ dawn: -2, day: 1, dusk: -1, night: -4 });
+  // A roof does not add heat, it holds the air near hearth-warm: indoors is
+  // this share of the way from outside to TEMPERATURE_HEARTH. Like the
+  // exposure needle it settles, so a roof cuts both ways — it warms a winter
+  // night and takes the edge off a summer noon instead of cooking you.
+  const TEMPERATURE_HEARTH = 18;
+  const TEMPERATURE_SHELTER_SHARE = 0.6;
 
   function seconds(world) { return world.timeSeconds === undefined ? 21600 : world.timeSeconds; }
 
@@ -63,13 +76,48 @@ Vinland.define('core/environment', function () {
     return !!(loc && loc.within);
   }
 
+  /**
+   * Ambient air temperature in °C, at the moment you are standing in.
+   * Deterministic, no randomness beyond weatherSeed — the same day/hour/place
+   * always reads the same temperature.
+   * @param {object} world
+   * @returns {number} integer degrees Celsius
+   */
+  function temperature(world) {
+    const date = calendar(world);
+    const w = weather(world);
+    const p = phase(world);
+    let temp = TEMPERATURE_BASE[date.season];
+    temp += TEMPERATURE_WEATHER[w] !== undefined ? TEMPERATURE_WEATHER[w] : 0;
+    temp += TEMPERATURE_PHASE[p] !== undefined ? TEMPERATURE_PHASE[p] : 0;
+    if (indoors(world)) {
+      temp += (TEMPERATURE_HEARTH - temp) * TEMPERATURE_SHELTER_SHARE;
+    }
+    // Whole degrees: the air is never read as a fraction anywhere.
+    return Math.round(temp);
+  }
+
+  /**
+   * Human label for a temperature value: "8°C", "–12°C", "0°C".
+   * Uses a proper minus sign for negatives.
+   * @param {number} tempC
+   * @returns {string}
+   */
+  function temperatureLabel(tempC) {
+    const n = Math.round(tempC);
+    return (n < 0 ? '\u2212' + Math.abs(n) : String(n)) + '\u00B0C';
+  }
+
   function conditions(world) {
     const date = calendar(world);
     const currentWeather = weather(world);
     const sheltered = indoors(world);
-    return { ...date, weather: currentWeather, sheltered,
+    const temp = temperature(world);
+    return { ...date, weather: currentWeather, temperature: temp,
+      temperatureLabel: temperatureLabel(temp),
+      sheltered,
       nextWeatherAt: (Math.floor(seconds(world) / WEATHER_INTERVAL) + 1) * WEATHER_INTERVAL,
-      label: date.season[0].toUpperCase() + date.season.slice(1) + ' · ' + currentWeather };
+      label: date.season[0].toUpperCase() + date.season.slice(1) + ' \u00B7 ' + currentWeather };
   }
 
   function duration(world, action, base, destination) {
@@ -91,5 +139,7 @@ Vinland.define('core/environment', function () {
   }
 
   return { DAY, WEATHER_INTERVAL, SEASONS, DAYLIGHT, FRONTS, FRONT_WEIGHTS,
-    calendar, phase, weather, indoors, conditions, duration, blocked };
+    TEMPERATURE_BASE, TEMPERATURE_WEATHER, TEMPERATURE_PHASE,
+    TEMPERATURE_HEARTH, TEMPERATURE_SHELTER_SHARE,
+    calendar, phase, weather, indoors, temperature, temperatureLabel, conditions, duration, blocked };
 });

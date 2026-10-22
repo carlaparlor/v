@@ -16,7 +16,7 @@
  * clickable and show a dropdown of actions. Passages mark them with {id} or {id|Display}.
  * See core/interactables.js for types and default actions.
  *
- * Items may declare `weight` (kilograms; default 2) and `equip` — a body slot
+ * Items may declare `weight` (kilograms; default 2), `insulation` (°C of warmth when worn, default 0) and `equip` — a body slot
  * ('head', 'torso', 'legs', 'feet' or 'hand') the thing rides in instead of
  * in the pack (core/inventory). The world's twelve takeable things weigh 29
  * kg together (the linen bundle is examine-only), more than a default back
@@ -100,6 +100,7 @@ Vinland.define('data/vinland', function () {
             name: 'seaboots',
             type: 'item',
             weight: 2,
+            insulation: 2,
             equip: 'feet',
             examine: 'Thick cowhide boots stained pale grey with dried salt along the seams. Someone stuffed dry grass inside the soles to soak up the damp, then left them by the door without coming back for them.',
             take: 'You pick up the seaboots. The leather is stiff with salt and still slightly damp around the soles.',
@@ -191,6 +192,7 @@ Vinland.define('data/vinland', function () {
             name: 'fur-hood',
             type: 'item',
             weight: 1,
+            insulation: 3,
             equip: 'head',
             examine: 'Soft fox fur stitched onto a thick felt lining, with leather ties to fasten under the chin. The stitching is tight and neat, made to keep bitter wind off your neck and ears.',
             take: 'You lift the fur-hood off its peg. The fur lining feels soft and dry against your palm.',
@@ -201,6 +203,7 @@ Vinland.define('data/vinland', function () {
             name: 'wool-trews',
             type: 'item',
             weight: 2,
+            insulation: 2,
             equip: 'legs',
             examine: 'Heavy dark wool trousers, neatly patched across one knee with lighter thread. Plain work clothes, sturdy and dry from hanging near the smoke vent.',
             take: 'You pull the wool-trews down from the peg and fold them neatly over your arm.',
@@ -343,6 +346,7 @@ Vinland.define('data/vinland', function () {
             name: 'storm-cloak',
             type: 'item',
             weight: 2,
+            insulation: 4,
             equip: 'torso',
             examine: 'A heavy wool cloak greased with lanolin to turn rain, neatly patched across one shoulder. Dried mud crusts the bottom hem.',
             take: 'You lift the storm-cloak off its peg and drape its heavy weight across your arm.',

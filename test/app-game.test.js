@@ -537,7 +537,9 @@ test('season and weather sit below the clock and stay synced through sheltered c
   const center = findByClass(doc.shell, 'map__center');
   const label = () => findByClass(doc.shell, 'map__environment');
   assert.equal(center.children[2], label());
-  assert.equal(label().textContent, 'Spring · clear');
+  // Season, weather and the air's temperature read as one line under the clock.
+  assert.equal(label().textContent, 'Spring · clear · 8\u00b0C');
+  assert.equal(findByClass(doc.shell, 'map__temperature').getAttribute('aria-label'), 'temperature 8\u00b0C');
   assert.equal(findByClass(doc.shell, 'map__clock').textContent, 'Day 1 · 06:00 · dawn');
   const env = Vinland.require('core/environment');
   let snowy;
@@ -547,17 +549,18 @@ test('season and weather sit below the clock and stay synced through sheltered c
   }
   assert.ok(snowy);
   g.setState(Object.freeze(snowy));
-  assert.equal(label().textContent, 'Winter · snow');
+  assert.equal(label().textContent, 'Winter · snow · \u221214\u00b0C');
   g.performAction('longhall-building', 'enter');
   assert.equal(g.getState().timeSeconds - snowy.timeSeconds, 600);
-  assert.equal(label().textContent, 'Winter · snow');
+  // Inside, the weather is the same but the air is not: a roof holds it near hearth-warm.
+  assert.equal(label().textContent, 'Winter · snow · 5\u00b0C');
   assert.equal(findByClass(doc.shell, 'map').dataset.weather, 'snow');
   const indoorStart = g.getState().timeSeconds;
   g.performAction('longhall-stairs', 'climb');
   // 300, not 300: the enter just trained travel to 2, and a trained walk is
   // a shade cheaper (1 - 0.25 * 2/100).
   assert.equal(g.getState().timeSeconds - indoorStart, 300);
-  assert.equal(label().textContent, 'Winter · snow');
+  assert.equal(label().textContent, 'Winter · snow · 5\u00b0C');
 });
 
 test('interactable dropdown resets aria-expanded on close and result views read pack region', () => {

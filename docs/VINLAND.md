@@ -46,6 +46,18 @@ never crash).
 
 ## Current state
 
+**Iteration 23** — the air has a number and clothes keep it off you. The map
+header reads `Spring · clear · 8°C`: whole degrees derived in
+`core/environment` from season, weather, the hour's phase, and a roof that
+holds the air near hearth-warm (cutting both ways — it warms a winter night
+and cools a summer noon) — deterministic, read at departure, and never bolted
+onto the prose. An item
+may declare `insulation` in °C, and only what you **wear** counts (fur-hood
++3, storm-cloak +4, wool-trews +2, seaboots +2 — +11 °C head to feet); the
+total nudges exposure back toward comfortable, so bundling up saves you in
+winter and cooks you in summer. The pack sheet says the warmth you wear and
+badges each worn row. See `docs/CHANGELOG.md`.
+
 **Iteration 22** — unified writing style and tone across all world passages,
 interactables, NPC dialogue, condition notes, action results, refusals,
 collapse text, and UI chrome, and removed the bolted-on trailing time/weather
