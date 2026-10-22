@@ -369,7 +369,7 @@ Vinland.define('core/player', function (require) {
     if (!world || !world.player) return null;
     if (world.player.stats.energy > 0) return null;
     if (!isExposed(world, destinationId)) return null;
-    return 'You are too exhausted to make that crossing. Sit down or sleep, and the ground will still be there.';
+    return 'You\u2019re completely exhausted\u2014your legs won\u2019t carry you across open ground right now. Find somewhere to sit or get some sleep first.';
   }
 
   function travelRefused(world, direction) {
@@ -438,16 +438,34 @@ Vinland.define('core/player', function (require) {
     return value < C.criticalBelow ? 'critical' : value < C.lowBelow ? 'low' : 'ok';
   }
 
-  /** Second-person notes, one per stat that is not ok (voice: CONVENTIONS). */
+  /** Second-person notes, one per stat that is not ok (voice: STYLE & CONVENTIONS). */
   const NOTES = Object.freeze({
-    health: Object.freeze({ low: 'You feel unwell.', critical: 'Your health is failing.' }),
-    hunger: Object.freeze({ low: 'Your hunger is growing.', critical: 'Your hunger is pressing; your hands shake.' }),
-    thirst: Object.freeze({ low: 'Your throat aches for water.', critical: 'You are parched.' }),
-    energy: Object.freeze({ low: 'You feel your strength draining.', critical: 'You are exhausted; every step is an effort.' }),
+    health: Object.freeze({
+      low: 'You\u2019re aching and worn down.',
+      critical: 'You\u2019re badly hurt\u2014you can barely stay on your feet.',
+    }),
+    hunger: Object.freeze({
+      low: 'Your stomach growls; your hunger is growing.',
+      critical: 'You\u2019re starving, and your hands won\u2019t stop shaking.',
+    }),
+    thirst: Object.freeze({
+      low: 'Your mouth is dry; you need water soon.',
+      critical: 'You\u2019re parched, your throat raw and dry.',
+    }),
+    energy: Object.freeze({
+      low: 'You\u2019re getting tired, your steps dragging.',
+      critical: 'You\u2019re exhausted; every step takes real effort.',
+    }),
     exposure: Object.freeze({
-      cold: Object.freeze({ low: 'You feel the cold settling into you.', critical: 'You are freezing; your fingers have gone numb.' }),
-      hot: Object.freeze({ low: 'You feel the heat settling onto you.', critical: 'You are overheating; the heat swims in your head.' })
-    })
+      cold: Object.freeze({
+        low: 'Your hands are stiff as the cold creeps into you.',
+        critical: 'You\u2019re freezing\u2014your fingers have gone numb.',
+      }),
+      hot: Object.freeze({
+        low: 'Your skin is damp and flushed from the rising heat.',
+        critical: 'You\u2019re overheating, your head swimming in the heat.',
+      }),
+    }),
   });
 
   /** View model for the always-on status block in the text pane. */
@@ -477,9 +495,10 @@ Vinland.define('core/player', function (require) {
 
   /** The prose shown when a collapse lands (second person, present tense). */
   function collapseResult() {
-    const text = 'Your legs give way and the world goes out like a fire under the smoke-hole. '
-      + 'You wake on the same ground, weaker, wrung out by the hours gone. '
-      + 'You are alive, and the shore has not changed its mind about you.';
+    const text = 'Your vision spots with darkness, and your legs give out beneath you. '
+      + 'You hit the ground hard before everything goes black. '
+      + 'When you finally drag yourself upright, two hours have slipped away. '
+      + 'You\u2019re sore, shaky, and still weak\u2014but you\u2019re alive.';
     return {
       title: 'You collapse',
       text: text,

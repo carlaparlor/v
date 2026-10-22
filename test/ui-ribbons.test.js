@@ -321,7 +321,7 @@ test('a carried thing is examined and set down from its own row', () => {
 
   const left = [...doc.shell.children].find((p) => p.dataset && p.dataset.panel === 'text');
   assert.ok(
-    findAllByClass(left, 'text__body').some((p) => p.textContent.includes('You have set down your')),
+    findAllByClass(left, 'text__body').some((p) => p.textContent.includes('You\u2019ve left your')),
     'the place prose says where it lies',
   );
   assert.ok(findByDataset(left, 'interactableId', 'ropes'), 'the dropped word stays clickable');

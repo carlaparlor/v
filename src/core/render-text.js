@@ -17,7 +17,6 @@ Vinland.define('core/render-text', function (require) {
 
   const { here, exitsOf, location, interactablesAt, containerState } = require('core/world');
   const time = require('core/time');
-  const environment = require('core/environment');
   const interactablesMod = require('core/interactables');
   const playerMod = require('core/player');
 
@@ -99,7 +98,7 @@ Vinland.define('core/render-text', function (require) {
     var words = dropped.map(function (inter) {
       return 'your {' + inter.id + '|' + inter.name + '}';
     });
-    return 'You have set down ' + joinAnd(words) + ' here.';
+    return 'You\u2019ve left ' + joinAnd(words) + ' on the ground here.';
   }
 
   /**
@@ -120,13 +119,12 @@ Vinland.define('core/render-text', function (require) {
     const byId = new Map();
     for (let i = 0; i < list.length; i++) byId.set(list[i].id, list[i]);
 
-    // A passage could be multiline? Currently single string; treat as one paragraph.
-    // If it contains newlines, split.
+    // Each place renders only its own passage (plus anything dropped here);
+    // clock, phase, season and weather belong to the map header, never bolted onto prose.
     const passage = (loc.passages || {})[time.clock(world).phase] || loc.passage;
     const dropped = list.filter(function (inter) { return inter.dropped === true; });
     const rawParagraphs = passage.split('\n\n');
     if (dropped.length > 0) rawParagraphs.push(droppedLine(dropped));
-    rawParagraphs.push(time.atmosphere(world, !!loc.within), environment.atmosphere(world));
     const richParagraphs = rawParagraphs.map(function (p) {
       return parseSegments(p, byId, world);
     });
@@ -149,7 +147,7 @@ Vinland.define('core/render-text', function (require) {
       player: playerMod.model(world.player),
       exits,
       exitsLine: exits.length === 0
-        ? 'There is no way out of here that you can see.'
+        ? 'There\u2019s no obvious way out from here.'
         : 'You can go ' +
           exits
             .map(function (exit) {

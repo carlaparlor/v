@@ -10,10 +10,23 @@
 - Pane ids are stable strings (`pane-a`, `pane-b`). Never index panes by position in code.
 
 ## Voice
-- **Second person, present tense.** The player is "you": "You cross the yard...". Never "the
-  player", never first person, never past tense for the world's own description.
-- Enforced by tests over the content pack (`test/data-pack.test.js`) — a passage without "you"
-  fails the build.
+- **Second person, present tense, plain modern English.** The person in the world is "you":
+  *"You cross the yard, your boots sinking slightly into the damp, packed earth..."* Never say
+  "the player", never narrate in first person, and never use past tense for what is happening now.
+- **Natural contractions, zero purple prose, zero bolted-on trailing paragraphs.** Use everyday
+  contractions (`you're`, `you've`, `it's`, `don't`, `can't`, `won't`, `isn't`, `there's`). Avoid
+  stiff uncontracted prose, epigrammatic closers, abstract object personification, and
+  riddle-speaking NPCs. Each location renders strictly its own authored passage (using
+  `passages.{dawn,day,dusk,night}` where the room itself shifts by phase) — never append generated
+  clock or weather filler paragraphs beneath it (the map header carries clock, season, and weather).
+- **Concrete sensory grounding.** Anchor rooms, examinations, and actions in physical sensations
+  (air, temperature, smell, sound, texture, weight) written in complete grammatical clauses. Let
+  unease come from specific, ordinary details that don't quite add up, never vague portent.
+- **Placeholders must read cleanly before and after taking.** Every `{id}` / `{id|Display}` token
+  must sit inside a grammatical clause with proper sentence capitalization both while highlighted
+  and after an item is taken into the pack.
+- **Full prose specification & examples:** see **[docs/STYLE.md](STYLE.md)**. Enforced
+  automatically by `test/data-pack.test.js` and `test/writing-style.test.js`.
 - Prose describes what *is*, not what the player should do. Where you can go is stated by the
   exits line, never implied by the prose.
 - Name places with a definite article ("The Yard", "The Cairn"): it reads well in a sentence and
@@ -167,20 +180,21 @@ nowhere else, so the sheet, the take gate and the clock cannot disagree:
   slots only); while it carries `equipped: '<slot>'` it rides ON you —
   zero kg ("what is on your body is not on your back"). One thing per slot:
   a second `equip` for an occupied slot is refused naming the occupant
-  ("Your hand already holds the seax.", "You already wear the fur-hood.").
+  ("You're already holding the seax.", "You're already wearing the fur-hood.").
   `equip` / `unequip` are verbs (30s, fine work like take; `equipText` /
   `unequipText` hold their prose, since `equip` names the slot — never fall
   through to the field). Unequipping must fit the load like anything else;
   a dropped thing always lands stowed (the flag belongs to the pack,
   exactly as the `dropped` mark belongs to the ground).
 - **Take is gated; drop is a verb.** `core/actions.perform` refuses a take
-  that would pass the limit, with the numbers in kg ("it weighs W kg, and
-  you have F kg free of C kg") and the usual half-minute failure. `drop`
-  costs 30 seconds and 1 energy: the thing leaves the pack and joins the
-  current location's interactables flagged `dropped: true`.
-  `core/render-text` names dropped things in one sentence after the
-  passage, with `{id|name}` placeholders so the word stays clickable;
-  taking it back strips the flag.
+  that would pass the limit, with the numbers in kg ("Your pack won't fit the
+  X — it weighs W kg, and you have F kg free of C kg.") and the usual
+  half-minute failure. `drop` costs 30 seconds and 1 energy: the thing leaves
+  the pack and joins the current location's interactables flagged
+  `dropped: true`. `core/render-text` names dropped things in one sentence
+  after the passage ("You've left your X on the ground here."), with
+  `{id|name}` placeholders so the word stays clickable; taking it back strips
+  the flag.
 - **Carried verbs.** `inventory.actionsFor(held)` is the type's verbs minus
   `take` (it is already yours), plus eat/drink when the thing has those
   values, plus `equip` or `unequip` when it can ride on you, and always

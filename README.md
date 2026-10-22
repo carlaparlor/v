@@ -25,6 +25,15 @@ npm test      # run the unit tests (needs Node 18+)
 
 ## Current state
 
+**Iteration 22 — writing style and tone.** Rewrote all location passages,
+phase overrides, interactable examinations, action results, NPC speech,
+condition notes, refusals, collapse prose, and UI copy into one plain,
+concrete, sensory second-person voice with natural contractions and understated
+everyday unease, and removed the two bolted-on time/weather paragraphs from
+room prose so each passage stands cleanly on its own. Codified in
+[docs/STYLE.md](docs/STYLE.md) and enforced automatically by
+`test/writing-style.test.js`. See [docs/CHANGELOG.md](docs/CHANGELOG.md).
+
 **Iteration 21 — every kind of thing has a face.** Every coloured word in
 the prose now leads with the glyph of its type, in the word's own colour: a
 thing (object), a parcel (item), a lidded store (container), a hammer
@@ -173,6 +182,7 @@ Vinland.require('app/game').getGame().travel('north')
 
 | Doc | Read it for |
 | --- | --- |
+| [docs/STYLE.md](docs/STYLE.md) | Writing style, tone, sentence craft, Do/Don't examples, and automated prose guards |
 | [docs/WORKFLOW.md](docs/WORKFLOW.md) | How development happens: the ask → read → do → test → fix loop |
 | [docs/VINLAND.md](docs/VINLAND.md) | What the game is and the non-negotiable engineering values |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, module registry, extension points, ADRs |

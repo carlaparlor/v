@@ -4,10 +4,15 @@
 
 ## Voice
 
-**Vinland is second person, present tense.** The game says "you": *you cross the yard, you feel
-the smithy before you reach it*. The world is narrated to the person in it, never about a
-character called "the player". This is enforced by tests, not by taste — see
-`docs/CONVENTIONS.md`.
+**Vinland is plain, sensory second-person present tense.** The game addresses you directly in
+natural modern English with everyday contractions (`you're`, `it's`, `don't`, `can't`, `won't`):
+*you cross the yard, your boots sinking slightly into the damp, packed earth*. Scenes are grounded
+in physical sensation (air, light, smell, temperature, weight) and lived-in everyday detail paired
+with quiet, concrete unease — never purple prose, abstract metaphors, oracle riddles, filter-verb
+spam (*"You see... You feel..."*), or fourth-wall references to *"the player"*.
+
+This is enforced by automated tests (`test/data-pack.test.js`, `test/writing-style.test.js`), not
+left to chance — see **[docs/STYLE.md](STYLE.md)** and **[docs/CONVENTIONS.md](CONVENTIONS.md)**.
 
 ## The three words that decide everything
 
@@ -40,6 +45,13 @@ never crash).
 | **Setup is trivial** | **Double-click `index.html`.** No install, no build step, no server, no Node, no dependencies, no environment variables, no database, no accounts. Enforced by `test/setup-is-trivial.test.js`. |
 
 ## Current state
+
+**Iteration 22** — unified writing style and tone across all world passages,
+interactables, NPC dialogue, condition notes, action results, refusals,
+collapse text, and UI chrome, and removed the bolted-on trailing time/weather
+paragraphs so every room passage stands on its own (while clock, season, and
+weather live cleanly in the map header). Documented in `docs/STYLE.md` and
+enforced automatically in `test/writing-style.test.js`. See `docs/CHANGELOG.md`.
 
 **Iteration 15** — what you carry is a mechanic and has its own ribbon. The
 pack is **weight**, not slots: each takeable thing has a weight and a back

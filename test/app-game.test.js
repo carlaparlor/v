@@ -347,7 +347,7 @@ test('taking an item never fades to a result view: popup, same view, plain word'
   assert.equal(findByClass(left, 'text__title').textContent, 'The Yard');
   assert.equal(findByDataset(left, 'interactableId', 'ropes'), null, 'ropes no longer an interactable word');
   assert.ok(findByClass(left, 'text__body').textContent.includes('ropes'), 'the word is still in the sentence');
-  assert.equal(g.getToast(), 'You have taken ropes');
+  assert.equal(g.getToast(), 'You take the ropes.');
   const toast = findByClass(doc.body, 'toast');
   assert.ok(toast, 'popup exists');
   assert.ok(toast.classList.contains('is-visible'));
@@ -365,7 +365,7 @@ test('taking from inside a container stays in that container view', () => {
   assert.equal(g.getMode(), 'action');
   assert.equal(findByClass(left, 'text__title').textContent, 'barrel');
   assert.equal(findByDataset(left, 'interactableId', 'herring'), null, 'herring word is plain in the barrel prose');
-  assert.equal(g.getToast(), 'You have taken herring');
+  assert.equal(g.getToast(), 'You take the herring.');
   g.back();
   assert.equal(g.getMode(), 'place', 'Back from the barrel reaches the place: the take stacked nothing');
   // ...while returnToPlace from a nested view still exits straight out.

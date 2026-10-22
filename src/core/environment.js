@@ -85,40 +85,11 @@ Vinland.define('core/environment', function () {
 
   function blocked(world, inter, action) {
     if (inter.type !== 'wildlife' || action !== 'approach' || indoors(world)) return null;
-    if (phase(world) === 'night') return 'You cannot approach the ' + inter.name + ' in the dark. You need daylight.';
-    if (weather(world) === 'storm') return 'You cannot approach the ' + inter.name + ' safely in the storm. You need to wait for it to ease.';
+    if (phase(world) === 'night') return 'It\u2019s too dark to approach the ' + inter.name + '. Wait for daylight.';
+    if (weather(world) === 'storm') return 'It isn\u2019t safe to approach the ' + inter.name + ' in this storm. Wait for the weather to ease.';
     return null;
   }
 
-  function atmosphere(world) {
-    const seasonal = {
-      spring: 'You feel the chill of spring as the shore begins to thaw.',
-      summer: 'You feel the milder air of summer settle over the shore.',
-      autumn: 'You feel the autumn chill deepening around the settlement.',
-      winter: 'You feel winter holding the shore in its cold grip.'
-    };
-    const outside = {
-      clear: 'You feel clear air moving over the shore.',
-      cloudy: 'You see cloud cover stretching over the settlement.',
-      fog: 'You see fog swallowing the paths; approaching wildlife takes extra care and time.',
-      rain: 'You feel rain soaking the paths; you need longer to cross the slippery ground.',
-      storm: 'You hear the storm battering the shore; travel is slow and wildlife is unsafe to approach.',
-      snow: 'You see snow collecting on the paths; each outdoor crossing takes longer.'
-    };
-    const sheltered = {
-      clear: 'You are sheltered indoors; the air outside is clear.',
-      cloudy: 'You are sheltered indoors, with cloud cover beyond the doorway.',
-      fog: 'You are sheltered indoors; fog hangs beyond the doorway.',
-      rain: 'You are sheltered from the rain pattering outside.',
-      storm: 'You are sheltered from the storm battering the walls.',
-      snow: 'You are sheltered from the snow gathering outside.'
-    };
-    if (indoors(world)) return sheltered[weather(world)] + ' ' +
-      ({ spring: 'You notice the spring chill at the doorway.', summer: 'You notice mild summer air at the doorway.',
-        autumn: 'You notice an autumn draught at the doorway.', winter: 'You notice winter cold pressing at the doorway.' })[calendar(world).season];
-    return seasonal[calendar(world).season] + ' ' + outside[weather(world)];
-  }
-
   return { DAY, WEATHER_INTERVAL, SEASONS, DAYLIGHT, FRONTS, FRONT_WEIGHTS,
-    calendar, phase, weather, indoors, conditions, duration, blocked, atmosphere };
+    calendar, phase, weather, indoors, conditions, duration, blocked };
 });
