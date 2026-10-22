@@ -178,6 +178,18 @@
     text-decoration-color 120ms ease;
 }
 
+/* The type's glyph, small enough to be a mark beside the word and never a
+   picture of its own. Sized in CSS, adjacent to the word with a hair of air;
+   it strokes currentColor, so the type colour reaches glyph and word alike. */
+.interactable__icon {
+  inline-size: 12px;
+  block-size: 12px;
+  flex: none;
+  margin-inline-end: 4px;
+  vertical-align: -0.12em;
+  opacity: 0.9;
+}
+
 /* Being taken: the word settles — colour drains to body text, weight drops.
    The re-render that follows lands on an already-plain word, so the swap
    itself is never seen. */

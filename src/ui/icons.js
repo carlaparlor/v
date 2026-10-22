@@ -10,7 +10,9 @@
  * Shape data is from lucide (https://lucide.dev, ISC-licensed): user-round,
  * backpack, settings and x for the ribbons; heart, utensils, droplet, zap and
  * thermometer (exposure: cold one way, hot the other) for the five vitals — keyed by stat name, so
- * icon(playerModel.stats[i].key) just works.
+ * icon(playerModel.stats[i].key) just works. The six interactable types have
+ * their own glyphs (box, gem, package-open, hammer, user-round, bird), chosen
+ * in core/interactables' TYPE_ICONS so the icon a type shows is data, not DOM.
  */
 Vinland.define('ui/icons', function () {
   'use strict';
@@ -82,6 +84,71 @@ Vinland.define('ui/icons', function () {
     exposure: Object.freeze([
       // thermometer
       Object.freeze({ tag: 'path', attrs: { d: 'M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z' } }),
+    ]),
+    // Interactable types: object, item, container, fixture, wildlife.
+    box: Object.freeze([
+      // a plain bound chest-shape: the thing itself
+      Object.freeze({
+        tag: 'path',
+        attrs: {
+          d: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z',
+        },
+      }),
+      Object.freeze({ tag: 'path', attrs: { d: 'm3.3 7 8.7 5 8.7-5' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M12 22V12' } }),
+    ]),
+    gem: Object.freeze([
+      // a cut stone: something worth carrying
+      Object.freeze({ tag: 'path', attrs: { d: 'M10.5 3 8 9l4 13 4-13-2.5-6' } }),
+      Object.freeze({
+        tag: 'path',
+        attrs: {
+          d: 'M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z',
+        },
+      }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M2 9h20' } }),
+    ]),
+    'package-open': Object.freeze([
+      // a lid thrown back: a container you have opened
+      Object.freeze({ tag: 'path', attrs: { d: 'M12 22v-9' } }),
+      Object.freeze({
+        tag: 'path',
+        attrs: {
+          d: 'M15.17 2.21a1.67 1.67 0 0 1 1.63 0L21 4.57a1.93 1.93 0 0 1 0 3.36L8.82 14.79a1.655 1.655 0 0 1-1.64 0L3 12.43a1.93 1.93 0 0 1 0-3.36z',
+        },
+      }),
+      Object.freeze({
+        tag: 'path',
+        attrs: {
+          d: 'M20 13v3.87a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13',
+        },
+      }),
+      Object.freeze({
+        tag: 'path',
+        attrs: {
+          d: 'M21 12.43a1.93 1.93 0 0 0 0-3.36L8.83 2.2a1.64 1.64 0 0 0-1.63 0L3 4.57a1.93 1.93 0 0 0 0 3.36l12.18 6.86a1.636 1.636 0 0 0 1.63 0z',
+        },
+      }),
+    ]),
+    hammer: Object.freeze([
+      // a tool fixed in place: something built, not carried
+      Object.freeze({ tag: 'path', attrs: { d: 'm15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'm18 15 4-4' } }),
+      Object.freeze({
+        tag: 'path',
+        attrs: {
+          d: 'm21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5',
+        },
+      }),
+    ]),
+    bird: Object.freeze([
+      // a creature with a life of its own
+      Object.freeze({ tag: 'path', attrs: { d: 'M16 7h.01' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'm20 7 2 .5-2 .5' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M10 18v3' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M14 17.75V21' } }),
+      Object.freeze({ tag: 'path', attrs: { d: 'M7 18a6 6 0 0 0 3.84-10.61' } }),
     ]),
   });
 

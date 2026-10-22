@@ -135,6 +135,7 @@ Vinland.define('core/actions', function (require) {
       display: display || held.name,
       interactable: held,
       color: interactablesMod.colorFor(held),
+      icon: interactablesMod.iconFor(held),
       actions: interactablesMod.actionsFor(held, held.type === 'container' ? worldMod.containerState(world, held.id) : undefined),
       typeName: held.type,
     };

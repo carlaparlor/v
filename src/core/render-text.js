@@ -38,6 +38,7 @@ Vinland.define('core/render-text', function (require) {
       display: display || inter.name,
       interactable: inter,
       color: interactablesMod.colorFor(inter),
+      icon: interactablesMod.iconFor(inter),
       actions: interactablesMod.actionsFor(inter, state),
       typeName: inter.type,
     };

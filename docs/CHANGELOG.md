@@ -3,6 +3,27 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 21 — the types wear glyphs
+
+**Asked:** interactables of each type should have icons next to them.
+
+Each clickable word in the prose (and in a result view) now leads with a
+small lucide glyph for its type: `box` for object, `gem` for item,
+`package-open` for container, `hammer` for fixture, `user-round` for npc,
+`bird` for wildlife. The mapping is data — `TYPE_ICONS` in
+`core/interactables`, with an explicit `icon` on an interactable overriding
+it — and the glyph rides in the view model (`segment.icon`, prose and
+results alike). It sits INSIDE the button, first child, so the whole thing
+is still one click target and the glyph strokes `currentColor`, taking the
+type's colour. Six colours are no longer the only thing telling the types
+apart. Sized in CSS at 12px (`.interactable__icon`), `aria-hidden` so the
+button still reads as the word alone; a type with no glyph renders without
+one rather than throwing.
+
+**261 tests, 0 failures.**
+
+---
+
 ## Iteration 20 — the load, laid out
 
 **Asked:** the circles should be centered, with "0 kg / 8 kg" under them.

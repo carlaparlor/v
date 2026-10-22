@@ -21,6 +21,19 @@ Vinland.define('core/interactables', function () {
     wildlife: '#f9c74f',
   };
 
+  /** Default icon name per type (keys in ui/icons.ICONS). Chosen to read as
+   * the kind of thing, not the thing: a box for scenery, a gem for something
+   * worth carrying, a thrown-back lid for a container, a hammer for what is
+   * built in place, a person for people, a bird for wildlife. */
+  const TYPE_ICONS = {
+    object: 'box',
+    item: 'gem',
+    container: 'package-open',
+    fixture: 'hammer',
+    npc: 'user-round',
+    wildlife: 'bird',
+  };
+
   /** Default actions per type. 'examine' is always present. For containers this
    * lists every verb the type can ever offer; actionsFor() filters it by the
    * container's current state (closed -> open, open -> close). */
@@ -85,5 +98,20 @@ Vinland.define('core/interactables', function () {
     return TYPE_COLORS[interactable.type] || '#ded4c3';
   }
 
-  return { TYPES, TYPE_COLORS, DEFAULT_ACTIONS, isKnownType, actionsFor, colorFor };
+  /**
+   * Icon name for an interactable: explicit `icon` override else its type's
+   * glyph. A null/empty override or an unknown type returns null — the render
+   * then shows no glyph rather than throwing on a name ui/icons cannot draw.
+   * @param {{ type?: string, icon?: string }} interactable
+   * @returns {string|null}
+   */
+  function iconFor(interactable) {
+    if (!interactable) return null;
+    if (typeof interactable.icon === 'string' && interactable.icon.length > 0) {
+      return interactable.icon;
+    }
+    return TYPE_ICONS[interactable.type] || null;
+  }
+
+  return { TYPES, TYPE_COLORS, TYPE_ICONS, DEFAULT_ACTIONS, isKnownType, actionsFor, colorFor, iconFor };
 });

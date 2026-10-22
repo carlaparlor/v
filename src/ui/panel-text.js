@@ -145,7 +145,12 @@ Vinland.define('ui/panel-text', function (require) {
 
   function makeInteractableNode(seg) {
     const wrap = el('span', 'interactable-wrap');
-    const btn = el('button', 'interactable', seg.display);
+    const btn = el('button', 'interactable');
+    // The type's glyph leads the word, inside the button so it is part of the
+    // same click target. aria-hidden (ui/icons) keeps the button's name the
+    // word alone; the colour of the word carries onto the glyph via currentColor.
+    if (seg.icon) btn.appendChild(iconsMod.icon(seg.icon, 'interactable__icon'));
+    btn.appendChild(document.createTextNode(seg.display));
     btn.dataset.interactableId = seg.id;
     btn.dataset.interactableType = seg.typeName || '';
     btn.style.color = seg.color || '';
