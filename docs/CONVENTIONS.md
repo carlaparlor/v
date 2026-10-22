@@ -122,9 +122,18 @@ there is one second-person note per stat that is not ok. Attributes and
 skills are not displayed in the pane; they live in the profile sheet on the
 map pane's ribbons (below). The block's colours are tokens
 (`--color-status*`, `--color-stat-*`) and must clear WCAG AA on the dark
-pane (tested). Every icon in the game — vitals and ribbons — ships as path
-data from `ui/icons` (lucide's 24×24 stroke grid, `stroke: currentColor`);
-a new icon is a PATHS entry, and an unknown icon name throws.
+pane (tested). Every icon in the game — vitals, ribbons and interactable
+types — ships as path data from `ui/icons` (lucide's 24×24 stroke grid,
+`stroke: currentColor`); a new icon is a PATHS entry, and an unknown icon
+name throws.
+
+Every coloured interactable word in the prose leads with the glyph of its
+type, in the word's own colour and sized in `em`: object → shapes, item →
+package, container → archive, fixture → hammer, npc → user-round, wildlife →
+paw-print (`TYPE_ICONS`, keyed by `core/interactables`' type names;
+`iconForType` falls back to `circle-dot` for an unknown type). The glyph is
+`aria-hidden` — the word is the button's accessible name — and it fades out
+with the colour when a taken word settles.
 
 **Name:** `world.player.name` is frozen player state, defaulting to "You"
 (`PLAYER_CONFIG.start.name`); a pack overrides it via `pack.player.name`

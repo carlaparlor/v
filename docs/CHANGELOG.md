@@ -3,6 +3,35 @@
 One entry per iteration. Newest first. Format: what was asked, what was built, what to test.
 ---
 
+## Iteration 21 — every kind of thing has a face
+
+**Asked:** interactables of each type should have icons next to them.
+
+Every coloured word in the prose now leads with the glyph of its type, in the
+word's own colour (`stroke: currentColor`): **object** → shapes (a triangle,
+square and circle — a thing in no particular shape), **item** → package (a
+parcel, made to be picked up), **container** → archive (a lidded store),
+**fixture** → hammer (built into the place, not carried), **npc** →
+user-round (a person) and **wildlife** → paw-print (a paw). The mapping is
+`TYPE_ICONS` in `ui/icons`, keyed by the same six type names
+`core/interactables` defines; `iconForType` falls back to a plain
+`circle-dot` for a type this build does not know, so a word is never left
+without a mark.
+
+The glyph is sized in `em` (0.9em, sitting on the baseline) so it follows
+the prose instead of a fixed pixel box, and it is `aria-hidden` — the
+button's accessible name stays the word. When a taken word settles
+(`is-taken`), the glyph fades with the colour: what is taken is no longer a
+thing you can act on. The dropdown is unchanged; the icon belongs to the
+word.
+
+**257 tests, 0 failures.** New: `ui-interactable-icons.test.js` — the map
+covers exactly the six core types, each maps to real lucide shape data, no
+two types share a glyph, the fallback is a real icon, and every rendered
+word leads with its type's glyph while keeping its label.
+
+---
+
 ## Iteration 20 — the load, laid out
 
 **Asked:** the circles should be centered, with "0 kg / 8 kg" under them.
